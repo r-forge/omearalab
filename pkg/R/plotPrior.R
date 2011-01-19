@@ -1,3 +1,4 @@
+#HugoWasHere
 #priorVariables depend on priorFn.  uniform=c(min, max); normal=c(mean, stdev); lognormal=c(mean, stdev), gamma=c(shape, scale), exponential=c(rate)
 #plotPrior("normal", c(1,2), plot.quants=TRUE)
 #plotPrior("exponential", c(1), plot.quants=FALSE)
