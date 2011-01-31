@@ -36,7 +36,7 @@ generate.simmap<-function (phy, taxa.vector, changeposition=0.5, digits = 10, tr
     #note that in the 2 case, you might want to do exceptions for changeposition==0 or ==1: cut out the part that has zero branch length
     simmap.out<-function(i) {
     	
-    	
+    	#remember the colon is already output by cp(":")
     	simmap.string<-paste("{",state.string,"}",sep="")
     	cp(simmap.string)	
     }
