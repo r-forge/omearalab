@@ -1,9 +1,9 @@
 generate.simmap<-function (phy, taxa.vector, changeposition=0.5, digits = 10, tree.prefix = "") 
 {
-	#changeposition is where on the branch leading to the taxset to change from state 0 to state 1: at the beginning (changeposition=0, at the end (changeposition=1, at the midpoint (changeposition=0.5)))
+	#changeposition is where on the branch leading to the taxset to change from state 0 to state 1: at the beginning (changeposition=0, at the end (changeposition=1), at the midpoint (changeposition=0.5)))
     brl <- !is.null(phy$edge.length) #if TRUE, there are branch lengths
     nodelab <- !is.null(phy$node.label) #if TRUE, there are node labels
-    phy$tip.label <- checkLabel(phy$tip.label) #gets rid of weird characters in species names
+    phy$tip.label <- checkLabel(phy$tip.label) #gets rid of weird characters in tip names
     if (nodelab) 
         phy$node.label <- checkLabel(phy$node.label)
     f.d <- paste("%.", digits, "g", sep = "") #format to print out branch lengths (how many digits, always include the decimal point)
@@ -11,20 +11,75 @@ generate.simmap<-function (phy, taxa.vector, changeposition=0.5, digits = 10, tr
         STRING[k] <<- x
         k <<- k + 1
     }
-    getMRCA<-function(taxa.vector) {
-    	mrcaNode<-which(phy$tip.label==taxa.vector[1])
-    	for (taxonIndex in 1:length(taxa.vector)) {
-    		mrcaNode=mrca(phy,full=TRUE)[mrcaNode,which(phy$tip.label==taxa.vector[taxonIndex])]
+    getMRCA<-function(phy,taxa.vector) {
+    	mrcaNode<-which(phy$tip.label==taxa.vector[1])  #pic the label in the phylogeny that is the same as the first item in the taxa.vector and place it's index position into mrcaNode
+    	for (taxonIndex in 1:length(taxa.vector)) {    #for each taxonIndex intance in taxa.vector
+    		mrcaNode=mrca(phy,full=TRUE)[mrcaNode,which(phy$tip.label==taxa.vector[taxonIndex])]  #from the mrca(phy,full=T) result pull out the row that is equal to the mrcaNode position and any other tip taxon.label [mrcaNode, which(phy$ip.label==taxa.vector[taxonIndex])], for the column place of the mrca function
     	}	
     	return(mrcaNode)
     }
-    #the getMRCA function will, for a given vector of taxon labels (and it currently assumes there are labels), will return the ape node number of the mrca of all those taxa
     
-    #the next step is to make a vector of length equal to the number of internal and terminal nodes in the tree.
+    
+    
+    
+    
+        #the getMRCA function will, for a given vector of taxon labels (and it currently assumes there are labels), return the ape node number of the mrca of all those taxa
+        
+        
+        
+        
+        getImmediateDescendants<-function(phy,mrcaNode){
+    	   	vector.descendants<-phy$edge[which(phy$edge[,1]==mrcaNode),2]
+       		return(vector.descendants)		
+       }
+       
+       getAllDescendants<-function(phy,mrcaNode){
+       		vector.alldescendants<-getImmediateDescendants(phy,mrcaNode)
+       		to.examine=vector.alldescendants
+       		while(length(to.examine)>0) {
+       			vector.nextdescendants=getImmediateDescendants(phy,to.examine[1])
+       			if (length(vector.nextdescendants)>0 ) {
+       				to.examine<-append(to.examine,vector.nextdescendants)
+       				vector.alldescendants<-append(vector.alldescendants,vector.nextdescendants)
+       			}	
+       			if (length(to.examine)>1) {
+	       			to.examine<-to.examine[2:length(to.examine)]   
+       			}
+       			else {
+       				to.examine=c()	
+       			}
+       		}
+       		return(vector.alldescendants)
+       	
+       	}
+        
+    
+        #the next step is to make a vector of length equal to the number of internal and terminal nodes in the tree.
     #each entry of the vector will be one of three integers:
     #	0 = an edge (terminal or internal) not in the taxset
     #	1 = an edge completely in the taxset
     #	2 = an edge partly in the taxset, partly not in (so the stem branch leading to the MRCA of all the taxa in the taxset)
+    
+    nodes.assignment<-rep(0, Nnode(phy) + Ntip(phy))
+    
+    #find mrca
+    
+   nodes.assignment[mrcaNode]=2      #assign element to be 2 to show where the break is
+    
+   # then use tree traversal from paradis or kids down below
+    
+    nodes.assignment[currentnode]=1
+    
+    
+    for each node above assign it to be one
+    
+    
+
+    
+
+    
+    
+    
     
     #then, at the steps in the function that say "HERE IS ONE PLACE..." we want to instead do simmap.out(nodeNumber). simmap.out will format the simmap string and cp() it.
     #note that node number you pass to simmap.out should be somewhere from 1 to Ntip+Nnode. This differs from what seems to be done with add.internal, where it has to use the ind object. 
@@ -37,7 +92,8 @@ generate.simmap<-function (phy, taxa.vector, changeposition=0.5, digits = 10, tr
     simmap.out<-function(i) {
     	
     	#remember the colon is already output by cp(":")
-    	simmap.string<-paste("{",state.string,"}",sep="")
+    	simmap.string<-paste("{",state.string,"}",sep="")   #0 and 1 easy, 2 will be more coding
+    	
     	cp(simmap.string)	
     }
     add.internal <- function(i) {
