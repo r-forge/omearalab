@@ -11,6 +11,9 @@ generate.simmap<-function (phy, taxa.vector, changeposition=0.5, digits = 10, tr
         STRING[k] <<- x
         k <<- k + 1
     }
+    
+            #the getMRCA function above will, for a given vector of taxon labels (and it currently assumes there are labels), return the ape node number of the mrca of all those taxa
+    
     getMRCA<-function(phy,taxa.vector) {
     	mrcaNode<-which(phy$tip.label==taxa.vector[1])  #pic the label in the phylogeny that is the same as the first item in the taxa.vector and place it's index position into mrcaNode
     	for (taxonIndex in 1:length(taxa.vector)) {    #for each taxonIndex intance in taxa.vector
@@ -21,32 +24,28 @@ generate.simmap<-function (phy, taxa.vector, changeposition=0.5, digits = 10, tr
     
     
     
-    
-    
-        #the getMRCA function will, for a given vector of taxon labels (and it currently assumes there are labels), return the ape node number of the mrca of all those taxa
-        
-        
-        
-        
+    	#the getImmediateDescendants, looks around the mrcaNode and pics out it's children
         getImmediateDescendants<-function(phy,mrcaNode){
     	   	vector.descendants<-phy$edge[which(phy$edge[,1]==mrcaNode),2]
        		return(vector.descendants)		
        }
        
+              
+       #the getAllDescendants uses the results of the getImmediateDescendants() 
        getAllDescendants<-function(phy,mrcaNode){
-       		vector.alldescendants<-getImmediateDescendants(phy,mrcaNode)
-       		to.examine=vector.alldescendants
-       		while(length(to.examine)>0) {
-       			vector.nextdescendants=getImmediateDescendants(phy,to.examine[1])
-       			if (length(vector.nextdescendants)>0 ) {
-       				to.examine<-append(to.examine,vector.nextdescendants)
-       				vector.alldescendants<-append(vector.alldescendants,vector.nextdescendants)
+       		vector.alldescendants<-getImmediateDescendants(phy,mrcaNode) #first get results 
+       		to.examine=vector.alldescendants   #stick the getImm.Dec() res into a new vector
+       		while(length(to.examine)>0) {  #while the immediate descendants are greater than 0
+       			vector.nextdescendants=getImmediateDescendants(phy,to.examine[1]) #get Immediate desc for the first element in to.examine stick it in vector.nextdesc.
+       			if (length(vector.nextdescendants)>0 ) {   #if vector.nextdesc. continues to have more than zero items in it
+       				to.examine<-append(to.examine,vector.nextdescendants) #then append to.examine, with the results of vector.nextdesc, stick it into to.examine
+       				vector.alldescendants<-append(vector.alldescendants,vector.nextdescendants) #append vector.alldesc, with the results of vector.nextdesc, into vector all.desc
        			}	
-       			if (length(to.examine)>1) {
-	       			to.examine<-to.examine[2:length(to.examine)]   
+       			if (length(to.examine)>1) {   #if to.examine is greater than one
+	       			to.examine<-to.examine[2:length(to.examine)]   #take the second element and on of to.examine and stick it in to.examine, i.e. drop the first element of to.examine
        			}
        			else {
-       				to.examine=c()	
+       				to.examine=c()	#if to.examine is not greater than one, return an empty to.examine vector, i.e clear it out. 
        			}
        		}
        		return(vector.alldescendants)
@@ -62,40 +61,50 @@ generate.simmap<-function (phy, taxa.vector, changeposition=0.5, digits = 10, tr
     
     nodes.assignment<-rep(0, Nnode(phy) + Ntip(phy))
     
-    #find mrca
+    nodes.assignment[mrcaNode]=2      #assign mrcaNode element to be 2 to show where the break is
     
-   nodes.assignment[mrcaNode]=2      #assign element to be 2 to show where the break is
-    
-   # then use tree traversal from paradis or kids down below
-    
-    nodes.assignment[currentnode]=1
-    
-    
-    for each node above assign it to be one
-    
+    nodes.assignment[getAllDescendants(phy, mrcaNode)]=1   #this might be out of the scope for the getAllDescendants function above where vector.alldescendatns gets created   
     
 
-    
-
-    
-    
     
     
     #then, at the steps in the function that say "HERE IS ONE PLACE..." we want to instead do simmap.out(nodeNumber). simmap.out will format the simmap string and cp() it.
-    #note that node number you pass to simmap.out should be somewhere from 1 to Ntip+Nnode. This differs from what seems to be done with add.internal, where it has to use the ind object. 
+    #note that nodeNumber you pass to simmap.out should be somewhere from 1 to Ntip+Nnode. This differs from what seems to be done with add.internal, where it has to use the ind object. 
     
-    #remember that simmap output: if the indicator vector is 0, it should be
-    # {0,brlen}
+    #remember that simmap output: 
+    # if the indicator vector is 0, it should be {0,brlen}
     #if 1, it is {1,brlen}
     #if 2, it is {1,brlen*(1-changeposition) : 0,brlen*changeposition}
     #note that in the 2 case, you might want to do exceptions for changeposition==0 or ==1: cut out the part that has zero branch length
-    simmap.out<-function(i) {
-    	
+    
+    
+    
+    simmap.out<-function(nodes.assignment, changeposition, i) {   # simmap.out will format the simmap string and cp() it. need to feed it a nodeNumber
+    	state.type<-nodes.assignment[i]
+    	if (state.type==0) {
+    		cp(paste("{0,", sprintf(f.d, phy$edge.length[i]), "}", sep=""))
+    		}
+    		else if (state.type==1){ 
+    			cp(paste("{1," sprintf(f.d, phy$edge.length[i]), "}", sep=""))
+    			}
+    		else if	(state.type==2){ 
+    			cp(paste("{1," sprintf(f.d, phy$edge.length[i]*(1-changeposition)),":","0,", sprintf(f.d, phy$edge.length[i]*(changeposition)), "}", sep=""))
+    			
+    			
+    			#modify  this last cp statement for if changeposition =0 or =1
+    			
+    			
+    			}
+    			
     	#remember the colon is already output by cp(":")
-    	simmap.string<-paste("{",state.string,"}",sep="")   #0 and 1 easy, 2 will be more coding
-    	
-    	cp(simmap.string)	
+    	 #going to be callig one node at a time
+    	  
+    	  
+    		
     }
+    
+    
+    
     add.internal <- function(i) {
         cp("(")
         desc <- kids[[i]]
@@ -111,9 +120,12 @@ generate.simmap<-function (phy, taxa.vector, changeposition=0.5, digits = 10, tr
             cp(phy$node.label[i - n])
         if (brl) {
             cp(":")
-            cp(sprintf(f.d, phy$edge.length[ind[i]])) #HERE IS ONE PLACE TO CHANGE FROM :2.646466 TO THE SIMMAP FORMAT. BUT WHICH STATE TO USE?
+            simmap.out(i) #HERE IS ONE PLACE TO CHANGE FROM :2.646466 TO THE SIMMAP FORMAT. BUT WHICH STATE TO USE?
         }
     }
+    
+    
+    
     add.terminal <- function(i) {
         cp(phy$tip.label[phy$edge[i, 2]])
         if (brl) {
@@ -121,26 +133,53 @@ generate.simmap<-function (phy, taxa.vector, changeposition=0.5, digits = 10, tr
             cp(sprintf(f.d, phy$edge.length[i])) #HERE IS ONE PLACE TO CHANGE FROM :2.646466 TO THE SIMMAP FORMAT. BUT WHICH STATE TO USE?
         }
     }
+    
+    
+    
+    ####tree traversal to assign children of each node, parent nodes, and tip taxa identification
+    
     n <- length(phy$tip.label)
+    
     parent <- phy$edge[, 1]
+    
     children <- phy$edge[, 2]
+    
     kids <- vector("list", n + phy$Nnode)
+    
     for (i in 1:length(parent)) kids[[parent[i]]] <- c(kids[[parent[i]]], 
         children[i])
+       
+    ####tree traversal to assign children of each node, parent nodes, and tip taxa identification
+     
+        
+        
+        
     ind <- match(1:max(phy$edge), phy$edge[, 2]) #I AM IND. BEWARE
+    
     LS <- 4 * n + 5
+    
     if (brl) 
         LS <- LS + 4 * n
+        
     if (nodelab) 
         LS <- LS + n
+        
     STRING <- character(LS)
+    
     k <- 1
+    
     cp(tree.prefix)
+    
     cp("(")
+    
     getRoot <- function(phy) phy$edge[, 1][!match(phy$edge[, 
         1], phy$edge[, 2], 0)][1]
+        
     root <- getRoot(phy)
+    
     desc <- kids[[root]]
+    
+    
     for (j in desc) {
         if (j > n) 
             add.internal(j)
@@ -148,12 +187,16 @@ generate.simmap<-function (phy, taxa.vector, changeposition=0.5, digits = 10, tr
         if (j != desc[length(desc)]) 
             cp(",")
     }
+    
+    
+    
     if (is.null(phy$root.edge)) {
         cp(")")
         if (nodelab) 
             cp(phy$node.label[1])
         cp(";")
     }
+    
     else {
         cp(")")
         if (nodelab) 
@@ -162,5 +205,7 @@ generate.simmap<-function (phy, taxa.vector, changeposition=0.5, digits = 10, tr
         cp(sprintf(f.d, phy$root.edge))
         cp(";")
     }
+    
+    
     paste(STRING, collapse = "")
 }
