@@ -63,10 +63,22 @@ generate.simmap<-function (phy, taxa.vector, changeposition=0.5, digits = 10, de
     
     mrcaNode<-getMRCA(phy, taxa.vector)
     
-    nodes.assignment[mrcaNode]=2      #assign mrcaNode element to be 2 to show where the break is
+    mess<-cbind(phy$edge, c(1:dim(phy$edge)[1]))
+
+        
+    #nodes.assignment[mrcaNode]=2      #assign mrcaNode element to be 2 to show where the break is
+    #nodes.assignment[mess[,3][which(mess[,1]==mrcaNode-1 & mess[,2]==mrcaNode)]]=2
+    nodes.assignment[mess[,3][which(mess[,1]==mess[which(mess[,2]==mrcaNode), 1] & mess[,2]==mrcaNode)]]=2
     
-    nodes.assignment[getAllDescendants(phy, mrcaNode)]=1   
+	i <- which(mess[, 2] == mrcaNode)
+	anc <- mess[i, 1]
+	tmp <- which(mess[, 1] == anc)
+	j <- tmp[which(tmp == i) + 1]
+	mess[(i+1):(j-1), ][,3]
     
+    
+    #nodes.assignment[getAllDescendants(phy, mrcaNode)]=1  this does not work because it indexes the wrong nodes for ape to use
+	nodes.assignment[mess[(i+1):(j-1), ][,3]]=1   
 
     
     
@@ -81,30 +93,38 @@ generate.simmap<-function (phy, taxa.vector, changeposition=0.5, digits = 10, de
     
     
     
-    simmap.out<-function(i,nodes.assignment, changeposition, ind, deleteBLsZeroLength) {   # simmap.out will format the simmap string and cp() it. need to feed it a nodeNumber
-    	print(paste("in simmap.out, i=",i))
-    	print(nodes.assignment)
+	simmap.out<-function(i,nodes.assignment, root, changeposition, ind, deleteBLsZeroLength) {   # simmap.out will format the simmap string and cp() it. need to feed it a nodeNumber
+    	#print(paste("root=", root))
+    	#print(paste("in simmap.out, i=",i))
+    	#print(nodes.assignment)
+    	
+    	
+   #if (nodes.assignment[i] != root) {
     	state.type<-nodes.assignment[i]
+    	#state.type<-nodes.assignment[i]
+    	
     	print(paste("chosen state.type = nodes.assignment[",i,"] =" , state.type))
     	if (state.type==0) {
     		cp(paste("{0,", sprintf(f.d, phy$edge.length[i]), "}", sep=""))
+    		print("statetype 0")
     	}
     	else if (state.type==1){ 
+    		print("statetype 1")
     		cp(paste("{1,", sprintf(f.d, phy$edge.length[i]), "}", sep=""))
     	}
     	else if (state.type==2){
-    		 		
-    		 		if (changeposition != 1 || changeposition !=0){   
-    					cp(paste("{1,", sprintf(f.d, phy$edge.length[i]*(1-changeposition)),":","0,", sprintf(f.d, phy$edge.length[i]*(changeposition)), "}", sep=""))
-    					}
-    				else if (deleteBLsZeroLength==TRUE && changeposition==1){
-    					cp(paste("{0,", sprintf(f.d, phy$edge.length[i]*(changeposition)), "}", sep=""))						}
-					else if (deleteBLsZeroLength==TRUE && changeposition==0){
-    					cp(paste("{1,", sprintf(f.d, phy$edge.length[i]*(1-changeposition)), "}", sep=""))    					}
+    		print("statetype 2")
+    		if (changeposition != 1 || changeposition !=0){   
+    			cp(paste("{1,", sprintf(f.d, phy$edge.length[i]*(1-changeposition)),":","0,", sprintf(f.d, phy$edge.length[i]*(changeposition)), "}", sep=""))
+    			}
+    		else if (deleteBLsZeroLength==TRUE && changeposition==1){
+    			cp(paste("{0,", sprintf(f.d, phy$edge.length[i]*(changeposition)), "}", sep=""))				}
+			else if (deleteBLsZeroLength==TRUE && changeposition==0){
+    			cp(paste("{1,", sprintf(f.d, phy$edge.length[i]*(1-changeposition)), "}", sep=""))    			}
     				
-    	  		}		
-    	}
-      
+		}		
+	#}
+	}
     
     
     add.internal <- function(i) {
@@ -122,9 +142,9 @@ generate.simmap<-function (phy, taxa.vector, changeposition=0.5, digits = 10, de
             cp(phy$node.label[i - n])
         if (brl) {
             cp(":")
-            print(paste("add.internal(",i,"); ind[i]=",ind[i]))
-            simmap.out(ind[i],nodes.assignment, changeposition, ind, deleteBLsZeroLength) #HERE IS ONE PLACE TO CHANGE FROM :2.646466 TO THE SIMMAP FORMAT. BUT WHICH STATE TO USE?
-           # cp(sprintf(f.d, phy$edge.length[ind[i]]))  #this is outputing the branch length of element i in ind
+            print(paste("add.internal(",i,"); ind[i]=",match(ind[i],ind)))
+            simmap.out(ind[i], nodes.assignment, root, changeposition, ind, deleteBLsZeroLength) #HERE IS ONE PLACE TO CHANGE FROM :2.646466 TO THE SIMMAP FORMAT. BUT WHICH STATE TO USE?  Simmap is getting passed ind[7] here, need the place in ind not the content
+            #cp(sprintf(f.d, phy$edge.length[ind[i]]))  #this is outputing the branch length of element i in ind
         }
     }
     
@@ -135,8 +155,8 @@ generate.simmap<-function (phy, taxa.vector, changeposition=0.5, digits = 10, de
         if (brl) {
             cp(":")
             print(paste("add.leaf(",i,"); ind[i]=",ind[i]))
-            simmap.out(i, nodes.assignment, changeposition, ind, deleteBLsZeroLength) #HERE IS ONE PLACE TO CHANGE FROM :2.646466 TO THE SIMMAP FORMAT. BUT WHICH STATE TO USE?
-           # cp(sprintf(f.d, phy$edge.length[i]))
+            simmap.out(i, nodes.assignment, root, changeposition, ind, deleteBLsZeroLength) #HERE IS ONE PLACE TO CHANGE FROM :2.646466 TO THE SIMMAP FORMAT. BUT WHICH STATE TO USE?
+            #cp(sprintf(f.d, phy$edge.length[i]))
         }
     }
     
@@ -162,15 +182,19 @@ generate.simmap<-function (phy, taxa.vector, changeposition=0.5, digits = 10, de
         
     ind <- match(1:max(phy$edge), phy$edge[, 2]) #I AM IND. BEWARE  #Ind is a vector whose elements correspond to the row describing the edges between corresponding nodes in the phylogeny. #finds the row (or index) of each edge value
     
-    LS <- 4 * n + 5
-    
+   
+   #what the heck is this LS business??? This is Paradis' way of setting up more than the necessary places for the items to define the tree (i.e. "("  , ")"  ,   ","     ,     "'"    , etc.); there'll be empty spaces in the STRING annotated by "" that he'll collapse.
+    LS <- 6 * n + 5
+
     if (brl) 
         LS <- LS + 4 * n
         
     if (nodelab) 
         LS <- LS + n
+   
+   
         
-    STRING <- character(LS)
+    STRING <- character(LS)  #builds the newick format as a STRING he adds to 
     
     k <- 1
     
@@ -178,18 +202,21 @@ generate.simmap<-function (phy, taxa.vector, changeposition=0.5, digits = 10, de
     
     cp("(")
     
-    getRoot <- function(phy) phy$edge[, 1][!match(phy$edge[, 
-        1], phy$edge[, 2], 0)][1]
+    getRoot <- function(phy) 
+    		phy$edge[, 1][!match(phy$edge[, 1], phy$edge[, 2], 0)][1]
         
     root <- getRoot(phy)
     
     desc <- kids[[root]]
     
     
+    
+    
+    #I think these are the loops that are adding the elements to the string...
     for (j in desc) {
         if (j > n) 
-            add.internal(j)
-        else add.terminal(ind[j])
+            add.internal(j)      #simmap.out(ind[i],nodes.assignment, changeposition, ind, deleteBLsZeroLength)
+        else add.terminal(ind[j]) #simmap.out(i, nodes.assignment, changeposition, ind, deleteBLsZeroLength)
         if (j != desc[length(desc)]) 
             cp(",")
     }
