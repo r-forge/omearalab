@@ -4,9 +4,12 @@ generate.simmap<-function(x, taxa.vector, change.position=0.5, digits=10, suppre
 	x.reorder<-reorder(x, "postorder")
 	description.vector<-rep(NA,nEdges(x.reorder))
 	mrcaNode<-MRCA(x.reorder,taxa.vector)
+	nodeToEdgeIndex<-matrix(nrow=0,ncol=2)
+	print(edges(x.reorder))
 	for (edgeIndex in 1:nEdges(x.reorder)) {
 		currentEdge<-edges(x.reorder)[edgeIndex,2]
 		currentNode<-getNode(x.reorder,currentEdge)
+		nodeToEdgeIndex<-rbind(nodeToEdgeIndex,c(currentNode,edgeIndex))
 		state=0
 		if (currentNode==mrcaNode) {
 			state=-1	
@@ -33,8 +36,22 @@ generate.simmap<-function(x, taxa.vector, change.position=0.5, digits=10, suppre
 				}
 			}
 		}
-		if(nodeType(getNode(x.reorder,currentEdge))=="tip") {
-			
+		if(nodeType(x.reorder)[getNode(x.reorder,currentEdge)]=="tip") {
+			description.vector[edgeIndex]=paste(names(getNode(x.reorder,currentNode)),simmapLabel,sep="")
+		}
+		else { #internal node, perhaps even the root
+			tmpDescription="("
+			print(nodeToEdgeIndex)
+			childrenNodes<-children(x.reorder,currentNode)
+			for (childIndex in 1:length(childrenNodes)) {
+				#tmpDescription=paste(tmpDescription,description.vector[nodeToEdgeIndex[which(nodeToEdgeIndex[,1]==childrenNodes[childIndex])],2],sep="")
+				if (childIndex<length(childrenNodes)) {
+					tmpDescription=paste(tmpDescription,",",sep="")
+				}
+			}
+			tmpDescription=paste(tmpDescription,")",simmapLabel,sep="")
+			description.vector[edgeIndex]=tmpDescription
 		}
 	}
+	print(description.vector)
 }
