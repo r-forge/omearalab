@@ -1,15 +1,24 @@
+#this is a function to convert from phylo or phylo4 to a newick string, by default in simmap1.1 format. 
+#By giving it a vector of taxon labels, it can give everything in the smallest clade containing those taxa
+#a simmap state of 1, everything else a state of 0, and the edge leading to that clade can be broken up: 
+#by default, half is in each state, but if change.position=0.75, the first 3/4 is in state 0 and the second 1/4
+#is in state 1.
+#If that edge is set to be entirely in one state (change.position==1 or change.position==0), there will be 
+#one state with zero length on that branch. This can be optionally deleted using suppress.zero=TRUE
+
 library(phylobase)
-generate.simmap<-function(x, taxa.vector, change.position=0.5, digits=10, suppress.zero=FALSE) {
+generate.simmap<-function(x, taxa.vector, change.position=0.5, digits=10, suppress.zero=FALSE,format="simmap1.1") {
+	if(class(x)!="phylo4") {
+		x<-as(x,"phylo4")
+	}
 	f.d <- paste("%.", digits, "g", sep = "") 
+	format<-match.arg(format,choices=c("simmap1.1","newick"))
 	x.reorder<-reorder(x, "postorder")
 	description.vector<-rep(NA,nEdges(x.reorder))
 	mrcaNode<-MRCA(x.reorder,taxa.vector)
-	nodeToEdgeIndex<-matrix(nrow=0,ncol=2)
-	print(edges(x.reorder))
 	for (edgeIndex in 1:nEdges(x.reorder)) {
 		currentEdge<-edges(x.reorder)[edgeIndex,2]
 		currentNode<-getNode(x.reorder,currentEdge)
-		nodeToEdgeIndex<-rbind(nodeToEdgeIndex,c(currentNode,edgeIndex))
 		state=0
 		if (currentNode==mrcaNode) {
 			state=-1	
@@ -35,16 +44,18 @@ generate.simmap<-function(x, taxa.vector, change.position=0.5, digits=10, suppre
 					}
 				}
 			}
+			if (format=="newick") {
+				simmapLabel=paste(":",sprintf(f.d, edgeLength(x.reorder,currentNode)),sep="") #in this case, override simmap. This is mostly for debugging
+			}
 		}
 		if(nodeType(x.reorder)[getNode(x.reorder,currentEdge)]=="tip") {
 			description.vector[edgeIndex]=paste(names(getNode(x.reorder,currentNode)),simmapLabel,sep="")
 		}
 		else { #internal node, perhaps even the root
 			tmpDescription="("
-			print(nodeToEdgeIndex)
 			childrenNodes<-children(x.reorder,currentNode)
 			for (childIndex in 1:length(childrenNodes)) {
-				#tmpDescription=paste(tmpDescription,description.vector[nodeToEdgeIndex[which(nodeToEdgeIndex[,1]==childrenNodes[childIndex])],2],sep="")
+				tmpDescription=paste(tmpDescription,description.vector[which(edges(x.reorder)[,2]==childrenNodes[childIndex])],sep="")
 				if (childIndex<length(childrenNodes)) {
 					tmpDescription=paste(tmpDescription,",",sep="")
 				}
@@ -53,5 +64,5 @@ generate.simmap<-function(x, taxa.vector, change.position=0.5, digits=10, suppre
 			description.vector[edgeIndex]=tmpDescription
 		}
 	}
-	print(description.vector)
+	return(description.vector[nEdges(x.reorder)]) #last element is the root
 }
