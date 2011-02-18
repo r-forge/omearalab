@@ -118,8 +118,8 @@ for (partitionIterator in 1:((2^nchar)-1)) { #do not want a model with no chars,
 			}
 		}
 	}
-	write.table(summary.dataframe,file="../Summaries/RateSummary.txt",sep="\t")
-	save(summary.dataframe,file="../Summaries/RateSummary.Rsave",ascii=TRUE)
+	#write.table(summary.dataframe,file="../Summaries/RateSummary.txt",sep="\t")
+	#save(summary.dataframe,file="../Summaries/RateSummary.Rsave",ascii=TRUE)
 
 }
 
