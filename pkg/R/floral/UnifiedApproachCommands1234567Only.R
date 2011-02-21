@@ -155,179 +155,53 @@ doUnifiedRun<-function(P=P,T=T,D=D,S=partitionSize) {
 
 }
 
-
-
 modify_transitions<-function(lik=lik, type=1, S=S, extralist=extralist) {	
-	print("in modify_transitions")
-	print(paste("extralist is ",extralist))
+#print("in modify_transitions")
+#print(paste("extralist is ",extralist))
 
-	if (S>=3) {
-		maxStringLength=nchar(2^S) #assuming character states are single digits only works up to 2^3 states. If the max state is 64, diversitree counts 01, 02, etc.
-		#rather than typing manually all the restrictions, I will calculate this automatically
-		constraintString="constrain(lik "
-		for (charStateI in 1:((2^S))) { 
-			for (charStateJ in (charStateI+1):((2^S))) { 
-				if (charStateJ<=(2^S)) {
-					binaryStateIVector<-digitsBase(charStateI-1,ndigits=S)[,1]
-					binaryStateJVector<-digitsBase(charStateJ-1,ndigits=S)[,1]
-				#	print(binaryStateIVector)
-				#	print(binaryStateJVector)
-					numberMismatches=sum(1-(binaryStateIVector==binaryStateJVector)) #so we have two vectors, say 00101 and 00110 (though as length 5 vectors). Doing v1==v2 leads to T T T F F. T=1 for R and F=0, so 1-(v1==v2) = c(1-1,1-1,1-1,1-0,1-0), sum of which is the number of mismatches
-					if (numberMismatches>1) {
-						constraintString=paste(constraintString,", q",sprintf(paste("%0",maxStringLength,"d",sep=""),charStateI),sprintf(paste("%0",maxStringLength,"d",sep=""),charStateJ),'~0, q',sprintf(paste("%0",maxStringLength,"d",sep=""),charStateJ),sprintf(paste("%0",maxStringLength,"d",sep=""),charStateI),'~0',sep="") 
-					}
+	maxStringLength=nchar(2^S) #assuming character states are single digits only works up to 2^3 states. If the max state is 64, diversitree counts 01, 02, etc.
+	#rather than typing manually all the restrictions, I will calculate this automatically
+	constraintString="constrain(lik "
+	for (charStateI in 1:((2^S))) { 
+		for (charStateJ in (charStateI+1):((2^S))) { 
+			if (charStateJ<=(2^S)) {
+				binaryStateIVector<-digitsBase(charStateI-1,ndigits=S)[,1]
+				binaryStateJVector<-digitsBase(charStateJ-1,ndigits=S)[,1]
+			#	print(binaryStateIVector)
+			#	print(binaryStateJVector)
+				numberMismatches=sum(1-(binaryStateIVector==binaryStateJVector)) #so we have two vectors, say 00101 and 00110 (though as length 5 vectors). Doing v1==v2 leads to T T T F F. T=1 for R and F=0, so 1-(v1==v2) = c(1-1,1-1,1-1,1-0,1-0), sum of which is the number of mismatches
+				if (numberMismatches>1) {
+					constraintString=paste(constraintString,", q",sprintf(paste("%0",maxStringLength,"d",sep=""),charStateI),sprintf(paste("%0",maxStringLength,"d",sep=""),charStateJ),'~0, q',sprintf(paste("%0",maxStringLength,"d",sep=""),charStateJ),sprintf(paste("%0",maxStringLength,"d",sep=""),charStateI),'~0',sep="") 
 				}
 			}
 		}
-		
-		
-		if (type==1) { #all transition rates the same
-			for (charStateI in 1:((2^S))) { 
-				for (charStateJ in (charStateI+1):((2^S))) { 
-					if (charStateJ<=(2^S)) {
-						binaryStateIVector<-digitsBase(charStateI-1,ndigits=S)[,1]
-						binaryStateJVector<-digitsBase(charStateJ-1,ndigits=S)[,1]
-					#	print(binaryStateIVector)
-					#	print(binaryStateJVector)
-						numberMismatches=sum(1-(binaryStateIVector==binaryStateJVector)) #so we have two vectors, say 00101 and 00110 (though as length 5 vectors). Doing v1==v2 leads to T T T F F. T=1 for R and F=0, so 1-(v1==v2) = c(1-1,1-1,1-1,1-0,1-0), sum of which is the number of mismatches
-						if (numberMismatches==1) {
-							constraintString=paste(constraintString,", q",sprintf(paste("%0",maxStringLength,"d",sep=""),charStateI),sprintf(paste("%0",maxStringLength,"d",sep=""),charStateJ),'~qAll, q',sprintf(paste("%0",maxStringLength,"d",sep=""),charStateJ),sprintf(paste("%0",maxStringLength,"d",sep=""),charStateI),'~qAll',sep="") 
-						}
-					}
-				}
-			}
-			replaceextralist("qAll") #changes in parent frame
-			constraintString=paste(constraintString,", extra='qAll'",sep="") 
-		}
-		else if (type==2) { #time reversible
-			for (charStateI in 1:((2^S))) { 
-				for (charStateJ in (charStateI+1):((2^S))) { 
-					if (charStateJ<=(2^S)) {
-						binaryStateIVector<-digitsBase(charStateI-1,ndigits=S)[,1]
-						binaryStateJVector<-digitsBase(charStateJ-1,ndigits=S)[,1]
-					#	print(binaryStateIVector)
-					#	print(binaryStateJVector)
-						numberMismatches=sum(1-(binaryStateIVector==binaryStateJVector)) #so we have two vectors, say 00101 and 00110 (though as length 5 vectors). Doing v1==v2 leads to T T T F F. T=1 for R and F=0, so 1-(v1==v2) = c(1-1,1-1,1-1,1-0,1-0), sum of which is the number of mismatches
-						if (numberMismatches==1) {
-							constraintString=paste(constraintString,", q",sprintf(paste("%0",maxStringLength,"d",sep=""),charStateI),sprintf(paste("%0",maxStringLength,"d",sep=""),charStateJ),'~q',sprintf(paste("%0",maxStringLength,"d",sep=""),charStateJ),sprintf(paste("%0",maxStringLength,"d",sep=""),charStateI),sep="") 
-						}
-					}
-				}
-			}
-			
-		}
-		else if (type==3) { #full, so nothing to do
-		}
-		else if (type>3 && type<=3+3*(2^S)) {
-		
-		
-			modeltype=0; #1=inflow only different for one state, #2=outflow only different for one state, #3=outflow and inflow different for one state
-			if (type<=3+(2^S)) { #do inflow model
-				modeltype=1
-				print("inflow rate for focal state unique")
-			}
-			else if (type<=3+2*(2^S)) { #do outflow model
-				modeltype=2
-				print("outflow rate for focal state unique")
+	}
+	
+	#we cut out the full, gain only, ,etc.models. They are all subsets of the following model
+	
+	 #do one of the independence/dependence models. I.e., char 3 rate is dependent on states 1 and 2 but not 4-7, plus char 4 rate is independent of all, +....
+	#for each character's gain and loss rate, these can be free or 0. if free, they can be the same regardless of state of another character(s) or independent. If free, we can have equal gain loss rate or not
+	maxGainRatesPerChar=2^(S-1) #i.e., 0_ -> 1_ or 0__ -> 1__
+	possibleIndependence<-blockparts(c(1:(S-1)))[,which(apply(blockparts(c(1:2)),2,max)<2)] #columns of this give the chars a particular focal char is independent of
+	numberIndependenceGainOptionsPerChar<-dim(possibleIndependence)[2]  #note that we cannot set gain rate to 0: we start with ancestral state of 0, so having any observed taxa with state 1 would make everything blow up
+	numberIndependenceLossOptionsPerChar<-2+numberIndependenceGainOptionsPerChar #for each gain option, can be also independent/dependent but free from gain rate, same but equal to gain rate, or 0
+	numberModelsPerChar=numberIndependenceGainOptionsPerChar*numberIndependenceLossOptionsPerChar
+	numberModelsOverall=numberModelsPerChar^S #a scary number
+	#now, to find which model to use
+	assignmentsVector=digitsBase(type,base=numberModelsPerChar,ndigits=S)[,1] #for each character, stores the index of which model to use. Note that these are from 0:numberModelsPerChar-1
+	for (charIndex in 1:S) {
+		currentModelID=1+assignmentsVector[charIndex]
+		modelsMatrix<-matrix(c(1:numberModelsPerChar),nrow=numberIndependenceGainOptionsPerChar,ncol=numberIndependenceLossOptionsPerChar) #so, row number tells us which gain model to use and col number which loss model to use
+		#WORK HERE
+		WORK HERE ON A WAY TO GET THE GAIN AND LOSS MODELS GIVEN THE OVERALL MODEL ID
+		#WORK HERE
+	}
+	constraintString=paste(constraintString,")",sep="") 
+	print(paste("transition model: ",constraintString))
+	return(eval(parse(text=constraintString)))
 
-			}
-			else if (type<=3+3*(2^S)) { #do inflow and outflow model
-				modeltype=3
-				print("inflow and outflow rates for focal state unique")				
-			}
-			focalstate=1+(type-4)%%(2^S) #so if type is 4, it means use the first char, so (4-3)%%8=1. If type is 14, that means 10%%8 and so use the second car (but a different model, the outflow model)
-		#	nonfocalratestateI=1
-		#	nonfocalratestateJ=2
-			#focalratestateI=1
-			#focalratestateJ=focalstate
-		#	if (focalstate==1) {
-		#		nonfocalratestateI=3
-		#	}
-		#	else if (focalstate==2) {
-		#		nonfocalratestateJ=3
-		#	}
-			for (charStateI in 1:((2^S))) { 
-				for (charStateJ in 1:((2^S))) { #note we're starting from 1 here, too
-					if (charStateJ<=(2^S)) {
-						binaryStateIVector<-digitsBase(charStateI-1,ndigits=S)[,1]
-						binaryStateJVector<-digitsBase(charStateJ-1,ndigits=S)[,1]
-						numberMismatches=sum(1-(binaryStateIVector==binaryStateJVector)) #so we have two vectors, say 00101 and 00110 (though as length 5 vectors). Doing v1==v2 leads to T T T F F. T=1 for R and F=0, so 1-(v1==v2) = c(1-1,1-1,1-1,1-0,1-0), sum of which is the number of mismatches
-						if (numberMismatches==1) {
-					#		if (charStateI!=focalstate && charStateJ!=focalstate && charStateI!=nonfocalratestateI && charStateJ!=nonfocalratestateJ) { 
-							if (charStateI!=focalstate && charStateJ!=focalstate) { 
-								constraintString=paste(constraintString,", q",sprintf(paste("%0",maxStringLength,"d",sep=""),charStateI),sprintf(paste("%0",maxStringLength,"d",sep=""),charStateJ),'~qMost',sep="") 
-							}
-							else if (charStateI==focalstate) { #outflow rate
-								if (modeltype!=1) { #so we have a unique outflow rate
-									constraintString=paste(constraintString,", q",sprintf(paste("%0",maxStringLength,"d",sep=""),charStateI),sprintf(paste("%0",maxStringLength,"d",sep=""),charStateJ),'~qSpecial',sep="") 
-								}
-								else {
-									constraintString=paste(constraintString,", q",sprintf(paste("%0",maxStringLength,"d",sep=""),charStateI),sprintf(paste("%0",maxStringLength,"d",sep=""),charStateJ),'~qMost',sep="") 
-								}
-							}
-							else if (charStateJ==focalstate) { #inflow rate
-								if (modeltype!=2) { #so we have a unique inflow rate
-									constraintString=paste(constraintString,", q",sprintf(paste("%0",maxStringLength,"d",sep=""),charStateI),sprintf(paste("%0",maxStringLength,"d",sep=""),charStateJ),'~qSpecial',sep="") 
-								}
-								else {
-									constraintString=paste(constraintString,", q",sprintf(paste("%0",maxStringLength,"d",sep=""),charStateI),sprintf(paste("%0",maxStringLength,"d",sep=""),charStateJ),'~qMost',sep="") 
-								}
-							}
-						}
-					}
-				}
-			}
-			replaceextralist(c('qMost','qSpecial'))
-			constraintString=paste(constraintString,", extra=c('qMost','qSpecial')",sep="") 
-			
-		}
-		else if (type==(4+3*(2^S))) { #do gain-only model, otherwise full
-			for (charStateI in 1:((2^S))) { 
-				for (charStateJ in 1:((2^S))) { 
-					if (charStateJ<=(2^S)) {
-						binaryStateIVector<-digitsBase(charStateI-1,ndigits=S)[,1]
-						binaryStateJVector<-digitsBase(charStateJ-1,ndigits=S)[,1]
-						numberMismatches=sum(1-(binaryStateIVector==binaryStateJVector)) #so we have two vectors, say 00101 and 00110 (though as length 5 vectors). Doing v1==v2 leads to T T T F F. T=1 for R and F=0, so 1-(v1==v2) = c(1-1,1-1,1-1,1-0,1-0), sum of which is the number of mismatches
-						if (numberMismatches==1) {
-							if (sum(binaryStateJVector-binaryStateIVector)==-1) { #ie., 101 - 111 = -1, so it's been a loss
-								constraintString=paste(constraintString,", q",sprintf(paste("%0",maxStringLength,"d",sep=""),charStateI),sprintf(paste("%0",maxStringLength,"d",sep=""),charStateJ),'~0',sep="") 
-							}
-						}
-					}
-				}
-			}
+}	
 
-		}
-		else if (type==(5+3*(2^S))) { #do gain-only model, otherwise equal
-			for (charStateI in 1:((2^S))) { 
-				for (charStateJ in 1:((2^S))) { 
-					if (charStateJ<=(2^S)) {
-						binaryStateIVector<-digitsBase(charStateI-1,ndigits=S)[,1]
-						binaryStateJVector<-digitsBase(charStateJ-1,ndigits=S)[,1]
-						numberMismatches=sum(1-(binaryStateIVector==binaryStateJVector)) #so we have two vectors, say 00101 and 00110 (though as length 5 vectors). Doing v1==v2 leads to T T T F F. T=1 for R and F=0, so 1-(v1==v2) = c(1-1,1-1,1-1,1-0,1-0), sum of which is the number of mismatches
-						if (numberMismatches==1) {
-							if (sum(binaryStateJVector-binaryStateIVector)==-1) { #ie., 101 - 111 = -1, so it's been a loss
-								constraintString=paste(constraintString,", q",sprintf(paste("%0",maxStringLength,"d",sep=""),charStateI),sprintf(paste("%0",maxStringLength,"d",sep=""),charStateJ),'~0',sep="") 
-							}
-							else {
-								if (charStateI!=1 && charStateJ!=2) {
-									constraintString=paste(constraintString,", q",sprintf(paste("%0",maxStringLength,"d",sep=""),charStateI),sprintf(paste("%0",maxStringLength,"d",sep=""),charStateJ),'~q',sprintf(paste("%0",maxStringLength,"d",sep=""),1),sprintf(paste("%0",maxStringLength,"d",sep=""),2),sep="") 
-								}
-							}
-						}
-					}
-				}
-			}
-		}
-		else {
-			return("error")
-		}
-		constraintString=paste(constraintString,")",sep="") 
-		print(paste("transition model: ",constraintString))
-		return(eval(parse(text=constraintString)))
-	}	
-	 
-}
 
 modify_diversification<-function(lik=lik, type=1, S=S, extralist=extralist) {
 	print(paste("diversification input extralist = ",extralist))
