@@ -1,7 +1,6 @@
 library(partitions)
 
 colMax<-function(x,na.rm=TRUE) {
-	print("colMax")
 	maxVal=rep(NA,dim(x)[2])
 	for (i in 1:dim(x)[2]) {
 		maxVal[i]<-max(x[,i],na.rm=na.rm)
@@ -10,7 +9,6 @@ colMax<-function(x,na.rm=TRUE) {
 }
 
 colMin<-function(x,na.rm=TRUE) {
-	print("colMin")
 	minVal=rep(NA,dim(x)[2])
 	for (i in 1:dim(x)[2]) {
 		minVal[i]<-min(x[,i],na.rm=na.rm)
@@ -19,7 +17,6 @@ colMin<-function(x,na.rm=TRUE) {
 }
 
 colCountIf<-function(x,val) {
-	print("colCountIf")
 	print(paste("dim(x)=",dim(x)))
 	countVec<-rep(NA,dim(x)[2])
 	for (i in 1:dim(x)[2]) {
@@ -42,6 +39,12 @@ popinterval<-function(collapseMatrix,complete=FALSE) {
 		pInt$complete=TRUE #if the model is one of no collapse, nothing further to do
 	}
 	return(pInt)
+}
+
+thetaindividual<-function(collapseMatrix,complete=FALSE,thetaMap) {
+	tI<-list(collapseMatrix=collapseMatrix,complete=complete,thetaMap=thetaMap)
+	class(tI)<-"thetaindividual"
+	return(tI)
 }
 
 returnIncompletes<-function(popIntervalsList) {
@@ -121,3 +124,42 @@ generateIntervals<-function(popVector,maxK=max(1,floor(sum(popVector)/20))) {
 	return(popIntervalsList)
 }
 
+kPopInterval<-function(popInterval) {
+	#returns the number of free parameters needed for that interval object. For example, having everything collapse in one step requires one param (the tMRCA). Having one collapse then a second requires two. Having no collapse requires 0
+	maxVector<-colMax(popInterval$collapseMatrix)
+	return(length(which(maxVector>0)))
+}
+
+#the basic idea here is that at each population in each time interval there is a theta. These can all be set to the same value, allowed to vary, or assigned in clumps (i.e., pops 1, 3, and 6 have the same theta value)
+#this generates all such mappings, subject to staying within the maximum number of free parameters
+generateThetaIndividuals<-function(popVector,popIntervalsList=generateIntervals(popVector),maxK=max(1,floor(sum(popVector)/20))) {
+	thetaIndividualsList<-list()
+	for (i in 1:length(popIntervalsList)) {
+		thetaMapTemplate<-1+0*popIntervalsList[[i]]$collapseMatrix  #will have all the populations, all with either NA or 1
+		numLineages=sum(thetaMapTemplate,na.rm=TRUE)
+		possibleMappings<-compositions(numLineages)
+		for (mappingIndex in 1:dim(possibleMappings)[2]) {
+			thisMapping<-possibleMappings[,mappingIndex]
+			if ((length(which(thisMapping>0))+kPopInterval(popIntervalsList[[i]]) )<=maxK) { #only do it on those mappings that have not too many free parameters
+				thetaMap<-thetaMapTemplate
+				whichPositions <- which(thetaMap==1)
+				for (positionIndex in 1:length(whichPositions)) {
+					position=whichPositions[positionIndex]
+					paramPosition<-which(thisMapping>0)[1]
+					thetaMap[position]=paramPosition #the position of the first parameter
+					thisMapping[paramPosition]=thisMapping[paramPosition]-1 #now we've used up one of those parameters. If there are no more intervals assigned that parameter, it will drop to 0
+				}
+				thetaIndividualsList[[length(thetaIndividualsList)+1]]<-thetaindividual(popIntervalsList[[i]]$collapseMatrix, popIntervalsList[[i]]$complete, thetaMap)
+			}
+		}
+	}
+	return(thetaIndividualsList)
+}
+
+#now we will generate all possible assignments of pairwise migration. Again, we want to keep the total number of free parameters (times, thetas, migration rates) under our chosen max
+generateMigrationIndividuals<-function(popVector,thetaIndividualsList=generateThetaIndividuals(popVector), maxK=max(1,floor(sum(popVector)/20))) {
+	migrationIndividualsList<-list()
+	for (i in 1:length(thetaIndividualsList)) {
+		#things to consider: migration between each subpop, as subpops coalesce
+	}
+}
