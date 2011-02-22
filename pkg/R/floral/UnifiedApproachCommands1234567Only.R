@@ -191,9 +191,14 @@ modify_transitions<-function(lik=lik, type=1, S=S, extralist=extralist) {
 	assignmentsVector=digitsBase(type,base=numberModelsPerChar,ndigits=S)[,1] #for each character, stores the index of which model to use. Note that these are from 0:numberModelsPerChar-1
 	for (charIndex in 1:S) {
 		currentModelID=1+assignmentsVector[charIndex]
-		modelsMatrix<-matrix(c(1:numberModelsPerChar),nrow=numberIndependenceGainOptionsPerChar,ncol=numberIndependenceLossOptionsPerChar) #so, row number tells us which gain model to use and col number which loss model to use
+		modelsMatrix<-matrix(c(1:numberModelsPerChar),nrow=numberIndependenceGainOptionsPerChar,ncol=numberIndependenceLossOptionsPerChar,byrow=TRUE) #so, row number tells us which gain model to use and col number which loss model to use
+		gainModel=ceiling(currentModelID/numberIndependenceLossOptionsPerChar)
+		lossModel=currentModelID%%numberIndependenceLossOptionsPerChar
+		if (lossModel==0) {
+			lossModel=numberIndependenceLossOptionsPerChar
+		}
 		#WORK HERE
-		WORK HERE ON A WAY TO GET THE GAIN AND LOSS MODELS GIVEN THE OVERALL MODEL ID
+		WORK HERE ON A WAY TO GET THE PARAMETERS FOR THE GAIN AND LOSS MODELS
 		#WORK HERE
 	}
 	constraintString=paste(constraintString,")",sep="") 
