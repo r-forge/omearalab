@@ -50,7 +50,7 @@ extraBipesData<-read.table("/Users/halamillo/Desktop/extraBipes.txt", row.names=
 
 iterateNonCensored<-function (phy, data, name.check=TRUE) {
 	if(name.check){
-		
+		phy<-as(phy,"phylo")
 		#check that taxa match between data and tree
 		checked.object<-name.check(phy,data)
 	
@@ -59,27 +59,28 @@ iterateNonCensored<-function (phy, data, name.check=TRUE) {
 				
 		
 	
-			}else {
-					warning("Phylogeny and character matrix are mismatched:\n")
-				cat("missmatched taxa have been dropped from analysis\n")
-				#cat("(In case you are curious check your working directoy for files(s) with data that didn't match)\n")
-	
-				if (length(checked.object$Tree.not.data) > 0) {  
-					#a<-checked.object$Tree.not.data
-					#write(a, file="Tree.not.data.txt")
-					phy<-drop.tip(phy, checked.object$Tree.not.data)
-				}
-	
-				if (length(checked.object$Data.not.tree) > 0) {
-					#b<-checked.object$Data.not.tree
-					#write(b, file="Data.not.tree.txt")
-					which(rownames(data) %in% checked.object$Data.not.tree)->rows
-					as.data.frame(data[-rows,])->data1
-					colnames(data1)<-colnames(data)
-					rownames(data1)<-rownames(data)[-rows]
-					data<-data1
-				}
+		} else {
+				warning("Phylogeny and character matrix are mismatched:\n")
+			cat("missmatched taxa have been dropped from analysis\n")
+			#cat("(In case you are curious check your working directoy for files(s) with data that didn't match)\n")
+
+			if (length(checked.object$Tree.not.data) > 0) {  
+				#a<-checked.object$Tree.not.data
+				#write(a, file="Tree.not.data.txt")
+				phy<-drop.tip(phy, checked.object$Tree.not.data)
 			}
+
+			if (length(checked.object$Data.not.tree) > 0) {
+				#b<-checked.object$Data.not.tree
+				#write(b, file="Data.not.tree.txt")
+				which(rownames(data) %in% checked.object$Data.not.tree)->rows
+				as.data.frame(data[-rows,])->data1
+				colnames(data1)<-colnames(data)
+				rownames(data1)<-rownames(data)[-rows]
+				data<-data1
+			}
+		}
+	}
 	phy<-as(phy, "phylo4d") #turn ape phylogeny into phylo4d class
 	browniePhy<-as(phy, "brownie") #turn phy into a brownie object
 	brownie.tree1<-addData(browniePhy, tip.data=data, dataTypes=contData())  #add data to browniePhy
