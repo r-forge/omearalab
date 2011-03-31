@@ -1,16 +1,16 @@
 #this code should find the best break among alternate morphological models
 
-library(phylobase)
-library(RBrownie)
-library(geiger) 
+#library(phylobase)
+#library(RBrownie)
+#library(geiger) 
 
 source("/Users/halamillo/Desktop/BrownieCode/generate.simmap.R")
 
 #make random small ape phylogeny and generate random data for it
-tree<-rcoal(10) 
-phy1<-tree
-data1 = runif((nTips(phy1)), 1, 10)
-data1
+#tree<-rcoal(10) 
+#phy1<-tree
+#data1 = runif((nTips(phy1)), 1, 10)
+#data1
 
 
 #for three-taxa with real names example (short example)
@@ -25,21 +25,23 @@ completeTree<-rcoal(5, tip.label)
 
 completeBipesData<-read.table("/Users/halamillo/Desktop/completeBipes.txt", row.names=1)
 
-tip.label2<-c("Bipes_biporus", "Bipes_cannaliculatus", "Bipes_tridactylus", "Bipes_alvarezi")
-partialTree<-rcoal(4, tip.label2)
+bipes.results<-iterateNonCensored(completeTree, completeBipesData)
 
-partialBipesData<-read.table("/Users/halamillo/Desktop/partialBipes.txt", row.names=1)
+#tip.label2<-c("Bipes_biporus", "Bipes_cannaliculatus", "Bipes_tridactylus", "Bipes_alvarezi")
+#partialTree<-rcoal(4, tip.label2)
 
-tip.label3<-c("Bipes_biporus", "Bipes_cannaliculatus", "Bipes_tridactylus", "Bipes_alvarezi", "Bipes_sp", "Bipes_sp2")
-extraTree<-rcoal(6, tip.label3)
+#partialBipesData<-read.table("/Users/halamillo/Desktop/partialBipes.txt", row.names=1)
 
-extraBipesData<-read.table("/Users/halamillo/Desktop/extraBipes.txt", row.names=1)
+#tip.label3<-c("Bipes_biporus", "Bipes_cannaliculatus", "Bipes_tridactylus", "Bipes_alvarezi", "Bipes_sp", "Bipes_sp2")
+#extraTree<-rcoal(6, tip.label3)
+
+#extraBipesData<-read.table("/Users/halamillo/Desktop/extraBipes.txt", row.names=1)
 
 
 #data = runif((nTips(tree1)), 1, 10)
 #data
 #phy<-tree1
-#bipes.results<-iterateNonCensored(tree1, data)
+#bipes.results<-iterateNonCensored(phy, extraBipesData)
 
 #for example with dipsadine tree and junk data
 #phy<-read.tree("/Users/halamillo/Desktop/NonAcrochMonoRegCons2.phy")
@@ -48,9 +50,12 @@ extraBipesData<-read.table("/Users/halamillo/Desktop/extraBipes.txt", row.names=
 
 
 
+
 iterateNonCensored<-function (phy, data, name.check=TRUE) {
+	
 	if(name.check){
 		phy<-as(phy,"phylo")
+		
 		#check that taxa match between data and tree
 		checked.object<-name.check(phy,data)
 	
@@ -113,7 +118,7 @@ iterateNonCensored<-function (phy, data, name.check=TRUE) {
 		for (i in 1:length(nombres)){ # create the empty list of taxa.vectors
 			names(nombres)[i]<-paste("taxa.vector.",i, sep="")
 		}
-	
+	cat("nombres")
 	####so now here use each of those taxa.vectors to generate the other simmap phylogenies
 	#### and read in each simmap formatted tree into an object
 
@@ -124,31 +129,33 @@ iterateNonCensored<-function (phy, data, name.check=TRUE) {
 			trees.list[i]<-generate.simmap(phy, nombres[i][[1]])
 			trees.list.phy[i]<-read.simmap(text=trees.list[i])
 		}
-		
+	cat("trees.list")	
 	####turn each tree into a phylo4d_ext class
 	phy.ext.list<-vector("list", length(trees.list.phy))
 		for(i in 1:length(trees.list.phy)){
 			phy.ext.list[i]<-phyext(trees.list.phy[[i]])		}	
-		
+	cat("phy.ext.list")
 	####turn each tree into a brownie class	
 	phy.brownie.list<-vector("list", length(phy.ext.list))
 		for(i in 1:length(phy.ext.list)){
 			phy.brownie.list[i]<-brownie(phy.ext.list[i])		}
-		
+	cat("phy.brownie.list")	
 	#####add the data to each tree
 	phy.brownie.list.w.data<-vector("list", length(phy.brownie.list))
 		for(i in 1:length(phy.brownie.list)){
 			phy.brownie.list.w.data[i]<-addData(phy.brownie.list[i], tip.data=data, dataTypes=contData())
 		}
-		
+	cat("phy.brownie.list.w.data")	
 		
 	####now generate the "all" taxaset
 	all_taxa<-grep("[a-z]", tipLabels(phy.brownie.list.w.data[[1]]), value=TRUE)  ##NOTE this is only for the junk tree -- need to fix this for the real species names 
 		for(i in 1:length(phy.brownie.list.w.data)){
 			taxasets(phy.brownie.list.w.data[[i]], taxnames="all")<-all_taxa		}
-
+	cat("all_taxa.grep")
 all.test.results1<-data.frame() #create an empty data frame as a repository of the final results
 all.test.results2<-data.frame() #create an empty data frame as a repository of the final results
+
+cat("created repository for results: all.test.results")
 
 	
 			
@@ -172,7 +179,7 @@ AICweight=AICweightraw/sum(AICweightraw)
 
 
 AICcweightraw=exp(-0.5*dAICc)
-AICcweight=AICcweightraw/sum(AICweightraw)
+AICcweight=AICcweightraw/sum(AICcweightraw)
 
 all.test.results<-cbind(all.test.results, dAIC, AICweight)
 all.test.results<-cbind(all.test.results,dAICc, AICcweight)
@@ -180,6 +187,7 @@ all.test.results<-cbind(all.test.results,dAICc, AICcweight)
 colnames(all.test.results)[6]<-"-LnL"
 
 return(all.test.results)
+return(phy.brownie.list.w.data)
 
 }
 
