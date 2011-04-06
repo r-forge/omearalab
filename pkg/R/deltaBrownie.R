@@ -228,30 +228,29 @@ blMultiplier<-function(phy,rate, change, shape){
 	else if (change=="quarter") {
 		#find the internal node that has ntax/2 TERMINAL descendants
 		#MAKE IT SO THAT TAXON 1 IS PART OF THIS CLADE (ONLLY BALANCED)
+		quarter.specs<-((nTips(phy4))/4)
+		desc.down.node<-c()	
+		
 		if(shape=="right"||shape=="left"){
 			for(i in 1:nNodes(phy4)){
 				while(length(descendants(phy4, focal.node, type=c("tips")))>2){
 					focal.node<-descendants(phy4, focal.node, type=c("children"))[which(descendants(phy4, focal.node, type=c("children")) %in% as.numeric(labels(grep("internal", nodeType(phy4)[children(phy4, focal.node)], value=TRUE))))]
 				}
-				
 			}
 		}
 		
 		else if(shape=="balanced"){	
-			
-			
-
+			while(length(descendants(phy4, focal.node, type=c("tips")))>1){
+				focal.node<-descendants(phy4, focal.node, type=c("children"))[1]
+			}
 		}
-		
-		first.node<-descendants(phy4, focal.node, type=c("all"))[1]
-		quarter.specs<-((nTips(phy4))/4)
-		#so now in order to "grab" 1/4 of the species
-		all.tips<-descendants(phy4, rootNode(phy4), type=c("tips"))
-		#now in all.tips find the tip that matches the one in first.node and it's quarter.specs neigbors
-		#this then gives you the tip node to which you have to extend to: i.e. extend.to.node from below
-		
-		first.node.and.extend.to.node<-c(first.node, extend.to.node)
-		focal.node<-MRCA(phy4, first.node.and.extend.to.node)			
+			
+		while(length(desc.down.node)<quarter.specs){
+			sibs.focal.node<-siblings(phy4, focal.node)
+			f.n.and.sibs<-c(focal.node, sibs.focal.node)
+			focal.node<-MRCA(phy4, f.n.and.sibs)
+			desc.down.node<-descendants(phy4, focal.node, type=c("tips"))
+		}
 	}
 	
 	focal.edge<-edgeLength(phy4)[which(edgeId(phy4)==getEdge(phy4,focal.node))]
