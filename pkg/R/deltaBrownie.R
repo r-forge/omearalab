@@ -20,12 +20,12 @@ source("/Users/halamillo/Desktop/BrownieCode/generate.simmap.R")
 #tree2<-rcoal(5, tip.label)
 
 
-tip.label<-c("Bipes_biporus", "Bipes_cannaliculatus", "Bipes_tridactylus", "Bipes_alvarezi", "Bipes_sp")
-completeTree<-rcoal(5, tip.label)
+##tip.label<-c("Bipes_biporus", "Bipes_cannaliculatus", "Bipes_tridactylus", "Bipes_alvarezi", "Bipes_sp")
+##completeTree<-rcoal(5, tip.label)
 
-completeBipesData<-read.table("/Users/halamillo/Desktop/completeBipes.txt", row.names=1)
+##completeBipesData<-read.table("/Users/halamillo/Desktop/completeBipes.txt", row.names=1)
 
-bipes.results<-iterateNonCensored(completeTree, completeBipesData)
+##bipes.results<-iterateNonCensored(completeTree, completeBipesData)
 
 #tip.label2<-c("Bipes_biporus", "Bipes_cannaliculatus", "Bipes_tridactylus", "Bipes_alvarezi")
 #partialTree<-rcoal(4, tip.label2)
@@ -121,7 +121,6 @@ iterateNonCensored<-function (phy, data, name.check=TRUE) {
 	cat("nombres")
 	####so now here use each of those taxa.vectors to generate the other simmap phylogenies
 	#### and read in each simmap formatted tree into an object
-
 	
 	trees.list<-c()
 	trees.list.phy<-vector("list", length(nombres))
@@ -190,5 +189,85 @@ return(all.test.results)
 return(phy.brownie.list.w.data)
 
 }
+#######Function to generate a balanced, left-leaning, or right-leaning phylogeny with branch lengths
+streeBrlen<-function(n,type=c("balanced","left","right")) {
+	kappa=1
+	type<-match.arg(type)
+	if(type=="balanced") {
+		kappa=0	
+	}
+	return(kappaTree(compute.brlen(stree(n,type)),kappa))
+}
 
 
+
+######Function to multiply the branch lenghts of a clade that can happen at the root, tipward (i.e. cherry), or that comprises 1/4 of the species
+blMultiplier<-function(phy,rate, change, shape){
+	phy4<-as(phy, 'phylo4')
+	#print(edgeLength(phy4))
+	focal.node<-rootNode(phy4) #just to initialize it
+	
+	if(change=="root") {
+		focal.node<-children(phy4, rootNode(phy4))[1]
+	}
+	else if (change=="cherry") {
+		#find the focal node that has only 2 TERMINAL descendants
+				
+		if(shape=="right"||shape=="left"){
+			for(i in 1:nNodes(phy4)){
+				while(length(descendants(phy4, focal.node, type=c("tips")))>2){
+					focal.node<-descendants(phy4, focal.node, type=c("children"))[which(descendants(phy4, focal.node, type=c("children")) %in% as.numeric(labels(grep("internal", nodeType(phy4)[children(phy4, focal.node)], value=TRUE))))]
+				}
+			}
+		}
+		else if(shape=="balanced"){
+			focal.node<-ancestor(phy4, descendants(phy4, focal.node, type=c("tips"))[1])
+		}
+
+	}
+	else if (change=="quarter") {
+		#find the internal node that has ntax/2 TERMINAL descendants
+		#MAKE IT SO THAT TAXON 1 IS PART OF THIS CLADE (ONLLY BALANCED)
+		if(shape=="right"||shape=="left"){
+			for(i in 1:nNodes(phy4)){
+				while(length(descendants(phy4, focal.node, type=c("tips")))>2){
+					focal.node<-descendants(phy4, focal.node, type=c("children"))[which(descendants(phy4, focal.node, type=c("children")) %in% as.numeric(labels(grep("internal", nodeType(phy4)[children(phy4, focal.node)], value=TRUE))))]
+				}
+				
+			}
+		}
+		
+		else if(shape=="balanced"){	
+			
+			
+
+		}
+		
+		first.node<-descendants(phy4, focal.node, type=c("all"))[1]
+		quarter.specs<-((nTips(phy4))/4)
+		#so now in order to "grab" 1/4 of the species
+		all.tips<-descendants(phy4, rootNode(phy4), type=c("tips"))
+		#now in all.tips find the tip that matches the one in first.node and it's quarter.specs neigbors
+		#this then gives you the tip node to which you have to extend to: i.e. extend.to.node from below
+		
+		first.node.and.extend.to.node<-c(first.node, extend.to.node)
+		focal.node<-MRCA(phy4, first.node.and.extend.to.node)			
+	}
+	
+	focal.edge<-edgeLength(phy4)[which(edgeId(phy4)==getEdge(phy4,focal.node))]
+	transformed.focal.edge<-0.5*(focal.edge + rate*focal.edge)
+	edgeLength(phy4)[which(edgeId(phy4)==getEdge(phy4,focal.node))]<-transformed.focal.edge
+	
+	rest.clade<-descendants(phy4, focal.node, type="all")
+	
+	
+	if(length(rest.clade)>1){
+		for(node.index in 1:length(rest.clade)){
+			new.focal.node=rest.clade[node.index]
+			edgeLength(phy4)[which(edgeId(phy4)==getEdge(phy4,new.focal.node))]<-edgeLength(phy4)[which(edgeId(phy4)==getEdge(phy4,new.focal.node))]*rate
+		}	
+	}
+	
+#	print(edgeLength(phy4))
+	return(as(phy4,"phylo"))	
+}

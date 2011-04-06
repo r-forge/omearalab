@@ -1,54 +1,13 @@
-streeBrlen<-function(n,type=c("balanced","left","right")) {
-	kappa=1
-	type<-match.arg(type)
-	if(type=="balanced") {
-		kappa=0	
-	}
-	return(kappaTree(compute.brlen(stree(n,type)),kappa))
-}
-
-blMultiplier<-function(phy,rate, change, shape){
-	phy4<-as(phy, 'phylo4')
-	#print(edgeLength(phy4))
-	focal.node<-rootNode(phy4) #just to initialize it
-	if(change=="root") {
-		focal.node<-children(phy4, rootNode(phy4))[1]
-	}
-	else if (change=="cherry") {
-		#find the focal node that has only 2 TERMINAL descendants
-		
-		#MAKE IT TAXON 1 ND SISTER
-	}
-	else if (change=="quarter") {
-		#find the internal node that has ntax/4 TERMINAL descendants
-		#MAKE IT SO THAT TAXON 1 IS PART OF THIS CLADE (ONLLY BALANCED)
-	}
-	focal.edge<-edgeLength(phy4)[which(edgeId(phy4)==getEdge(phy4,focal.node))]
-	transformed.focal.edge<-0.5*(focal.edge + rate*focal.edge)
-	edgeLength(phy4)[which(edgeId(phy4)==getEdge(phy4,focal.node))]<-transformed.focal.edge
-	
-	rest.clade<-descendants(phy4, focal.node, type="all")
-	
-	
-	if(length(rest.clade)>1){
-		for(node.index in 1:length(rest.clade)){
-			new.focal.node=rest.clade[node.index]
-			edgeLength(phy4)[which(edgeId(phy4)==getEdge(phy4,new.focal.node))]<-edgeLength(phy4)[which(edgeId(phy4)==getEdge(phy4,new.focal.node))]*rate
-		}	
-	}
-	
-
-	
-	
-#	print(edgeLength(phy4))
-	return(as(phy4,"phylo"))	
-}
-
 ntax.vector=c(2^4, 2^5, 2^6, 2^7, 2^8)
 shape.vector=c("balanced", "right")
 rate.vector=c(0.1, 0.5, 1, 2, 10)
 change.position.vector=c("root", "quarter", "cherry")
 reps.per.combination=10
+
+data = runif((nTips(phy)), 1, 10)
+#runif(n, min=0, max=1)
+
+setwd(/data/cichlids/)
 
 
 for(rep in 1:reps.per.combination){
@@ -63,6 +22,7 @@ for(rep in 1:reps.per.combination){
 				
 				for(change.position.index in 1:length(change.position.vector)){
 					change=change.position.vector[change.position.index]
+					
 					fileNameRoot<-paste("ntax",ntax,"shape",shape,"rate",rate,"change",change,"rep",rep,sep="",collapse="")
 					batchFileName<-paste(fileNameRoot,".R",sep="",collapse="")
 					cat("library(geiger)\n","library(RBrownie)\n",sep="",file=batchFileName,append=FALSE)
@@ -70,13 +30,26 @@ for(rep in 1:reps.per.combination){
 					cat("source('deltaBrownie.R')","\n",sep="",file=batchFileName,append=TRUE)
 					cat("streeBrlen(ntax, type=shape)->phy\n",sep="",file=batchFileName,append=TRUE)
 					
+					cat("data = runif((nTips(phy)), 1, 10)\n",sep="",file=batchFileName,append=TRUE )
+					
+					#look at Barb's code to plot to a pdf each time for the transformed tree
+					
 					
 					#TO DO: KEEP ADDING COMMANDS FOR THE BATCH FILE 
-					
-					#MAKE SURE EACH DATA.FRAME IS SAVED AS AN R OBJECT IN ANOTHER FILE 
+						#where is the phy that streeBrlen is outputting with each file (i.e. ntax256shaperightrate10changecherryrep8.R), this object needs to be fed in the write() below marked "HERE!"
+						#each one of the results from each (ntax256shaperightrate10changecherryrep8.R) file needs to fed throgh iterateNonCensored()
+						#to do the iterateNonCensored will need data associated with each tree
+						
+						
+						
+						
+					#MAKE SURE EACH DATA.FRAME IS SAVED AS AN R OBJECT IN ANOTHER FILE
+					#write(HERE!, file=paste("run", HERE!, sep="")) 
 					
 					#TO DO: SYSTEM(EZSUB R CMD BATCH BATCHFILENAME)
-					
+					#intern=TRUE captures the command as an R character vector; all other TRUE/FALSE arguements are left with their defaults, except for the command argument wich pastes the directory
+					#system(command=paste("/home/alamillo/bin/ezsubmediumR R CMD BATCH ", batchFileName, sep=""), intern=TRUE, ignore.stderr=FALSE, wait=TRUE, input=NULL, show.output.on.console=FALSE)
+					#Sys.sleep(5)
 					
 				}
 			}
@@ -84,7 +57,15 @@ for(rep in 1:reps.per.combination){
 	}	
 }
 
-
+for plotting the pdf:
+if (savePlot) {
+               pdf(paste("SimTree", jobName, ".pdf", sep=""))        
+               plot(x=c(min(c(startVector, endVector)), max(c(startVector, endVector))), y=c(0, max(c(startTime, endTime))), type="n", ylab="Time", xlab="Trait value", main="", bty="n")
+               for (i in 1:length(startVector)) {
+                       lines(x=c(startVector[i], endVector[i]), y=max(c(startTime, endTime)) - c(startTime[i], endTime[i]))
+               }
+               dev.off()
+       }
 
 
 
