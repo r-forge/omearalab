@@ -1,0 +1,30 @@
+#!/usr/bin/perl -w
+use diagnostics;
+use strict;
+my $numArgs= 1 + $#ARGV;
+if ($numArgs == 0) {
+	print "Call this script with your R batch file (batch.R, etc.). If you give multiple arguments, the first is interpreted as your batch file, the next ones as other files to transfer, too";
+}
+else {
+	my $inputbatch=$ARGV[0];
+	chomp $inputbatch;
+	my $randnumber=int(rand(1000000000));
+	open(OUT,">.batchcondor$randnumber");
+	print OUT "executable = /usr/bin/R\n";
+	print OUT "universe = vanilla\n";
+	print OUT "arguments = CMD BATCH $inputbatch\n";
+	print OUT "transfer_input_files= $inputbatch";
+	if ($numArgs>1) {
+		for (my $argnum=1; $argnum<$numArgs; $argnum++) {
+			print OUT ",$ARGV[$argnum]";
+		}
+	}
+	print OUT "\n";
+	print OUT 'log=results.log
+notification=never
+should_transfer_files=YES
+when_to_transfer_output = ON_EXIT
+queue';
+	close OUT;
+	system("condor_submit .batchcondor$randnumber");
+}
