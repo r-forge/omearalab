@@ -1,4 +1,4 @@
-setwd("/data/cichlids/")
+
 
 ntax.vector=c(2^4, 2^5, 2^6, 2^7, 2^8)
 shape.vector=c("balanced", "right")
@@ -52,9 +52,13 @@ for(rep in 1:reps.per.combination){
 					#MAKE SURE EACH DATA.FRAME IS SAVED AS AN R OBJECT IN ANOTHER FILE DONW
 					
 					#TO DO: SYSTEM(EZSUB R CMD BATCH BATCHFILENAME)  DONE
-					intern=TRUE captures the command as an R character vector; all other TRUE/FALSE arguements are left with their defaults, except for the command argument wich pastes the directory
-					system(command=paste("/home/alamillo/bin/ezsubmediumR R CMD BATCH ", batchFileName, sep=""), intern=TRUE, ignore.stderr=FALSE, wait=TRUE, input=NULL, show.output.on.console=FALSE)
-					#Sys.sleep(5)
+					#intern=TRUE captures the command as an R character vector; all other TRUE/FALSE arguements are left with their defaults, except for the command argument wich pastes the directory
+					lsString=paste("ls -l results.", fileNameRoot,".data.frame",'|grep -c data.frame', sep="", collapse="")
+					outputCount=suppressWarnings(as.numeric(system(lsString, intern=TRUE)))
+					if(outputCount==0){
+						system(command=paste("condor_submitR ", batchFileName, " deltaBrownie.R", sep=""), intern=TRUE, ignore.stderr=FALSE, wait=TRUE, input=NULL, show.output.on.console=FALSE)
+					}
+					Sys.sleep(5)
 					
 				}
 			}
@@ -62,20 +66,6 @@ for(rep in 1:reps.per.combination){
 	}	
 }
 
-#for plotting the pdf:
-#if (savePlot) {
-				#pdf(paste("phy", fileNameRoot, ".pdf", sep=""))
-				#plot(phy3)
-				#title(main=fileNameRoot, col.main="red", font.main=2)
-				#dev.off()
-
-        
-               #plot(x=c(min(c(startVector, endVector)), max(c(startVector, endVector))), y=c(0, max(c(startTime, endTime))), type="n", ylab="Time", xlab="Trait value", main="", bty="n")
-               #for (i in 1:length(startVector)) {
-                      # lines(x=c(startVector[i], endVector[i]), y=max(c(startTime, endTime)) - c(startTime[i], endTime[i]))
-              # }
-               #dev.off()
-       #}
 
 
 
