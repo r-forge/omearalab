@@ -3,6 +3,8 @@ library(sfsmisc)
 library(ape)
 library(partitions) #for converting from binary back to decimal
 
+
+
 #the following 56 lines are truly stupid. However, otherwise I get an error thrown when i call make.cache.musse
 source('../../../UnifiedApproachScripts/diversitree/R/asr-bisse.R')
 source('../../../UnifiedApproachScripts/diversitree/R/asr-mkn.R')
@@ -72,7 +74,7 @@ replaceextralist<-function(i) {
 }
 
 make.musse.modifiedWithRootFixedAt1 <- function(tree, states, k, sampling.f=NULL, strict=FALSE,
-                       safe=FALSE) { #we turn off strict so that we can still run even if we have just chars 1, 2, 3, 5, 6, 7, 8, for example
+                       safe=FALSE) { #we turn off strict so that we can still run even if we have just chars 1, 2, 3, 5, 6, 7, 8, for example. And remember that states start with 1, not 0, for musse.
   cache <- make.cache.musse(tree, states, k, sampling.f, strict)
   branches <- make.branches.musse(k, safe)
   root.p.vector=rep(0,k)
@@ -97,7 +99,8 @@ make.musse.modifiedWithRootFixedAt1 <- function(tree, states, k, sampling.f=NULL
   ll
 }
 
-doUnifiedRun<-function(P=P,T=T,D=D,S=partitionSize) {
+#F=focal states
+doUnifiedRun<-function(F=F, P=P,T=T,D=D,S=partitionSize) {
 	#first, make the data and tree files
 	filename=prepData(P=P,T=T,D=D,S=S)
 
