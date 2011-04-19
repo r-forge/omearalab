@@ -9,7 +9,21 @@ reps.per.combination=10
 
 numberRuns=length(ntax.vector)*length(shape.vector)*length(rate.vector)*length(change.position.vector)*(reps.per.combination)
 
-all.a<-vector("list", numberRuns)
+
+
+####for testing###
+counter<-0
+ntax.vector=c(2^4, 2^5, 2^6, 2^7) #4
+shape.vector=c("balanced", "right") #2
+rate.vector=c(0.1, 0.5, 1, 2, 10) #5
+change.position.vector=c("root", "quarter", "cherry") #3
+reps.per.combination=1
+
+
+
+
+
+allresults.data.frame<-data.frame()
 
 
 
@@ -26,23 +40,29 @@ for(rep in 1:reps.per.combination){
 				for(change.position.index in 1:length(change.position.vector)){
 					change=change.position.vector[change.position.index]
 					
-					counter<-counter+1
-					
 					#results.ntax.128.shape.balanced.rate.0.5.change.root.rep.1.data.frame
 					
 					fileNameRoot<-paste("ntax.",ntax,".shape.",shape,".rate.",rate,".change.",change,".rep.",rep,sep="",collapse="")
-					names(all.a[[counter]])<-c(fileNameRoot) #paste(fileNameRoot)
-					
+					print(paste("rep is ",rep," fileNameRoot = ",fileNameRoot))		
 					if(system(paste("ls results* | grep -c results.",fileNameRoot,".data.frame",sep="",collapse=""),intern=TRUE)==1) {#list all files 
-						load(paste("results.",fileNameRoot,".data.frame",sep="",collapse=""))
-						all.a$fileNameRoot<-paste("results.", fileNameRoot, sep="")
-
+						load(paste("results.",fileNameRoot,".data.frame",sep="",collapse=""))->loadedobjects
+						print(paste("loaded in ",loadedobjects))
+						input.df<-eval(parse(text=paste("results.",fileNameRoot,sep="",collapse="")))
+						extrainfo.df<-cbind(ntax,shape,rate,change,rep,input.df)
+						allresults.data.frame<-rbind(allresults.data.frame, extrainfo.df)
+						
+					}
+					else {
+						print(paste("results.",fileNameRoot,".data.frame does not exist in this dir",sep="",collapse=""))	
 					}
 				}
 			}
 		}		
 	}
 }
+
+
+
 
 
 

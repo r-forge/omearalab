@@ -1,8 +1,8 @@
 #this code should find the best break among alternate morphological models
 
-#library(phylobase)
-#library(RBrownie)
-#library(geiger) 
+library(phylobase)
+library(RBrownie)
+library(geiger) 
 
 
 #make random small ape phylogeny and generate random data for it
@@ -54,7 +54,6 @@
 #If that edge is set to be entirely in one state (change.position==1 or change.position==0), there will be 
 #one state with zero length on that branch. This can be optionally deleted using suppress.zero=TRUE
 
-library(phylobase)
 generate.simmap<-function(x, taxa.vector, change.position=0.5, digits=10, suppress.zero=FALSE,format="simmap1.1") {
 	if(class(x)!="phylo4") {
 		x<-as(x,"phylo4")
