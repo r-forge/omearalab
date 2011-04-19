@@ -59,7 +59,7 @@ generate.simmap<-function(x, taxa.vector, change.position=0.5, digits=10, suppre
 
 	
 	tree<-description.vector[nEdges(x.reorder)]
-	names(tree)<-c(paste('node_#', node_number, sep=""))
+	names(tree)<-c(paste(node_number, sep=""))
 	return(tree) #last element is the root
 
 }

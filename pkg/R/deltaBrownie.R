@@ -5,16 +5,9 @@ library(RBrownie)
 library(geiger) 
 
 
-#make random small ape phylogeny and generate random data for it
-#tree<-rcoal(10) 
-#phy1<-tree
-#data1 = runif((nTips(phy1)), 1, 10)
-#data1
-
-
 #for three-taxa with real names example (short example)
-#tip.label<-c("Bipes_biporus", "Bipes_cannaliculatus", "Bipes_tridactylus", "Bipes_alvarezi", "Bipes_sp")
-#tree1<-rcoal(5, tip.label)
+tip.label<-c("Bipes_biporus", "Bipes_cannaliculatus", "Bipes_tridactylus", "Bipes_alvarezi", "Bipes_sp")
+tree1<-rcoal(5, tip.label)
 #tip.label2<-c("Bipes_biporus", "Bipes_cannaliculatus", "Bipes_tridactylus", "Bipes_alvarezi")
 #tree2<-rcoal(5, tip.label)
 
@@ -22,9 +15,9 @@ library(geiger)
 ##tip.label<-c("Bipes_biporus", "Bipes_cannaliculatus", "Bipes_tridactylus", "Bipes_alvarezi", "Bipes_sp")
 ##completeTree<-rcoal(5, tip.label)
 
-##completeBipesData<-read.table("/Users/halamillo/Desktop/completeBipes.txt", row.names=1)
+completeBipesData<-read.table("/Users/halamillo/Desktop/completeBipes.txt", row.names=1)
 
-##bipes.results<-iterateNonCensored(completeTree, completeBipesData)
+bipes.results<-iterateNonCensored(tree1, completeBipesData)
 
 #tip.label2<-c("Bipes_biporus", "Bipes_cannaliculatus", "Bipes_tridactylus", "Bipes_alvarezi")
 #partialTree<-rcoal(4, tip.label2)
@@ -63,6 +56,7 @@ generate.simmap<-function(x, taxa.vector, change.position=0.5, digits=10, suppre
 	x.reorder<-reorder(x, "postorder")
 	description.vector<-rep(NA,nEdges(x.reorder))
 	mrcaNode<-MRCA(x.reorder,taxa.vector)
+	node_number<-mrcaNode
 	for (edgeIndex in 1:nEdges(x.reorder)) {
 		currentEdge<-edges(x.reorder)[edgeIndex,2]
 		currentNode<-getNode(x.reorder,currentEdge)
@@ -111,9 +105,13 @@ generate.simmap<-function(x, taxa.vector, change.position=0.5, digits=10, suppre
 			description.vector[edgeIndex]=tmpDescription
 		}
 	}
-	return(description.vector[nEdges(x.reorder)]) #last element is the root
-}
 
+	
+	tree<-description.vector[nEdges(x.reorder)]
+	names(tree)<-c(paste(node_number, sep=""))
+	return(tree) #last element is the root
+
+}
 
 
 
@@ -184,7 +182,7 @@ iterateNonCensored<-function (phy, data, name.check=TRUE) {
 		for (i in 1:length(nombres)){ # create the empty list of taxa.vectors
 			names(nombres)[i]<-paste("taxa.vector.",i, sep="")
 		}
-	cat("nombres")
+	#cat("nombres")
 	####so now here use each of those taxa.vectors to generate the other simmap phylogenies
 	#### and read in each simmap formatted tree into an object
 	
@@ -194,33 +192,39 @@ iterateNonCensored<-function (phy, data, name.check=TRUE) {
 			trees.list[i]<-generate.simmap(phy, nombres[i][[1]])
 			trees.list.phy[i]<-read.simmap(text=trees.list[i])
 		}
-	cat("trees.list")	
+	#cat("trees.list")	
 	####turn each tree into a phylo4d_ext class
 	phy.ext.list<-vector("list", length(trees.list.phy))
 		for(i in 1:length(trees.list.phy)){
 			phy.ext.list[i]<-phyext(trees.list.phy[[i]])		}	
-	cat("phy.ext.list")
+	#cat("phy.ext.list")
 	####turn each tree into a brownie class	
 	phy.brownie.list<-vector("list", length(phy.ext.list))
 		for(i in 1:length(phy.ext.list)){
 			phy.brownie.list[i]<-brownie(phy.ext.list[i])		}
-	cat("phy.brownie.list")	
+	#cat("phy.brownie.list")	
 	#####add the data to each tree
 	phy.brownie.list.w.data<-vector("list", length(phy.brownie.list))
 		for(i in 1:length(phy.brownie.list)){
 			phy.brownie.list.w.data[i]<-addData(phy.brownie.list[i], tip.data=data, dataTypes=contData())
 		}
-	cat("phy.brownie.list.w.data")	
+	#cat("phy.brownie.list.w.data")
+	
+	#generate the names list of where the tree brakes
+	NodeShift=c()
+	
+	for (i in 1:length(nombres)){
+			NodeShift[i]<-names(generate.simmap(phy, nombres[i][[1]]))
+			NodeShift[i+1]<-c("NA")
+		}
 		
 	####now generate the "all" taxaset
 	all_taxa<-grep("[a-z]", tipLabels(phy.brownie.list.w.data[[1]]), value=TRUE)  ##NOTE this is only for the junk tree -- need to fix this for the real species names 
 		for(i in 1:length(phy.brownie.list.w.data)){
 			taxasets(phy.brownie.list.w.data[[i]], taxnames="all")<-all_taxa		}
-	cat("all_taxa.grep")
+	#cat("all_taxa.grep")
 all.test.results1<-data.frame() #create an empty data frame as a repository of the final results
 all.test.results2<-data.frame() #create an empty data frame as a repository of the final results
-
-cat("created repository for results: all.test.results")
 
 	
 			
@@ -234,6 +238,8 @@ newRow<-data.frame(Tree=all.test.results2$Tree, Tree.weight =all.test.results2$"
 colnames(newRow)=c("Tree", "Tree weight", "Tree name", "Char", "Model", "-LnL", "AIC", "AICc", "AncState", "Rate_in_state_0", "Rate_in_state_1")
 
 all.test.results<-rbind(all.test.results1, newRow)
+
+all.test.results<-cbind(all.test.results,NodeShift)
 
 		
 dAIC=all.test.results$AIC-min(all.test.results$AIC)
