@@ -62,7 +62,7 @@ source('../../../UnifiedApproachScripts/diversitree/R/td.R')
 source('../../../UnifiedApproachScripts/diversitree/R/util.R')
 source('../../../UnifiedApproachScripts/diversitree/R/')
 
-print("Using command script v. Feb. 16 1:19 pm")
+print("Using command script v. April 19 4:28 pm")
 
 replaceextralist<-function(i) {
 	#print("in replaceextralist")
