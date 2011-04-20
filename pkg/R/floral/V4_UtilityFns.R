@@ -28,7 +28,12 @@ library(partitions) #for converting from binary back to decimal
 #	5: one birth, two death: bF=bN vs dF vs dN
 #	6: freedome: bF vs bN vs dF vs dN
 
-# max number of parameters in this case is just 8, not bad for 500 taxa
+# Definitions:
+#   character: single trait, like petal symmetry
+#	character combination: combination of traits, like 0100011
+#   focal set: group of character combinations, like c(0100011, 0100010) is one possible focal set
+
+# max number of parameters in this case is just 8, not bad for 500 taxa. Want to only do one case where all states are equal for all rates
 
 # constrain root state = 0000000
 
@@ -46,19 +51,68 @@ vectorMismatch<-function(vector1, vector2) {
 	}
 }
 
-#char states go from 1:2^S
-charAsBinaryVector<-function(charState,S) {
-	return(digitsBase(charState-1,ndigits=S)[,1])
+#comboDecimal go from 1:2^S
+comboAsBinaryVector<-function(comboDecimal,S) {
+	return(digitsBase(comboState-1,ndigits=S)[,1])
 }
 
-charAsBinaryString<-function(charState,S) {
-	return(paste(charAsBinaryVector(charState,S),sep="",collapse=""))
+comboAsBinaryString<-function(comboDecimal,S) {
+	return(paste(comboAsBinaryVector(comboState,S),sep="",collapse=""))
 }
 
-charAsState<-function(charBinary,S) {
-	if (length(charBinary)==1) { #we have a string, first make it a vector
-		charBinary<-strsplit(charBinary,split="")[[1]]
+comboAsDecimal<-function(comboBinary,S) {
+	if (length(comboBinary)==1) { #we have a string, first make it a vector
+		comboBinary<-strsplit(comboBinary,split="")[[1]]
 	}
-	return(1+todec(as.numeric(charBinary)))
+	return(1+todec(as.numeric(comboBinary)))
 }
 
+#focalAsBinaryVector goes from 000......000 (nothing is special) to 111......111 (all is special). Is of length 2^7.
+#so if it is 110000...000  only combo numbers 1 and 2 are in the focal set
+focalAsBinaryVector<-function(focalDecimal,S) {
+	return(digitsBase(focalDecimal,ndigits=2^S)[,1])
+}
+
+focalAsBinaryString<-function(focalDecimal,S) {
+	return(paste(focalAsBinaryVector(focalDecimal,S),sep="",collapse=""))
+}
+
+focalAsDecimal<-function(focalBinary,S) {
+	if (length(focalBinary)==1) { #we have a string, first make it a vector
+		focalBinary<-strsplit(focalBinary,split="")[[1]]
+	}
+	return(todec(as.numeric(focalBinary)))
+}
+
+convertFocalToCombos<-function(focalBinary) {
+	return(which(focalBinary==1))
+}
+
+
+interestingFocal<-function(focalBinary,S) {
+	interestingFocal<-FALSE
+	focalCombos<-convertFocalToCombos(interestingFocal)
+	if (length(focalCombos)<2) {
+		interestingFocal<-TRUE #is interesting because a single focal trait or zero focal traits
+	}
+	else {
+		comboMatrix<-matrix()
+		for (i in 1:length(focalCombos)) {
+			if (i==1) {
+				comboMatrix<-matrix(focalAsBinaryVector(focalCombos[i]),nrow=1)
+			}
+			else {
+				comboMatrix<-rbind(comboMatrix,focalAsBinaryVector(focalCombos[i]))
+			}
+		}
+		varVector<-c()
+		for (i in 1:length(focalCombos)) {
+			varVector<-c(varVector, var(focalCombos[,i]))
+		}
+		numberInvariantSites<-length(which(varVector==0))
+		if ((2^(S-numberInvariantSites))==dim(comboMatrix)[1]) {
+			interestingFocal==TRUE #imagine just 3 chars. c(010,011) works as 01*, but c(010,111) does not (it is just *1*, but only part of *1*, omitting 110 and 011). This tests that. 
+		}
+	}
+	return(interestingFocal)
+}
