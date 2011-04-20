@@ -1,6 +1,48 @@
 library(diversitree) #obvious
 library(sfsmisc) #for counting in binary
-nchar=7
+library(partitions)
+library(gmp) #for dealing with big integers
+source("V4_UtilityFns.R")
+
+focalDecimal<-as.bigz(0)
+focalVector<-focalAsBinaryVector(focalDecimal,S)
+totalInterestingFocal<-0
+totalAllFocal<-0
+totalRuns<-0
+
+
+
+while (min(focalVector)==0) { #so this will stop once focalVector gets to 111...1111
+	totalAllFocal<-totalAllFocal+1
+	if (interestingFocal(focalVector,S)) { #if this is an interesting combination
+		totalInterestingFocal<-totalInterestingFocal+1
+		print(paste(vectorToString(getFocalSummaryLabel(focalVector,S)), ": Interesting focal set = ",totalInterestingFocal, " out of ",totalAllFocal," all focal sets so far: "))
+		for (transitionModelIndex in 1:dim(transitionModels)[1]) {
+			mkdirCmd=paste("mkdir ",paste("../ActualRuns/T",transitionModelIndex,sep="",collapse=""),sep="",collapse="")
+			suppressWarnings(system(mkdirCmd))
+			for (diversificationModelIndex in 1:dim(diversificationModels)[1]) {
+				mkdirCmd=paste("mkdir ",paste("../ActualRuns/T",transitionModelIndex,"/T",transitionModelIndex,"_D",diversificationModelIndex,sep="",collapse=""),sep="",collapse="")
+				suppressWarnings(system(mkdirCmd))
+				if (numberFocalCombos(focalVector) >= transitionModels$min_focalcombos[transitionModelIndex]) { #if there aren't enough combos to make the model appropriate, don't run it
+					if(numberFocalCombos(focalVector) >= diversificationModels$min_focalcombos[diversificationModelIndex]) { #if there aren't enough combos to make the model appropriate, don't run it
+						totalRuns<-totalRuns+1
+						#yay! Now we can run!
+						nameRoot<-paste("T",transitionModelIndex,"_D",diversificationModelIndex,"_",vectorToString(getFocalSummaryLabel(focalVector,S,"x")),sep="",collapse="")
+						mkdirCmd=paste("mkdir ",paste("../ActualRuns/T",transitionModelIndex,"/T",transitionModelIndex,"_D",diversificationModelIndex,"/",nameRoot,sep="",collapse=""),sep="",collapse="")
+						suppressWarnings(system(mkdirCmd))
+												
+						
+						
+					}
+				}
+			}
+		}
+	}
+	focalDecimal<-focalDecimal+1
+	focalVector<-focalAsBinaryVector(focalDecimal,S)
+}
+
+
 
 
 
