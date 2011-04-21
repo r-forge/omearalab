@@ -228,3 +228,23 @@ getAllInterestingFocalVectors<-function(S){
 		focalVector<-focalAsBinaryVector(focalDecimal,S)
 	}
 }
+
+convertFocalLabelToFocalVector<-function(focalLabel,S,uncertainty="2") {
+	labelVector<-strsplit(focalLabel,split="")
+	uncertainChars<-which(labelVector==uncertainty)
+	numUncertainChars<-length(uncertainChars)
+	possibleStatesAtUncertain<-blockparts(1:numUncertainChars,numUncertainChars,include.fewer=TRUE)
+	which(apply(possibleStatesAtUncertain,2,max)>1)->badMaxVals 
+	possibleStatesAtUncertain<-possibleStatesAtUncertain[,-badMaxVals]
+	focalVector<-rep(0,2^S)
+	###WORK E
+		
+}
+
+getAllInterestingFocalVectorsEfficient<-function(S) {
+	possibleFocalLabels<-blockparts(1:S,2*S,include.fewer=TRUE)
+	which(apply(possibleFocalLabels,2,max)>2)->badMaxVals #0 and 1 are obvious: here, 2 is used instead of * for focal sets allowing multiple combos: 001* = 0010 & 0011
+	possibleFocalLabels<-possibleFocalLabels[,-badMaxVals]
+	
+}
+
