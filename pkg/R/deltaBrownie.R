@@ -257,8 +257,15 @@ all.test.results<-cbind(all.test.results,dAICc, AICcweight)
 
 colnames(all.test.results)[6]<-"-LnL"
 
-return(all.test.results)
-return(phy.brownie.list.w.data)
+result.object<-vector("list",2)
+names(result.object)<-c("all.test.results", "phy.brownie.list.w.data")
+
+result.object$all.test.results<-all.test.results
+result.object$trees.list.phy<-phy.brownie.list.w.data
+
+#result.object<-c(all.test.results, trees.list.phy)
+#return(all.test.results)
+return(result.object)
 
 }
 #######Function to generate a balanced, left-leaning, or right-leaning phylogeny with branch lengths
