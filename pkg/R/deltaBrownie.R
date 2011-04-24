@@ -6,18 +6,18 @@ library(geiger)
 
 
 #for three-taxa with real names example (short example)
-tip.label<-c("Bipes_biporus", "Bipes_cannaliculatus", "Bipes_tridactylus", "Bipes_alvarezi", "Bipes_sp")
-tree1<-rcoal(5, tip.label)
+#tip.label<-c("Bipes_biporus", "Bipes_cannaliculatus", "Bipes_tridactylus", "Bipes_alvarezi", "Bipes_sp")
+#tree1<-rcoal(5, tip.label)
 #tip.label2<-c("Bipes_biporus", "Bipes_cannaliculatus", "Bipes_tridactylus", "Bipes_alvarezi")
 #tree2<-rcoal(5, tip.label)
 
 
 ##tip.label<-c("Bipes_biporus", "Bipes_cannaliculatus", "Bipes_tridactylus", "Bipes_alvarezi", "Bipes_sp")
-##completeTree<-rcoal(5, tip.label)
+#completeTree<-rcoal(5, tip.label)
 
-completeBipesData<-read.table("/Users/halamillo/Desktop/completeBipes.txt", row.names=1)
+#completeBipesData<-read.table("/Users/halamillo/Desktop/completeBipes.txt", row.names=1)
 
-bipes.results<-iterateNonCensored(tree1, completeBipesData)
+#bipes.results<-iterateNonCensored(tree1, completeBipesData)
 
 #tip.label2<-c("Bipes_biporus", "Bipes_cannaliculatus", "Bipes_tridactylus", "Bipes_alvarezi")
 #partialTree<-rcoal(4, tip.label2)
@@ -182,7 +182,7 @@ iterateNonCensored<-function (phy, data, name.check=TRUE) {
 		for (i in 1:length(nombres)){ # create the empty list of taxa.vectors
 			names(nombres)[i]<-paste("taxa.vector.",i, sep="")
 		}
-	#cat("nombres")
+	cat("nombres")
 	####so now here use each of those taxa.vectors to generate the other simmap phylogenies
 	#### and read in each simmap formatted tree into an object
 	
@@ -192,23 +192,23 @@ iterateNonCensored<-function (phy, data, name.check=TRUE) {
 			trees.list[i]<-generate.simmap(phy, nombres[i][[1]])
 			trees.list.phy[i]<-read.simmap(text=trees.list[i])
 		}
-	#cat("trees.list")	
+	cat("trees.list  ")	
 	####turn each tree into a phylo4d_ext class
 	phy.ext.list<-vector("list", length(trees.list.phy))
 		for(i in 1:length(trees.list.phy)){
 			phy.ext.list[i]<-phyext(trees.list.phy[[i]])		}	
-	#cat("phy.ext.list")
+	cat("phy.ext.list  ")
 	####turn each tree into a brownie class	
 	phy.brownie.list<-vector("list", length(phy.ext.list))
 		for(i in 1:length(phy.ext.list)){
 			phy.brownie.list[i]<-brownie(phy.ext.list[i])		}
-	#cat("phy.brownie.list")	
+	cat("phy.brownie.list  ")	
 	#####add the data to each tree
 	phy.brownie.list.w.data<-vector("list", length(phy.brownie.list))
 		for(i in 1:length(phy.brownie.list)){
 			phy.brownie.list.w.data[i]<-addData(phy.brownie.list[i], tip.data=data, dataTypes=contData())
 		}
-	#cat("phy.brownie.list.w.data")
+	cat("phy.brownie.list.w.data  ")
 	
 	#generate the names list of where the tree brakes
 	NodeShift=c()
@@ -222,7 +222,7 @@ iterateNonCensored<-function (phy, data, name.check=TRUE) {
 	all_taxa<-grep("[a-z]", tipLabels(phy.brownie.list.w.data[[1]]), value=TRUE)  ##NOTE this is only for the junk tree -- need to fix this for the real species names 
 		for(i in 1:length(phy.brownie.list.w.data)){
 			taxasets(phy.brownie.list.w.data[[i]], taxnames="all")<-all_taxa		}
-	#cat("all_taxa.grep")
+	cat("all_taxa.grep  ")
 all.test.results1<-data.frame() #create an empty data frame as a repository of the final results
 all.test.results2<-data.frame() #create an empty data frame as a repository of the final results
 
@@ -258,16 +258,20 @@ all.test.results<-cbind(all.test.results,dAICc, AICcweight)
 colnames(all.test.results)[6]<-"-LnL"
 
 result.object<-vector("list",2)
-names(result.object)<-c("all.test.results", "phy.brownie.list.w.data")
+names(result.object)<-c("all.test.results", "tree.with.shift")
 
 result.object$all.test.results<-all.test.results
-result.object$trees.list.phy<-phy.brownie.list.w.data
+result.object$trees.list.phy<-phy.brownie.list.w.data[[result.object$all.test.results$Tree[which((result.object$all.test.results$AICcweight)==max(result.object$all.test.results$AICcweight))]]]
 
 #result.object<-c(all.test.results, trees.list.phy)
 #return(all.test.results)
 return(result.object)
 
 }
+
+
+
+
 #######Function to generate a balanced, left-leaning, or right-leaning phylogeny with branch lengths
 streeBrlen<-function(n,type=c("balanced","left","right")) {
 	kappa=1
