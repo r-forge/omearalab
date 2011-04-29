@@ -2,7 +2,7 @@ library(diversitree) #obvious
 library(sfsmisc) #for counting in binary
 library(partitions)
 library(gmp) #for dealing with big integers
-source("V4_UtilityFns.R")
+source("/data/abc/RunsApril2011/UnifiedApproachScripts/V4_UtilityFns.R")
 
 
 focalVectorList<-getAllInterestingFocalVectorsStringsEfficient(S)
@@ -13,10 +13,10 @@ runsInFile<-0
 for (focalIndex in 1:length(focalVectorList)) {
 	focalVector<-stringToVector(unlist(focalVectorList[[focalIndex]]))
 	for (transitionModelIndex in 1:dim(transitionModels)[1]) {
-		mkdirCmd=paste("mkdir ",paste("../ActualRuns/T",transitionModelIndex,sep="",collapse=""),sep="",collapse="")
+		mkdirCmd=paste("mkdir -p ",paste("../ActualRuns/T",transitionModelIndex,sep="",collapse=""),sep="",collapse="")
 		suppressWarnings(system(mkdirCmd))
 		for (diversificationModelIndex in 1:dim(diversificationModels)[1]) {
-			mkdirCmd=paste("mkdir ",paste("../ActualRuns/T",transitionModelIndex,"/T",transitionModelIndex,"_D",diversificationModelIndex,sep="",collapse=""),sep="",collapse="")
+			mkdirCmd=paste("mkdir -p ",paste("../ActualRuns/T",transitionModelIndex,"/T",transitionModelIndex,"_D",diversificationModelIndex,sep="",collapse=""),sep="",collapse="")
 			suppressWarnings(system(mkdirCmd))
 			if (numberFocalCombos(focalVector) >= transitionModels$min_focalcombos[transitionModelIndex]) { #if there aren't enough combos to make the model appropriate, don't run it
 				if(numberFocalCombos(focalVector) >= diversificationModels$min_focalcombos[diversificationModelIndex]) { #if there aren't enough combos to make the model appropriate, don't run it
@@ -25,13 +25,13 @@ for (focalIndex in 1:length(focalVectorList)) {
 					Sys.sleep(1)
 					nameRoot<-paste("T",transitionModelIndex,"_D",diversificationModelIndex,"_",vectorToString(getFocalSummaryLabel(focalVector,S,"x")),sep="",collapse="")
 					dirRoot<-paste("../ActualRuns/T",transitionModelIndex,"/T",transitionModelIndex,"_D",diversificationModelIndex,"/",nameRoot,sep="",collapse="")
-					mkdirCmd=paste("mkdir ",dirRoot,sep="",collapse="")
+					mkdirCmd=paste("mkdir -p ",dirRoot,sep="",collapse="")
 					suppressWarnings(system(mkdirCmd))
 					lsString=paste(paste("ls -1 ",dirRoot,' | grep -c final.matrix.all',sep="",collapse=""))
 					print(lsString)
 					finalMatrixAllCount=suppressWarnings(as.numeric(system(lsString,intern=TRUE)))
 					if(finalMatrixAllCount==0) {
-						runCommand=paste("source('../../../UnifiedApproachScripts/V4_Commands.R')\ndoUnifiedRun(F='",vectorToString(focalVector),"',T=",transitionModelIndex,",D=",diversificationModelIndex,",S=",partitionSize,")",sep="",collapse="")
+						runCommand=paste("source('/data/abc/RunsApril2011/UnifiedApproachScripts/V4_Commands.R')\ndoUnifiedRun(F='",vectorToString(focalVector),"',T=",transitionModelIndex,",D=",diversificationModelIndex,",S=",partitionSize,")",sep="",collapse="")
 						cat(runCommand,file=paste(dirRoot,'/run.R',sep=""),append=FALSE)
 						if (runsInFile==0) {
 							pbsCommands=paste('#!/bin/bash','#$ -cwd','#$ -o /dev/null','#$ -e /dev/null',sep="\n")
