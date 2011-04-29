@@ -4,148 +4,72 @@ library(partitions)
 library(gmp) #for dealing with big integers
 source("V4_UtilityFns.R")
 
-focalDecimal<-as.bigz(0)
-focalVector<-focalAsBinaryVector(focalDecimal,S)
-totalInterestingFocal<-0
-totalAllFocal<-0
+
+focalVectorList<-getAllInterestingFocalVectorsStringsEfficient(S)
+
 totalRuns<-0
 
-
-
-while (min(focalVector)==0) { #so this will stop once focalVector gets to 111...1111
-	totalAllFocal<-totalAllFocal+1
-	if (interestingFocal(focalVector,S)) { #if this is an interesting combination
-		totalInterestingFocal<-totalInterestingFocal+1
-		print(paste(vectorToString(getFocalSummaryLabel(focalVector,S)), ": Interesting focal set = ",totalInterestingFocal, " out of ",totalAllFocal," all focal sets so far: "))
-		for (transitionModelIndex in 1:dim(transitionModels)[1]) {
-			mkdirCmd=paste("mkdir ",paste("../ActualRuns/T",transitionModelIndex,sep="",collapse=""),sep="",collapse="")
+for (focalIndex in 1:length(focalVectorList)) {
+	focalVector<-stringToVector(focalVectorList[[focalIndex]])
+	for (transitionModelIndex in 1:dim(transitionModels)[1]) {
+		mkdirCmd=paste("mkdir ",paste("../ActualRuns/T",transitionModelIndex,sep="",collapse=""),sep="",collapse="")
+		suppressWarnings(system(mkdirCmd))
+		for (diversificationModelIndex in 1:dim(diversificationModels)[1]) {
+			mkdirCmd=paste("mkdir ",paste("../ActualRuns/T",transitionModelIndex,"/T",transitionModelIndex,"_D",diversificationModelIndex,sep="",collapse=""),sep="",collapse="")
 			suppressWarnings(system(mkdirCmd))
-			for (diversificationModelIndex in 1:dim(diversificationModels)[1]) {
-				mkdirCmd=paste("mkdir ",paste("../ActualRuns/T",transitionModelIndex,"/T",transitionModelIndex,"_D",diversificationModelIndex,sep="",collapse=""),sep="",collapse="")
-				suppressWarnings(system(mkdirCmd))
-				if (numberFocalCombos(focalVector) >= transitionModels$min_focalcombos[transitionModelIndex]) { #if there aren't enough combos to make the model appropriate, don't run it
-					if(numberFocalCombos(focalVector) >= diversificationModels$min_focalcombos[diversificationModelIndex]) { #if there aren't enough combos to make the model appropriate, don't run it
-						totalRuns<-totalRuns+1
-						#yay! Now we can run!
-						nameRoot<-paste("T",transitionModelIndex,"_D",diversificationModelIndex,"_",vectorToString(getFocalSummaryLabel(focalVector,S,"x")),sep="",collapse="")
-						mkdirCmd=paste("mkdir ",paste("../ActualRuns/T",transitionModelIndex,"/T",transitionModelIndex,"_D",diversificationModelIndex,"/",nameRoot,sep="",collapse=""),sep="",collapse="")
-						suppressWarnings(system(mkdirCmd))
-												
-						
-						
-					}
-				}
-			}
-		}
-	}
-	focalDecimal<-focalDecimal+1
-	focalVector<-focalAsBinaryVector(focalDecimal,S)
-}
-
-
-
-
-
-
-
-
-numberOfTransitionModelsForPartitionSize<-c(4,17,5+3*(2^3),5+3*(2^4),5+3*(2^5),5+3*(2^6),5+3*(2^7)) #make sure to include models that reduce to independent models: though they are present in smaller model sets, we might want independent transitions but dependent diversification
-numberOfDiversificationModelsForPartitionSize<-c(19,12,6+3*(2^3),6+3*(2^4),6+3*(2^5),6+3*(2^6),6+3*(2^7))
-
-
-#three steps:
-#Step 1
-#	Get assignment of components: i.e., bisse for trait 1, musse for traits 1+2, musse for traits 3+5+6
-#	For each component, try each of the possible models: i.e., for bisse, full, equal, uncorrelated; for 3 char models, maybe the "one is odd" models, split models, etc.
-#   Record for each of these the model partition, combination type, model type (transition + diversification type), K, lnL, name of file containing the values
-#
-#Step 2
-#	Get AIC of all the model combinations: i.e., AIC of aabbbcc where a=musse uniform, b=musse uncorrelated, etc.
-#	Find the best model combinations
-#	Report weights for different model types: how important is correlation between chars 2 and 3?
-#
-#Step 3
-#	Get parameter estimates from best? equally good? average? models
-
-#Step 1
-#we will store these results in a dataframe
-#char 1, 2, 3.... \t combosize\t model \t lnL \t K \t AIC \toutput file name
-#but first have to make them
-numberOfModels=0;
-runsInFile=0;
-pbsCommands=""
-partitionIterator=(2^nchar)-1 #doing 1234567 ONLY
-#print(digitsBase(partitionIterator,ndigits=nchar))
-partitionScheme<-digitsBase(partitionIterator,ndigits=nchar)
-partitionScheme<-partitionScheme[,1] #1 means include that char in partition, NA means do not
-partitionScheme<-partitionScheme*c(1:nchar) #so this will result in a vector with digits showing if the character is included
-partitionSize<-length(which(partitionScheme>0))
-partitionSchemeText=paste(partitionScheme,sep="",collapse="_")
-mkdirCmd=paste("mkdir ",paste("../ActualRuns/P",partitionSchemeText,sep="",collapse=""),sep="",collapse="")
-suppressWarnings(system(mkdirCmd))
-for (transitionIndex in 1:numberOfTransitionModelsForPartitionSize[partitionSize]) { 
-	for (diversificationIndex in 1:numberOfDiversificationModelsForPartitionSize[partitionSize]) {
-		if (min(numberOfTransitionModelsForPartitionSize[partitionSize],numberOfDiversificationModelsForPartitionSize[partitionSize])>0) { #just to make sure we have models: for (1:1) and for (1:0) still run
-			#Sys.sleep(1) #because I'm a nice guy
-			numberOfModels=numberOfModels+1
-			#print(numberOfModels)
-			nameRoot=paste("P",partitionSchemeText,"_T",transitionIndex,"_D",diversificationIndex,sep="",collapse="")
-			mkdirCmd=paste("mkdir ",paste("../ActualRuns/P",partitionSchemeText,sep="",collapse=""),"/",nameRoot,sep="",collapse="")
-			mkdirResult<-suppressWarnings(system(mkdirCmd))
-			if (mkdirResult!=0) { #already exists. We might want to rerun stuff if earlier runs failed, but we'll remove pointless files nonetheless
-				system(paste("rm ",paste("../ActualRuns/P",partitionSchemeText,sep="",collapse=""),"/",nameRoot,'/*t',sep="",collapse=""))
-				system(paste("rm ",paste("../ActualRuns/P",partitionSchemeText,sep="",collapse=""),"/",nameRoot,'/*csv',sep="",collapse=""))
-				system(paste("rm ",paste("../ActualRuns/P",partitionSchemeText,sep="",collapse=""),"/",nameRoot,'/*sh',sep="",collapse=""))
-				system(paste("rm ",paste("../ActualRuns/P",partitionSchemeText,sep="",collapse=""),"/",nameRoot,'/*sh',sep="",collapse=""))
-				system(paste("rm ",paste("../ActualRuns/P",partitionSchemeText,sep="",collapse=""),"/",nameRoot,'/*fit.final',sep="",collapse=""))
-				system(paste("rm ",paste("../ActualRuns/P",partitionSchemeText,sep="",collapse=""),"/",nameRoot,'/*final.matrix',sep="",collapse=""))
-			}
-			lsString=paste(paste("ls -1 ",paste("../ActualRuns/P",partitionSchemeText,sep="",collapse=""),"/",nameRoot,' | grep -c final.matrix.all',sep="",collapse=""))
-			print(lsString)
-			finalMatrixAllCount=suppressWarnings(as.numeric(system(lsString,intern=TRUE)))
-			print(paste("finalMatrixAllCount = ",finalMatrixAllCount," for ",nameRoot))
-			if(finalMatrixAllCount==0) {
-				runCommand=paste("source('../../../UnifiedApproachScripts/UnifiedApproachV3Commands1234567Only.R')\ndoUnifiedRun(P='",partitionSchemeText,"',T=",transitionIndex,",D=",diversificationIndex,",S=",partitionSize,")",sep="",collapse="")
-				cat(runCommand,file=paste(paste("../ActualRuns/P",partitionSchemeText,sep="",collapse=""),"/",nameRoot,'/run.R',sep=""),append=FALSE)
-				if (runsInFile==0) {
-					pbsCommands=paste('#!/bin/bash','#$ -cwd','#$ -o /dev/null','#$ -e /dev/null',sep="\n")
-					#queue="long*"
-					#if (partitionSize==1) {
-					#	queue="short*" #2 hr
-					#}
-					#else if (partitionSize<=3) {
-					#	queue="medium*" #24 hr
-					#}
-					queue="medium*"
-					pbsCommands=paste(pbsCommands,'\n#$ -q ',queue,sep="")
-					pbsCommands=paste(pbsCommands,'#$ -M omeara.brian@gmail.com', '#$ -m beas', '#$ -S /bin/bash',sep="\n")
-					pbsCommands=paste(pbsCommands,"\n","#$ -N R_",gsub("_","",partitionSchemeText),"\n", 'module load R/2.12.0',sep="")
-				}
-				pbsCommands=paste(pbsCommands,"\n",'cd /data/abc/RunsFebruary2011/ActualRuns/P',partitionSchemeText,"/",nameRoot,sep="",collapse="")
-				pbsCommands=paste(pbsCommands,"\n","/data/apps/R/R-2.12.0/bin/R CMD BATCH run.R",sep="")
-				#print(paste(paste("../ActualRuns/P",partitionSchemeText,sep="",collapse=""),"/",nameRoot,'/run.sh',sep=""))
-				pbsCommands=paste(pbsCommands,"\nrm ",' *.csv *.t ',sep="")
-				runsInFile=runsInFile+1
-				if (runsInFile>200) { #change this to deal with remnants
-					cat(pbsCommands,file=paste(paste("/data/abc/RunsFebruary2011/ActualRuns/P",partitionSchemeText,sep="",collapse=""),"/",nameRoot,'/run.sh',sep=""),append=FALSE)
-					print(pbsCommands)
-					#print(paste("cd ",paste("../ActualRuns/P",partitionSchemeText,sep="",collapse=""),"/",nameRoot,sep=""))
-					setwd(paste(paste("/data/abc/RunsFebruary2011/ActualRuns/P",partitionSchemeText,sep="",collapse=""),"/",nameRoot,sep=""))
-					system("pwd")
-					system("chmod u+x run.sh")
-					system("qsub run.sh")
-					setwd("../..")
+			if (numberFocalCombos(focalVector) >= transitionModels$min_focalcombos[transitionModelIndex]) { #if there aren't enough combos to make the model appropriate, don't run it
+				if(numberFocalCombos(focalVector) >= diversificationModels$min_focalcombos[diversificationModelIndex]) { #if there aren't enough combos to make the model appropriate, don't run it
+					totalRuns<-totalRuns+1
+					#yay! Now we can run!
 					Sys.sleep(1)
-					runsInFile=0
-					pbsCommands=""
+					nameRoot<-paste("T",transitionModelIndex,"_D",diversificationModelIndex,"_",vectorToString(getFocalSummaryLabel(focalVector,S,"x")),sep="",collapse="")
+					dirRoot<-paste("../ActualRuns/T",transitionModelIndex,"/T",transitionModelIndex,"_D",diversificationModelIndex,"/",nameRoot,sep="",collapse="")
+					mkdirCmd=paste("mkdir ",dirRooot,sep="",collapse="")
+					suppressWarnings(system(mkdirCmd))
+					lsString=paste(paste("ls -1 ",dirRoot,' | grep -c final.matrix.all',sep="",collapse=""))
+					print(lsString)
+					finalMatrixAllCount=suppressWarnings(as.numeric(system(lsString,intern=TRUE)))
+					if(finalMatrixAllCount==0) {
+						runCommand=paste("source('../../../UnifiedApproachScripts/V4_Commands.R')\ndoUnifiedRun(F='",vectorToString(focalVector),"',T=",transitionIndex,",D=",diversificationIndex,",S=",partitionSize,")",sep="",collapse="")
+						cat(runCommand,file=paste(dirRoot,"/",nameRoot,'/run.R',sep=""),append=FALSE)
+						if (runsInFile==0) {
+							pbsCommands=paste('#!/bin/bash','#$ -cwd','#$ -o /dev/null','#$ -e /dev/null',sep="\n")
+							#queue="long*"
+							#if (partitionSize==1) {
+							#	queue="short*" #2 hr
+							#}
+							#else if (partitionSize<=3) {
+							#	queue="medium*" #24 hr
+							#}
+							queue="medium*"
+							pbsCommands=paste(pbsCommands,'\n#$ -q ',queue,sep="")
+							pbsCommands=paste(pbsCommands,'#$ -M omeara.brian@gmail.com', '#$ -m beas', '#$ -S /bin/bash',sep="\n")
+							pbsCommands=paste(pbsCommands,"\n","#$ -N R_",gsub("_","",partitionSchemeText),"\n", 'module load R/2.12.0',sep="")
+						}
+						pbsCommands=paste(pbsCommands,"\n",'cd /data/abc/RunsApril2011/ActualRuns/P',partitionSchemeText,"/",nameRoot,sep="",collapse="")
+						pbsCommands=paste(pbsCommands,"\n","/data/apps/R/R-2.12.0/bin/R CMD BATCH run.R",sep="")
+						#print(paste(paste("../ActualRuns/P",partitionSchemeText,sep="",collapse=""),"/",nameRoot,'/run.sh',sep=""))
+						pbsCommands=paste(pbsCommands,"\nrm ",' *.csv *.t ',sep="")
+						runsInFile=runsInFile+1
+						if (runsInFile>20) { #change this to deal with remnants
+							cat(pbsCommands,file=paste(dirRoot,"/",nameRoot,'/run.sh',sep=""),append=FALSE)
+							print(pbsCommands)
+							#print(paste("cd ",paste("../ActualRuns/P",partitionSchemeText,sep="",collapse=""),"/",nameRoot,sep=""))
+							setwd(paste(paste("/data/abc/RunsApril2011/ActualRuns/T",transitionModelIndex,"/T",transitionModelIndex,"_D",diversificationModelIndex,sep="",collapse=""),"/",nameRoot,sep=""))
+							system("pwd")
+							system("chmod u+x run.sh")
+							system("qsub run.sh")
+							setwd("../..")
+							Sys.sleep(1)
+							runsInFile=0
+							pbsCommands=""
+						}
+						while(as.numeric(system("qstat | grep -c bomeara",intern=TRUE))>1800) {
+							Sys.sleep(117)
+						}
+					}			
 				}
-			}
-			while(as.numeric(system("qstat | grep -c bomeara",intern=TRUE))>1800) {
-				Sys.sleep(117)
 			}
 		}
 	}
 }
-
-
-

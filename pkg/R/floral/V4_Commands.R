@@ -2,6 +2,7 @@ library(diversitree)
 library(sfsmisc) 
 library(ape)
 library(partitions) #for converting from binary back to decimal
+source("V4_UtilityFns.R")
 
 
 
@@ -64,7 +65,7 @@ source('../../../UnifiedApproachScripts/diversitree/R/td.R')
 source('../../../UnifiedApproachScripts/diversitree/R/util.R')
 source('../../../UnifiedApproachScripts/diversitree/R/')
 
-print("Using command script v. April 19 4:28 pm")
+print("Using command script v. April 28 1:48 pm")
 
 replaceextralist<-function(i) {
 	#print("in replaceextralist")
@@ -100,10 +101,13 @@ make.musse.modifiedWithRootFixedAt1 <- function(tree, states, k, sampling.f=NULL
 }
 
 #F=focal states
-doUnifiedRun<-function(F=F, P=P,T=T,D=D,S=partitionSize) {
+doUnifiedRun<-function(F=F, T=T,D=D,S=partitionSize) {
 	#first, make the data and tree files
-	filename=prepData(P=P,T=T,D=D,S=S)
-
+	filename=prepData(P="1_2_3_4_5_6_7",F=F,T=T,D=D,S=S)
+	focalVector=F
+	if (length(focalVector==1)) {
+		focalVector<-stringToVector(focalVector)
+	}
 	#next, load the actual data
 	data<-read.csv(file=paste(filename,".csv",sep=""),header=TRUE)
 	states<-data[,2]
@@ -117,12 +121,12 @@ doUnifiedRun<-function(F=F, P=P,T=T,D=D,S=partitionSize) {
 	results.vector.all<-c()
 	lik <- make.musse.modifiedWithRootFixedAt1(tree=phy, states=states, k=2^S, sampling.f=sampling.f)
 	#print("trying to assign extralist")
-	assign("extralist",list(),envir = .GlobalEnv)
+	assign("extralist",list(),envir = .GlobalEnv) #naughty
 	#print(paste("first extralist is ",extralist))
-	lik.trans <- modify_transitions(lik, type=T, S=S,extralist=extralist)
+	lik.trans <- modify_transitions(lik, type=T, F=F, S=S,extralist=extralist)
 	#print(paste("second extralist is ",extralist))
 	argnames(lik.trans)
-	lik.final <- modify_diversification(lik.trans, type=D, S=S,extralist=extralist)
+	lik.final <- modify_diversification(lik.trans, type=D, F=F, S=S,extralist=extralist)
 	#print(paste("third extralist is ",extralist))
 	argnames(lik.final)
 	p <- starting.point.musse(phy, 2^S)
@@ -136,15 +140,15 @@ doUnifiedRun<-function(F=F, P=P,T=T,D=D,S=partitionSize) {
 	#save(final.matrix, file=paste(filename,'.final.matrix',sep=""), compress=TRUE)
 	rownames(final.matrix)<-paste("FINAL_",rownames(final.matrix),sep="") #to make it easier to grep
 	print(formatC(final.matrix,format="f",digits=30,drop0trailing=TRUE))
-	print(paste("FINAL_P ",P,sep=""))
+	print(paste("FINAL_F ",F,sep=""))
 	print(paste("FINAL_T ",T,sep=""))
 	print(paste("FINAL_D ",D,sep=""))
 	print(paste("FINAL_S ",S,sep=""))
 	print(paste("FINAL_filename ",filename,sep=""))
 	final.matrix.all<-matrix(c(fit.final$lnLik,AIC(fit.final,k=length(fit.final$par)),length(fit.final$par),length(grep("q",names(fit.final$par))),length(grep("lambda",names(fit.final$par))),length(grep("mu",names(fit.final$par))),coef(fit.final,full=TRUE,extra=TRUE)),ncol=1,dimnames=list(c("lnLik","AIC","k_all","k_q","k_lambda","k_mu",names(coef(fit.final,full=TRUE,extra=TRUE)))))
 	save(final.matrix.all, file=paste(filename,'.final.matrix.all',sep=""), compress=TRUE)
-	rownames(final.matrix.all)<-paste("FINALALL_",rownames(final.matrix.all),sep="") #to make it easier to grep
-	print(formatC(final.matrix.all,format="f",digits=30,drop0trailing=TRUE))
+	#rownames(final.matrix.all)<-paste("FINALALL_",rownames(final.matrix.all),sep="") #to make it easier to grep
+	#print(formatC(final.matrix.all,format="f",digits=30,drop0trailing=TRUE))
 	
 	
 	#modify below this
@@ -158,21 +162,21 @@ doUnifiedRun<-function(F=F, P=P,T=T,D=D,S=partitionSize) {
 
 }
 
-modify_transitions<-function(lik=lik, type=1, S=S, extralist=extralist) {	
-#print("in modify_transitions")
-#print(paste("extralist is ",extralist))
 
+modify_transitions<-function(lik=lik, type=1, F=F, S=S, extralist=extralist) {
+	#remember to see transition models in V*_UtilityFns.R
 	maxStringLength=nchar(2^S) #assuming character states are single digits only works up to 2^3 states. If the max state is 64, diversitree counts 01, 02, etc.
+
+
+
 	#rather than typing manually all the restrictions, I will calculate this automatically
 	constraintString="constrain(lik "
 	for (charStateI in 1:((2^S))) { 
+		binaryStateIVector<-digitsBase(charStateI-1,ndigits=S)[,1]
 		for (charStateJ in (charStateI+1):((2^S))) { 
 			if (charStateJ<=(2^S)) {
-				binaryStateIVector<-digitsBase(charStateI-1,ndigits=S)[,1]
 				binaryStateJVector<-digitsBase(charStateJ-1,ndigits=S)[,1]
-			#	print(binaryStateIVector)
-			#	print(binaryStateJVector)
-				numberMismatches=sum(1-(binaryStateIVector==binaryStateJVector)) #so we have two vectors, say 00101 and 00110 (though as length 5 vectors). Doing v1==v2 leads to T T T F F. T=1 for R and F=0, so 1-(v1==v2) = c(1-1,1-1,1-1,1-0,1-0), sum of which is the number of mismatches
+				numberMismatches=vectorMismatch(binaryStateIVector,binaryStateJVector) #so we have two vectors, say 00101 and 00110 (though as length 5 vectors). Doing v1==v2 leads to T T T F F. T=1 for R and F=0, so 1-(v1==v2) = c(1-1,1-1,1-1,1-0,1-0), sum of which is the number of mismatches
 				if (numberMismatches>1) {
 					constraintString=paste(constraintString,", q",sprintf(paste("%0",maxStringLength,"d",sep=""),charStateI),sprintf(paste("%0",maxStringLength,"d",sep=""),charStateJ),'~0, q',sprintf(paste("%0",maxStringLength,"d",sep=""),charStateJ),sprintf(paste("%0",maxStringLength,"d",sep=""),charStateI),'~0',sep="") 
 				}
@@ -180,162 +184,84 @@ modify_transitions<-function(lik=lik, type=1, S=S, extralist=extralist) {
 		}
 	}
 	
-	#we cut out the full, gain only, ,etc.models. They are all subsets of the following model
-	
-	 #do one of the independence/dependence models. I.e., char 3 rate is dependent on states 1 and 2 but not 4-7, plus char 4 rate is independent of all, +....
-	#for each character's gain and loss rate, these can be free or 0. if free, they can be the same regardless of state of another character(s) or independent. If free, we can have equal gain loss rate or not
-	maxGainRatesPerChar=2^(S-1) #i.e., 0_ -> 1_ or 0__ -> 1__
-	possibleIndependence<-blockparts(c(1:(S-1)),include.fewer=TRUE)[,which(apply(blockparts(c(1:2)),2,max)<2)] #columns of this give the chars a particular focal char is independent of
-	numberIndependenceGainOptionsPerChar<-dim(possibleIndependence)[2]  #note that we cannot set gain rate to 0: we start with ancestral state of 0, so having any observed taxa with state 1 would make everything blow up
-	numberIndependenceLossOptionsPerChar<-2+numberIndependenceGainOptionsPerChar #for each gain option, can be also independent/dependent but free from gain rate, same but equal to gain rate, or 0
-	numberModelsPerChar=numberIndependenceGainOptionsPerChar*numberIndependenceLossOptionsPerChar
-	numberModelsOverall=numberModelsPerChar^S #a scary number
-	#now, to find which model to use
-	assignmentsVector=digitsBase(type,base=numberModelsPerChar,ndigits=S)[,1] #for each character, stores the index of which model to use. Note that these are from 0:numberModelsPerChar-1
-	for (charIndex in 1:S) {
-		currentModelID=1+assignmentsVector[charIndex]
-		gainModel=ceiling(currentModelID/numberIndependenceLossOptionsPerChar)
-		lossModel=currentModelID%%numberIndependenceLossOptionsPerChar #has to do with how modulus works
-		if (lossModel==0) {
-			lossModel=numberIndependenceLossOptionsPerChar
+	#now for the actual model
+	for (charStateI in 1:((2^S))) { 
+		binaryStateIVector<-digitsBase(charStateI-1,ndigits=S)[,1]
+		fromFocal<-FALSE
+		if( focalVector[comboAsDecimal(binaryStateIVector,S)] == 1) {
+			fromFocal<-TRUE
 		}
-		gainIndependence<-digitsBase(gainModel-1,base=2,ndigits=S-1)[,1] #a vector going from 0000.. to 111...
-		lossIndependence<-c(NA)
-		if (lossModel==numberIndependenceGainOptionsPerChar+1) {
-			lossIndependence<-c(-1) #is a reversible model
-		}
-		else if (lossModel==numberIndependenceGainOptionsPerChar+2) {
-			lossIndependence<-c(-2) #is a gain only model
-		}
-		else {
-			lossIndependence<-digitsBase(lossModel-1,base=2,ndigits=S-1)[,1] #a vector going from 0000.. to 111...
-		}
-		for (charStateI in 1:((2^S))) { 
-			for (charStateJ in 1:((2^S))) { #note we're starting from 1 here, too
-				if (charStateJ<=(2^S)) {
-					gainLabel=paste("qGainChar",charIndex,sep="")
-					
-					binaryStateIVector<-digitsBase(charStateI-1,ndigits=S)[,1]
-					binaryStateJVector<-digitsBase(charStateJ-1,ndigits=S)[,1]
-					numberMismatches=sum(1-(binaryStateIVector==binaryStateJVector)) #so we have two vectors, say 00101 and 00110 (though as length 5 vectors). Doing v1==v2 leads to T T T F F. T=1 for R and F=0, so 1-(v1==v2) = c(1-1,1-1,1-1,1-0,1-0), sum of which is the number of mismatches
-					numberMismatchesFocalChar=1-(binaryStateIVector[charIndex]==binaryStateJVector[charIndex])
-					if (numberMismatches==1 && numberMismatchesFocalChar==1) {
-					
-						if (charStateI!=focalstate && charStateJ!=focalstate) { 
-							constraintString=paste(constraintString,", q",sprintf(paste("%0",maxStringLength,"d",sep=""),charStateI),sprintf(paste("%0",maxStringLength,"d",sep=""),charStateJ),'~qMost',sep="") 
-						}
-						else if (charStateI==focalstate) { #outflow rate
-							if (modeltype!=1) { #so we have a unique outflow rate
-								constraintString=paste(constraintString,", q",sprintf(paste("%0",maxStringLength,"d",sep=""),charStateI),sprintf(paste("%0",maxStringLength,"d",sep=""),charStateJ),'~qSpecial',sep="") 
-							}
-							else {
-								constraintString=paste(constraintString,", q",sprintf(paste("%0",maxStringLength,"d",sep=""),charStateI),sprintf(paste("%0",maxStringLength,"d",sep=""),charStateJ),'~qMost',sep="") 
-							}
-						}
-						else if (charStateJ==focalstate) { #inflow rate
-							if (modeltype!=2) { #so we have a unique inflow rate
-								constraintString=paste(constraintString,", q",sprintf(paste("%0",maxStringLength,"d",sep=""),charStateI),sprintf(paste("%0",maxStringLength,"d",sep=""),charStateJ),'~qSpecial',sep="") 
-							}
-							else {
-								constraintString=paste(constraintString,", q",sprintf(paste("%0",maxStringLength,"d",sep=""),charStateI),sprintf(paste("%0",maxStringLength,"d",sep=""),charStateJ),'~qMost',sep="") 
-							}
-						}
+		for (charStateJ in 1:((2^S))) { #note we're starting from 1 here, too
+			binaryStateJVector<-digitsBase(charStateJ-1,ndigits=S)[,1]
+			numberMismatches=vectorMismatch(binaryStateIVector,binaryStateJVector) #so we have two vectors, say 00101 and 00110 (though as length 5 vectors). Doing v1==v2 leads to T T T F F. T=1 for R and F=0, so 1-(v1==v2) = c(1-1,1-1,1-1,1-0,1-0), sum of which is the number of mismatches
+			if (numberMismatches==1) {
+				toFocal<-FALSE
+				if( focalVector[comboAsDecimal(binaryStateJVector,S)] == 1) {
+					toFocal<-TRUE
+				}
+				qString<-"~qMost"
+				if(fromFocal) {
+					if (toFocal) {
+						qString<-qFFbyModel[type] #see utility file
+					}
+					else {
+						qString<-qFNbyModel[type]
 					}
 				}
+				else {
+					if (toFocal) {
+						qString<-qNFbyModel[type]
+					}
+					else {
+						qString<-qNNbyModel[type]
+					}
+				}
+				constraintString=paste(constraintString,", q",sprintf(paste("%0",maxStringLength,"d",sep=""),charStateI),sprintf(paste("%0",maxStringLength,"d",sep=""),charStateJ),qString,sep="") 
 			}
-		}		
+		}
 	}
 	constraintString=paste(constraintString,")",sep="") 
 	print(paste("transition model: ",constraintString))
 	return(eval(parse(text=constraintString)))
-
-}	
-
-
-modify_diversification<-function(lik=lik, type=1, S=S, extralist=extralist) {
-	print(paste("diversification input extralist = ",extralist))
-	maxStringLength=nchar(2^S) #assuming character states are single digits only works up to 2^3 states. If the max state is 64, diversitree counts 01, 02, etc.
-	if (S>=3) {
-		constraintString="constrain(lik "
-		if (type==1) {
-			#do nothing, is full model
-		}
-		else if (type==2) { #equal speciation
-			for (charStateI in 2:((2^S))) { #we don't do char 1, as we set everything to that one
-				constraintString=paste(constraintString,", lambda",sprintf(paste("%0",maxStringLength,"d",sep=""),charStateI),'~lambda',sprintf(paste("%0",maxStringLength,"d",sep=""),1),sep="") 
-			}
-		}
-		else if (type==3) { #equal extinction
-			for (charStateI in 2:((2^S))) { #we don't do char 1, as we set everything to that one
-				constraintString=paste(constraintString,", mu",sprintf(paste("%0",maxStringLength,"d",sep=""),charStateI),'~mu',sprintf(paste("%0",maxStringLength,"d",sep=""),1),sep="") 
-			}
-		}
-		else if (type==4) { #one speciation rate, one extinction rate
-			for (charStateI in 2:((2^S))) { #we don't do char 1, as we set everything to that one
-				constraintString=paste(constraintString,", mu",sprintf(paste("%0",maxStringLength,"d",sep=""),charStateI),'~mu',sprintf(paste("%0",maxStringLength,"d",sep=""),1),sep="") 
-				constraintString=paste(constraintString,", lambda",sprintf(paste("%0",maxStringLength,"d",sep=""),charStateI),'~lambda',sprintf(paste("%0",maxStringLength,"d",sep=""),1),sep="") 
-			}
-		}
-		else if (type==5) { #zero extinction, free speciation
-			for (charStateI in 1:((2^S))) { 
-				constraintString=paste(constraintString,", mu",sprintf(paste("%0",maxStringLength,"d",sep=""),charStateI),'~0',sep="") 
-			}
-		}
-		else if (type==6) { #zero extinction, equal speciation
-			for (charStateI in 1:((2^S))) { 
-				constraintString=paste(constraintString,", mu",sprintf(paste("%0",maxStringLength,"d",sep=""),charStateI),'~0',sep="") 
-			}
-			for (charStateI in 2:((2^S))) { #we don't do char 1, as we set everything to that one
-				constraintString=paste(constraintString,", lambda",sprintf(paste("%0",maxStringLength,"d",sep=""),charStateI),'~lambda',sprintf(paste("%0",maxStringLength,"d",sep=""),1),sep="") 
-			}
-		}
-		else {
-			modelIndex=type-7
-			focalstate=1+modelIndex%%(2^S) #so it starts at 1
-			modelFamily=1+floor(modelIndex/(2^S)) # 1, 2, 3....
-			#modelFamily==1: one combo has unique speciation, all have equal extinction
-			#modelFamily==2: one combo has unique speciation and extinction, all others have equal speciation rates and equal extinction rates
-			#modelFamily==3: one combo has unique extinction, all have equal speciation
-			nonfocalstate=2
-			if (focalstate==2) {
-				nonfocalstate=1
-			}
-			for (charStateI in 1:((2^S))) { 
-				if (charStateI!=focalstate) {
-					if (charStateI!=nonfocalstate) {
-						constraintString=paste(constraintString,", lambda",sprintf(paste("%0",maxStringLength,"d",sep=""),charStateI),'~lambda',sprintf(paste("%0",maxStringLength,"d",sep=""),nonfocalstate),sep="") 
-						constraintString=paste(constraintString,", mu",sprintf(paste("%0",maxStringLength,"d",sep=""),charStateI),'~mu',sprintf(paste("%0",maxStringLength,"d",sep=""),nonfocalstate),sep="") 
-					}
-				}
-				else {
-					if (modelFamily==1) {
-						constraintString=paste(constraintString,", mu",sprintf(paste("%0",maxStringLength,"d",sep=""),charStateI),'~mu',sprintf(paste("%0",maxStringLength,"d",sep=""),nonfocalstate),sep="") 
-					}
-					if (modelFamily==3) {
-						constraintString=paste(constraintString,", lambda",sprintf(paste("%0",maxStringLength,"d",sep=""),charStateI),'~lambda',sprintf(paste("%0",maxStringLength,"d",sep=""),nonfocalstate),sep="") 
-					}
-					#otherwise, these left free to vary
-				}
-			}
-		}
-		if (length(extralist)>0) {
-			constraintString=paste(constraintString,", extra=c(",sep="") 		
-			for (extraIndex in 1:length(extralist)) {
-				constraintString=paste(constraintString,"'",extralist[extraIndex],"'",sep="")
-				if (extraIndex<length(extralist)) {
-					constraintString=paste(constraintString,", ",sep="")
-				}
-			}
-			constraintString=paste(constraintString,")",sep="") 
-		}
-		constraintString=paste(constraintString,")",sep="") 
-		print(paste("diversification model: ",constraintString))
-		return(eval(parse(text=constraintString)))
-	}
 }
 
+modify_diversification<-function(lik=lik, type=1, F=F, S=S, extralist=extralist) {
+	print(paste("diversification input extralist = ",extralist))
+	maxStringLength<-nchar(2^S) #assuming character states are single digits only works up to 2^3 states. If the max state is 64, diversitree counts 01, 02, etc.
+	constraintString<-"constrain(lik "
+	for (charStateI in 1:((2^S))) { 
+		binaryStateIVector<-digitsBase(charStateI-1,ndigits=S)[,1]
+		isFocal<-FALSE
+		if( focalVector[comboAsDecimal(binaryStateIVector,S)] == 1) {
+			isFocal<-TRUE
+		}
+		if (isFocal) {
+			constraintString=paste(constraintString,", lambda",sprintf(paste("%0",maxStringLength,"d",sep=""),charStateI),bFbyModel[type],sep="") 
+			constraintString=paste(constraintString,", mu",sprintf(paste("%0",maxStringLength,"d",sep=""),charStateI),dFbyModel[type],sep="") 
+		}
+		else {
+			constraintString=paste(constraintString,", lambda",sprintf(paste("%0",maxStringLength,"d",sep=""),charStateI),bNbyModel[type],sep="") 
+			constraintString=paste(constraintString,", mu",sprintf(paste("%0",maxStringLength,"d",sep=""),charStateI),dNbyModel[type],sep="") 
+		}
+	}
+	
+	
+	if (length(extralist)>0) {
+		constraintString=paste(constraintString,", extra=c(",sep="") 		
+		for (extraIndex in 1:length(extralist)) {
+			constraintString=paste(constraintString,"'",extralist[extraIndex],"'",sep="")
+			if (extraIndex<length(extralist)) {
+				constraintString=paste(constraintString,", ",sep="")
+			}
+		}
+		constraintString=paste(constraintString,")",sep="") 
+	}
+	constraintString=paste(constraintString,")",sep="") 
+	print(paste("diversification model: ",constraintString))
+	return(eval(parse(text=constraintString)))
+}
 
-prepData<-function(P=P,T=T,D=D,S=S,sourcetraits="../../../SourceData/Steb7binaryJan19prunenoper_BCOPrune.csv") {
+prepData<-function(P=P,F=F,T=T,D=D,S=S,sourcetraits="../../../SourceData/Steb7binaryJan19prunenoper_BCOPrune.csv") {
 	partitionVector<-strsplit(P,split="_")
 	print(partitionVector)
 	partitionVector<-as.numeric(partitionVector[[1]])

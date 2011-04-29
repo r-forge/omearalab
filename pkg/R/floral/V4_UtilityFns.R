@@ -23,6 +23,12 @@ library(gmp) #for dealing with big integers
 transitionModels<-data.frame(cbind(c(1:5),c(1,2,2,3,4),c(0,1,1,1,2),c("equal","inflow","outflow","inandoutflow","free")),stringsAsFactors=FALSE)
 names(transitionModels)<-c("T","k_q","min_focalcombos","description") #the min focal states is because some models don't make sense in certain cases. For example, if you have one focal state, models that have qFF as a free parameter don't make sense
 
+qFFbyModel<-c("~qMost", "~qMost", "~qMost", "~qMost", "~qFF")
+qNNbyModel<-c("~qMost", "~qMost", "~qMost", "~qMost", "~qNN")
+qNFbyModel<-c("~qMost", "~qNF"  , "~qMost", "~qNF"  , "~qNF")
+qFNbyModel<-c("~qMost", "~qMost", "~qFN"  , "~qFN"  , "~qFN")
+
+
 # note that if focal set size is 1, qFF is not a free parameter, so change K accordingly
 
 # diversification models:
@@ -36,6 +42,11 @@ names(transitionModels)<-c("T","k_q","min_focalcombos","description") #the min f
 
 diversificationModels<-data.frame(cbind(c(1:6),c(1,2,1,2,1,2),c(0,0,1,1,2,2),c(0,1,0,1,1,1),c("yule","tworateyule","birthdeath","twobirthonedeath","onebirthtwodeath","free")),stringsAsFactors=FALSE)
 names(diversificationModels)<-c("D","k_b","k_d","min_focalcombos","description")
+
+bFbyModel=c("~lambdaAll", "~lambdaF",  "~lambdaAll", "~lambdaF", "~lambdaAll", "~lambdaF")
+bNbyModel=c("~lambdaAll", "~lambdaN",  "~lambdaAll", "~lambdaN", "~lambdaAll", "~lambdaN")
+dFbyModel=c("~0"        , "~0"      ,  "~muAll"    , "~muAll"  , "~muF"      , "~muF"    )
+dNbyModel=c("~0"        , "~0"      ,  "~muAll"    , "~muAll"  , "~muN"      , "~muN"    )
 
 # Definitions:
 #   character: single trait, like petal symmetry
@@ -84,9 +95,24 @@ vectorMismatch<-function(vector1, vector2) {
 		return(NA)
 	}
 	else {
-		return(sum(1-(binaryStateIVector==binaryStateJVector))) #so we have two vectors, say 00101 and 00110 (though as length 5 vectors). Doing v1==v2 leads to T T T F F. T=1 for R and F=0, so 1-(v1==v2) = c(1-1,1-1,1-1,1-0,1-0), sum of which is the number of mismatches
+		return(sum(1-(vector1==vector2))) #so we have two vectors, say 00101 and 00110 (though as length 5 vectors). Doing v1==v2 leads to T T T F F. T=1 for R and F=0, so 1-(v1==v2) = c(1-1,1-1,1-1,1-0,1-0), sum of which is the number of mismatches
 	}
 }
+
+vectorMismatchExcludePositions<-function(vector1, vector2, excludePositions) {
+	if (length(vector1)!=length(vector2)) {
+		return(NA)
+	}
+	else if (length(excludePositions)==0) {
+		return(vectorMismatch(vector1, vector2))
+	}
+	else if (max(excludePositions)>max(length(vector1),length(vector2))) {
+		return(NA)
+	}
+	else {
+		return(sum(1-((vector1==vector2)[-1*excludePositions])))
+	}
+}	
 
 #comboDecimal go from 1:2^S
 comboAsBinaryVector<-function(comboDecimal,S) { #works best of combo Decimal is bigz class
@@ -205,7 +231,7 @@ interestingFocal<-function(focalBinaryVector,S) {
 	return(interestingFocal)
 }
 
-getAllInterestingFocalVectors<-function(S){
+getAllInterestingFocalVectorsInefficient<-function(S){
 	focalDecimal<-as.bigz(0)
 	focalVector<-focalAsBinaryVector(focalDecimal,S)
 	totalInterestingFocal<-0
@@ -230,21 +256,28 @@ getAllInterestingFocalVectors<-function(S){
 }
 
 convertFocalLabelToFocalVector<-function(focalLabel,S,uncertainty="2") {
-	labelVector<-strsplit(focalLabel,split="")
+	labelVector<-strsplit(focalLabel,split="")[[1]]
 	uncertainChars<-which(labelVector==uncertainty)
-	numUncertainChars<-length(uncertainChars)
-	possibleStatesAtUncertain<-blockparts(1:numUncertainChars,numUncertainChars,include.fewer=TRUE)
-	which(apply(possibleStatesAtUncertain,2,max)>1)->badMaxVals 
-	possibleStatesAtUncertain<-possibleStatesAtUncertain[,-badMaxVals]
 	focalVector<-rep(0,2^S)
-	###WORK E
-		
+	for (i in 1:2^S) {
+		if(0==vectorMismatchExcludePositions(labelVector,comboAsBinaryVector(as.bigz(i),S),uncertainChars)) {
+			focalVector[i]<-1
+		}
+	}
+	return(focalVector)
 }
 
-getAllInterestingFocalVectorsEfficient<-function(S) {
+getAllInterestingFocalVectorsStringsEfficient<-function(S) {
+	focalVectorList<-list()
 	possibleFocalLabels<-blockparts(1:S,2*S,include.fewer=TRUE)
 	which(apply(possibleFocalLabels,2,max)>2)->badMaxVals #0 and 1 are obvious: here, 2 is used instead of * for focal sets allowing multiple combos: 001* = 0010 & 0011
 	possibleFocalLabels<-possibleFocalLabels[,-badMaxVals]
-	
+	for(i in 1:dim(possibleFocalLabels)[2]) {
+		focalLabel<-paste(possibleFocalLabels[,i],sep="",collapse="")
+		#print(focalLabel)
+		focalVectorList<-append(focalVectorList, vectorToString(convertFocalLabelToFocalVector(focalLabel,S,uncertainty="2")))
+		names(focalVectorList[[length(focalVectorList)]])<-focalLabel
+	}
+	return(focalVectorList)
 }
 
