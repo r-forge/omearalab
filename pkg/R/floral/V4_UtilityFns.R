@@ -166,7 +166,7 @@ numberFocalCombos<-function(focalBinaryVector) {
 
 
 stringToVector<-function(inString) {
-	return(as.numeric(strsplit(inString,split="")))
+	return(as.numeric(unlist(strsplit(inString,split=""))))
 }
 
 vectorToString<-function(inVector) {
@@ -274,7 +274,7 @@ getAllInterestingFocalVectorsStringsEfficient<-function(S) {
 	possibleFocalLabels<-possibleFocalLabels[,-badMaxVals]
 	for(i in 1:dim(possibleFocalLabels)[2]) {
 		focalLabel<-paste(possibleFocalLabels[,i],sep="",collapse="")
-		#print(focalLabel)
+		print(focalLabel)
 		focalVectorList<-append(focalVectorList, vectorToString(convertFocalLabelToFocalVector(focalLabel,S,uncertainty="2")))
 		names(focalVectorList[[length(focalVectorList)]])<-focalLabel
 	}
