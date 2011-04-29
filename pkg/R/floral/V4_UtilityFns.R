@@ -176,20 +176,16 @@ vectorToString<-function(inVector) {
 maxFocalAsBinaryVector<-rep(1,2^S)
 
 
-createComboMatrix<-function(focalBinaryVector) {
+createComboMatrix<-function(focalBinaryVector,S) {
 	focalCombos<-convertFocalToCombos(focalBinaryVector)
 	comboMatrix<-matrix()
 	if (length(focalCombos)>0) {
 		for (i in 1:length(focalCombos)) {
 			if (i==1) {
-				comboMatrix<-matrix(comboAsBinaryVector(as.bigz(focalCombos[i])),nrow=1)
+				comboMatrix<-matrix(comboAsBinaryVector(as.bigz(focalCombos[i]),S),nrow=1)
 			}
 			else {
-				if (dim(comboMatrix)[2] != length(comboAsBinaryVector(as.bigz(focalCombos[i])))) {
-					print(comboAsBinaryVector(as.bigz(focalCombos[i])))
-					print(focalCombos[i])
-				}
-				comboMatrix<-rbind(comboMatrix,comboAsBinaryVector(as.bigz(focalCombos[i])))
+				comboMatrix<-rbind(comboMatrix,comboAsBinaryVector(as.bigz(focalCombos[i]),S))
 			}
 		}
 	}
@@ -197,7 +193,7 @@ createComboMatrix<-function(focalBinaryVector) {
 }
 
 getFocalSummaryLabel<-function(focalBinaryVector,S,any="*") {
-	comboMatrix<-createComboMatrix(focalBinaryVector)
+	comboMatrix<-createComboMatrix(focalBinaryVector,S)
 	labelVector<-rep(any,S)
 	if (numberFocalCombos(focalBinaryVector)>1) {
 		for (i in 1:dim(comboMatrix)[2]) {
@@ -217,7 +213,7 @@ interestingFocal<-function(focalBinaryVector,S) {
 	if (sum(focalBinaryVector)>0.5*length(focalBinaryVector)) { #too many focal combos (don't want more than half the combos)
 		return(FALSE)
 	}
-	comboMatrix<-createComboMatrix(focalBinaryVector)
+	comboMatrix<-createComboMatrix(focalBinaryVector,S)
 	focalCombos<-convertFocalToCombos(focalBinaryVector)
 	if (length(focalCombos)<2) {
 		interestingFocal<-TRUE #is interesting because a single focal trait or zero focal traits
