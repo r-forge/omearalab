@@ -8,6 +8,7 @@ source("V4_UtilityFns.R")
 focalVectorList<-getAllInterestingFocalVectorsStringsEfficient(S)
 
 totalRuns<-0
+runsInFile<-0
 
 for (focalIndex in 1:length(focalVectorList)) {
 	focalVector<-stringToVector(unlist(focalVectorList[[focalIndex]]))
@@ -31,7 +32,7 @@ for (focalIndex in 1:length(focalVectorList)) {
 					finalMatrixAllCount=suppressWarnings(as.numeric(system(lsString,intern=TRUE)))
 					if(finalMatrixAllCount==0) {
 						runCommand=paste("source('../../../UnifiedApproachScripts/V4_Commands.R')\ndoUnifiedRun(F='",vectorToString(focalVector),"',T=",transitionModelIndex,",D=",diversificationModelIndex,",S=",partitionSize,")",sep="",collapse="")
-						cat(runCommand,file=paste(dirRoot,"/",nameRoot,'/run.R',sep=""),append=FALSE)
+						cat(runCommand,file=paste(dirRoot,'/run.R',sep=""),append=FALSE)
 						if (runsInFile==0) {
 							pbsCommands=paste('#!/bin/bash','#$ -cwd','#$ -o /dev/null','#$ -e /dev/null',sep="\n")
 							#queue="long*"
@@ -46,13 +47,13 @@ for (focalIndex in 1:length(focalVectorList)) {
 							pbsCommands=paste(pbsCommands,'#$ -M omeara.brian@gmail.com', '#$ -m beas', '#$ -S /bin/bash',sep="\n")
 							pbsCommands=paste(pbsCommands,"\n","#$ -N R_",gsub("_","",partitionSchemeText),"\n", 'module load R/2.12.0',sep="")
 						}
-						pbsCommands=paste(pbsCommands,"\n",'cd /data/abc/RunsApril2011/ActualRuns/P',partitionSchemeText,"/",nameRoot,sep="",collapse="")
+						pbsCommands=paste(pbsCommands,"\n",'cd /data/abc/RunsApril2011/ActualRuns/T',transitionModelIndex,"/T",transitionModelIndex,"_D",diversificationModelIndex,"/",nameRoot,sep="",collapse="")
 						pbsCommands=paste(pbsCommands,"\n","/data/apps/R/R-2.12.0/bin/R CMD BATCH run.R",sep="")
 						#print(paste(paste("../ActualRuns/P",partitionSchemeText,sep="",collapse=""),"/",nameRoot,'/run.sh',sep=""))
 						pbsCommands=paste(pbsCommands,"\nrm ",' *.csv *.t ',sep="")
 						runsInFile=runsInFile+1
 						if (runsInFile>20) { #change this to deal with remnants
-							cat(pbsCommands,file=paste(dirRoot,"/",nameRoot,'/run.sh',sep=""),append=FALSE)
+							cat(pbsCommands,file=paste(dirRoot,'/run.sh',sep=""),append=FALSE)
 							print(pbsCommands)
 							#print(paste("cd ",paste("../ActualRuns/P",partitionSchemeText,sep="",collapse=""),"/",nameRoot,sep=""))
 							setwd(paste(paste("/data/abc/RunsApril2011/ActualRuns/T",transitionModelIndex,"/T",transitionModelIndex,"_D",diversificationModelIndex,sep="",collapse=""),"/",nameRoot,sep=""))
