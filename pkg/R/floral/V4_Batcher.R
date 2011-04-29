@@ -30,7 +30,7 @@ for (focalIndex in 1:length(focalVectorList)) {
 					print(lsString)
 					finalMatrixAllCount=suppressWarnings(as.numeric(system(lsString,intern=TRUE)))
 					if(finalMatrixAllCount==0) {
-						runCommand=paste("source('../../../UnifiedApproachScripts/V4_Commands.R')\ndoUnifiedRun(F='",vectorToString(focalVector),"',T=",transitionIndex,",D=",diversificationIndex,",S=",partitionSize,")",sep="",collapse="")
+						runCommand=paste("source('../../../UnifiedApproachScripts/V4_Commands.R')\ndoUnifiedRun(F='",vectorToString(focalVector),"',T=",transitionModelIndex,",D=",diversificationModelIndex,",S=",partitionSize,")",sep="",collapse="")
 						cat(runCommand,file=paste(dirRoot,"/",nameRoot,'/run.R',sep=""),append=FALSE)
 						if (runsInFile==0) {
 							pbsCommands=paste('#!/bin/bash','#$ -cwd','#$ -o /dev/null','#$ -e /dev/null',sep="\n")
