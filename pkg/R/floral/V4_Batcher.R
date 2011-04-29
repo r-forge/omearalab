@@ -10,7 +10,7 @@ focalVectorList<-getAllInterestingFocalVectorsStringsEfficient(S)
 totalRuns<-0
 
 for (focalIndex in 1:length(focalVectorList)) {
-	focalVector<-stringToVector(focalVectorList[[focalIndex]])
+	focalVector<-stringToVector(unlist(focalVectorList[[focalIndex]]))
 	for (transitionModelIndex in 1:dim(transitionModels)[1]) {
 		mkdirCmd=paste("mkdir ",paste("../ActualRuns/T",transitionModelIndex,sep="",collapse=""),sep="",collapse="")
 		suppressWarnings(system(mkdirCmd))
@@ -24,7 +24,7 @@ for (focalIndex in 1:length(focalVectorList)) {
 					Sys.sleep(1)
 					nameRoot<-paste("T",transitionModelIndex,"_D",diversificationModelIndex,"_",vectorToString(getFocalSummaryLabel(focalVector,S,"x")),sep="",collapse="")
 					dirRoot<-paste("../ActualRuns/T",transitionModelIndex,"/T",transitionModelIndex,"_D",diversificationModelIndex,"/",nameRoot,sep="",collapse="")
-					mkdirCmd=paste("mkdir ",dirRooot,sep="",collapse="")
+					mkdirCmd=paste("mkdir ",dirRoot,sep="",collapse="")
 					suppressWarnings(system(mkdirCmd))
 					lsString=paste(paste("ls -1 ",dirRoot,' | grep -c final.matrix.all',sep="",collapse=""))
 					print(lsString)
