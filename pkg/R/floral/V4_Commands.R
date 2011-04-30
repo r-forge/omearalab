@@ -267,6 +267,7 @@ modify_diversification<-function(lik=lik, type=1, F=F, S=S, extralist=extralist)
 	}
 	
 	replaceextralist(c(extralist, unlist(strsplit(extralistD[type],split=" "))))
+	print(paste("extralist after replace extralist is ",extralist))
 	if (length(extralist)>0) {
 		constraintString=paste(constraintString,", extra=c(",sep="") 		
 		for (extraIndex in 1:length(extralist)) {
