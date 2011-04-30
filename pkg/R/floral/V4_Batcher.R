@@ -13,10 +13,10 @@ runsInFile<-0
 for (focalIndex in 1:length(focalVectorList)) {
 	focalVector<-stringToVector(unlist(focalVectorList[[focalIndex]]))
 	for (transitionModelIndex in 1:dim(transitionModels)[1]) {
-		mkdirCmd=paste("mkdir -p ",paste("../ActualRuns/T",transitionModelIndex,sep="",collapse=""),sep="",collapse="")
+		mkdirCmd=paste("mkdir -p ",paste("/data/abc/RunsApril2011/ActualRuns/T",transitionModelIndex,sep="",collapse=""),sep="",collapse="")
 		suppressWarnings(system(mkdirCmd))
 		for (diversificationModelIndex in 1:dim(diversificationModels)[1]) {
-			mkdirCmd=paste("mkdir -p ",paste("../ActualRuns/T",transitionModelIndex,"/T",transitionModelIndex,"_D",diversificationModelIndex,sep="",collapse=""),sep="",collapse="")
+			mkdirCmd=paste("mkdir -p ",paste("/data/abc/RunsApril2011/ActualRuns/T",transitionModelIndex,"/T",transitionModelIndex,"_D",diversificationModelIndex,sep="",collapse=""),sep="",collapse="")
 			suppressWarnings(system(mkdirCmd))
 			if (numberFocalCombos(focalVector) >= transitionModels$min_focalcombos[transitionModelIndex]) { #if there aren't enough combos to make the model appropriate, don't run it
 				if(numberFocalCombos(focalVector) >= diversificationModels$min_focalcombos[diversificationModelIndex]) { #if there aren't enough combos to make the model appropriate, don't run it
@@ -24,7 +24,7 @@ for (focalIndex in 1:length(focalVectorList)) {
 					#yay! Now we can run!
 					Sys.sleep(1)
 					nameRoot<-paste("T",transitionModelIndex,"_D",diversificationModelIndex,"_",vectorToString(getFocalSummaryLabel(focalVector,S,"x")),sep="",collapse="")
-					dirRoot<-paste("../ActualRuns/T",transitionModelIndex,"/T",transitionModelIndex,"_D",diversificationModelIndex,"/",nameRoot,sep="",collapse="")
+					dirRoot<-paste("/data/abc/RunsApril2011/ActualRuns/T",transitionModelIndex,"/T",transitionModelIndex,"_D",diversificationModelIndex,"/",nameRoot,sep="",collapse="")
 					mkdirCmd=paste("mkdir -p ",dirRoot,sep="",collapse="")
 					suppressWarnings(system(mkdirCmd))
 					lsString=paste(paste("ls -1 ",dirRoot,' | grep -c final.matrix.all',sep="",collapse=""))

@@ -261,7 +261,7 @@ modify_diversification<-function(lik=lik, type=1, F=F, S=S, extralist=extralist)
 	return(eval(parse(text=constraintString)))
 }
 
-prepData<-function(P=P,F=F,T=T,D=D,S=S,sourcetraits="../../../SourceData/Steb7binaryJan19prunenoper_BCOPrune.csv") {
+prepData<-function(P=P,F=F,T=T,D=D,S=S,sourcetraits="/data/abc/RunsApril2011/SourceData/Steb7binaryJan19prunenoper_BCOPrune.csv") {
 	partitionVector<-strsplit(P,split="_")
 	print(partitionVector)
 	partitionVector<-as.numeric(partitionVector[[1]])
@@ -269,7 +269,7 @@ prepData<-function(P=P,F=F,T=T,D=D,S=S,sourcetraits="../../../SourceData/Steb7bi
 	charsToInclude<-partitionVector[which(partitionVector>0)]
 	stopifnot(S==length(charsToInclude))
 	file<-sourcetraits
-	phy<-"../../../SourceData/floral_1.nex"
+	phy<-"/data/abc/RunsApril2011/SourceData/floral_1.nex"
 	tree<-read.nexus(phy)
 	data<-read.csv(file)
 	colnamesVector<-colnames(data)
