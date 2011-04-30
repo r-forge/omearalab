@@ -166,6 +166,10 @@ doUnifiedRun<-function(F=F, T=T,D=D,S=partitionSize) {
 modify_transitions<-function(lik=lik, type=1, F=F, S=S, extralist=extralist) {
 	#remember to see transition models in V*_UtilityFns.R
 	maxStringLength=nchar(2^S) #assuming character states are single digits only works up to 2^3 states. If the max state is 64, diversitree counts 01, 02, etc.
+	focalVector=F
+	if (length(focalVector==1)) {
+		focalVector<-stringToVector(focalVector)
+	}
 
 
 
@@ -241,6 +245,11 @@ modify_diversification<-function(lik=lik, type=1, F=F, S=S, extralist=extralist)
 	print(paste("diversification input extralist = ",extralist))
 	maxStringLength<-nchar(2^S) #assuming character states are single digits only works up to 2^3 states. If the max state is 64, diversitree counts 01, 02, etc.
 	constraintString<-"constrain(lik "
+	focalVector=F
+	if (length(focalVector==1)) {
+		focalVector<-stringToVector(focalVector)
+	}
+
 	for (charStateI in 1:((2^S))) { 
 		binaryStateIVector<-digitsBase(charStateI-1,ndigits=S)[,1]
 		isFocal<-FALSE
@@ -276,6 +285,11 @@ modify_diversification<-function(lik=lik, type=1, F=F, S=S, extralist=extralist)
 prepData<-function(P=P,F=F,T=T,D=D,S=S,sourcetraits="/data/abc/RunsApril2011/SourceData/Steb7binaryJan19prunenoper_BCOPrune.csv") {
 	partitionVector<-strsplit(P,split="_")
 	print(partitionVector)
+	focalVector=F
+	if (length(focalVector==1)) {
+		focalVector<-stringToVector(focalVector)
+	}
+
 	partitionVector<-as.numeric(partitionVector[[1]])
 	print(partitionVector)
 	charsToInclude<-partitionVector[which(partitionVector>0)]
