@@ -265,8 +265,10 @@ modify_diversification<-function(lik=lik, type=1, F=F, S=S, extralist=extralist)
 			constraintString=paste(constraintString,", mu",sprintf(paste("%0",maxStringLength,"d",sep=""),charStateI),dNbyModel[type],sep="") 
 		}
 	}
-	
+	origextralist<-extralist
+	print(paste("extralistD is ",extralistD))
 	replaceextralist(c(extralist, unlist(strsplit(extralistD[type],split=" "))))
+	extralist<-c(origextralist, unlist(strsplit(extralistD[type],split=" ")))
 	print(paste("extralist after replace extralist is ",extralist))
 	if (length(extralist)>0) {
 		constraintString=paste(constraintString,", extra=c(",sep="") 		
