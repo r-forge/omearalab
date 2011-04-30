@@ -28,6 +28,8 @@ qNNbyModel<-c("~qMost", "~qMost", "~qMost", "~qMost", "~qNN")
 qNFbyModel<-c("~qMost", "~qNF"  , "~qMost", "~qNF"  , "~qNF")
 qFNbyModel<-c("~qMost", "~qMost", "~qFN"  , "~qFN"  , "~qFN")
 
+extralistT<-c("qMost", "qMost qNF", "qMost qFN", "qMost qNF qFN", "qFF qNN qNF qFN") #stores the extralist values; remember to do strsplit before use
+
 
 # note that if focal set size is 1, qFF is not a free parameter, so change K accordingly
 
@@ -47,6 +49,8 @@ bFbyModel=c("~lambdaAll", "~lambdaF",  "~lambdaAll", "~lambdaF", "~lambdaAll", "
 bNbyModel=c("~lambdaAll", "~lambdaN",  "~lambdaAll", "~lambdaN", "~lambdaAll", "~lambdaN")
 dFbyModel=c("~0"        , "~0"      ,  "~muAll"    , "~muAll"  , "~muF"      , "~muF"    )
 dNbyModel=c("~0"        , "~0"      ,  "~muAll"    , "~muAll"  , "~muN"      , "~muN"    )
+
+extralistD<-c("lambdaAll", "lambdaF lambdaN", "lambdaAll muAll", "lambdaF lambdaN muAll", "lambdaAll muF muN", "lambdaF lambdaN muF muN")
 
 # Definitions:
 #   character: single trait, like petal symmetry

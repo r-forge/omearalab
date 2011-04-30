@@ -220,6 +220,18 @@ modify_transitions<-function(lik=lik, type=1, F=F, S=S, extralist=extralist) {
 			}
 		}
 	}
+	
+	replaceextralist(unlist(strsplit(extralistT[type],split=" ")))
+	if (length(extralist)>0) {
+		constraintString=paste(constraintString,", extra=c(",sep="") 		
+		for (extraIndex in 1:length(extralist)) {
+			constraintString=paste(constraintString,"'",extralist[extraIndex],"'",sep="")
+			if (extraIndex<length(extralist)) {
+				constraintString=paste(constraintString,", ",sep="")
+			}
+		}
+		constraintString=paste(constraintString,")",sep="") 
+	}
 	constraintString=paste(constraintString,")",sep="") 
 	print(paste("transition model: ",constraintString))
 	return(eval(parse(text=constraintString)))
@@ -245,7 +257,7 @@ modify_diversification<-function(lik=lik, type=1, F=F, S=S, extralist=extralist)
 		}
 	}
 	
-	
+	replaceextralist(unlist(strsplit(extralistD[type],split=" ")))
 	if (length(extralist)>0) {
 		constraintString=paste(constraintString,", extra=c(",sep="") 		
 		for (extraIndex in 1:length(extralist)) {
