@@ -56,11 +56,12 @@ for (focalIndex in 1:length(focalVectorList)) {
 							cat(pbsCommands,file=paste(dirRoot,'/run.sh',sep=""),append=FALSE)
 							print(pbsCommands)
 							#print(paste("cd ",paste("../ActualRuns/P",partitionSchemeText,sep="",collapse=""),"/",nameRoot,sep=""))
+							origWD<-getwd()
 							setwd(paste(paste("/data/abc/RunsApril2011/ActualRuns/T",transitionModelIndex,"/T",transitionModelIndex,"_D",diversificationModelIndex,sep="",collapse=""),"/",nameRoot,sep=""))
 							system("pwd")
 							system("chmod u+x run.sh")
 							system("qsub run.sh")
-							setwd("../..")
+							setwd(origWD)
 							Sys.sleep(1)
 							runsInFile=0
 							pbsCommands=""
