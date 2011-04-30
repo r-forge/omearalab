@@ -122,12 +122,12 @@ doUnifiedRun<-function(F=F, T=T,D=D,S=partitionSize) {
 	lik <- make.musse.modifiedWithRootFixedAt1(tree=phy, states=states, k=2^S, sampling.f=sampling.f)
 	#print("trying to assign extralist")
 	assign("extralist",list(),envir = .GlobalEnv) #naughty
-	#print(paste("first extralist is ",extralist))
+	print(paste("first extralist is ",extralist))
 	lik.trans <- modify_transitions(lik, type=T, F=F, S=S,extralist=extralist)
-	#print(paste("second extralist is ",extralist))
+	print(paste("second extralist is ",extralist))
 	argnames(lik.trans)
 	lik.final <- modify_diversification(lik.trans, type=D, F=F, S=S,extralist=extralist)
-	#print(paste("third extralist is ",extralist))
+	print(paste("third extralist is ",extralist))
 	argnames(lik.final)
 	p <- starting.point.musse(phy, 2^S)
 	if (length(extralist)>0) {
@@ -266,7 +266,7 @@ modify_diversification<-function(lik=lik, type=1, F=F, S=S, extralist=extralist)
 		}
 	}
 	
-	replaceextralist(unlist(strsplit(extralistD[type],split=" ")))
+	replaceextralist(c(extralist, unlist(strsplit(extralistD[type],split=" "))))
 	if (length(extralist)>0) {
 		constraintString=paste(constraintString,", extra=c(",sep="") 		
 		for (extraIndex in 1:length(extralist)) {
