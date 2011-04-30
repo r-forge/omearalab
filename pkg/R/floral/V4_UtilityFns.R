@@ -1,4 +1,4 @@
-library(diversitree) #obvious
+#library(diversitree) #obvious
 library(sfsmisc) #for counting in binary
 library(partitions) #for converting from binary back to decimal
 library(gmp) #for dealing with big integers
