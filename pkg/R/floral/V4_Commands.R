@@ -1,4 +1,4 @@
-#library(diversitree)
+library(diversitree)
 library(sfsmisc) 
 library(ape)
 library(partitions) #for converting from binary back to decimal
