@@ -52,7 +52,7 @@ for (focalIndex in 1:length(focalVectorList)) {
 						#print(paste(paste("../ActualRuns/P",partitionSchemeText,sep="",collapse=""),"/",nameRoot,'/run.sh',sep=""))
 						pbsCommands=paste(pbsCommands,"\nrm ",' *.csv *.t ',sep="")
 						runsInFile=runsInFile+1
-						if (runsInFile>200) { #change this to deal with remnants
+						if (runsInFile>4) { #change this to deal with remnants
 							cat(pbsCommands,file=paste(dirRoot,'/run.sh',sep=""),append=FALSE)
 							print(pbsCommands)
 							#print(paste("cd ",paste("../ActualRuns/P",partitionSchemeText,sep="",collapse=""),"/",nameRoot,sep=""))
