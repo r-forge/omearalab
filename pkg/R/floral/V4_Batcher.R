@@ -66,7 +66,7 @@ for (focalIndex in 1:length(focalVectorList)) {
 							runsInFile=0
 							pbsCommands=""
 						}
-						while(as.numeric(system("qstat | grep -c bomeara",intern=TRUE))>1800) {
+						while(as.numeric(system("qstat | grep -c bomeara",intern=TRUE))>500) {
 							Sys.sleep(117)
 						}
 					}			
