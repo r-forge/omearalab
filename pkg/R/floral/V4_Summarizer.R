@@ -16,7 +16,7 @@ while(1<2) { #this will keep looping, updating the summary
 		old.summary.dataframe<-summary.dataframe
 		loadedOld<-TRUE
 	}
-	
+	print(paste("loaded old summary = ",loadedOld))
 	totalRuns<-0
 	completedRuns<-0
 	maxStringLength=nchar(2^S) #assuming character states are single digits only works up to 2^3 states. If the max state is 64, diversitree counts 01, 02, etc.
