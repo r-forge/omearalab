@@ -33,7 +33,7 @@ while(1<2) { #this will keep looping, updating the summary
 					if(numberFocalCombos(focalVector) >= diversificationModels$min_focalcombos[diversificationModelIndex]) { #if there aren't enough combos to make the model appropriate, don't run it
 						totalRuns<-totalRuns+1
 						#yay! Now we can run!
-						tryLoad==TRUE
+						tryLoad<-TRUE
 						if (loadedOld==TRUE) { #see if we've already loaded this
 							if(length(which(old.summary.dataframe$T==transitionModelIndex & old.summary.dataframe$D==diversificationModelIndex & old.summary.dataframe$focal==paste(getFocalSummaryLabel(focalVector,S=7,any="x"),sep="",collapse="") ))==1) {
 								tryLoad<-FALSE #it's already in the old.summary.dataframe
