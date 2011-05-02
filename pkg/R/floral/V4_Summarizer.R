@@ -69,6 +69,7 @@ while(1<2) { #this will keep looping, updating the summary
 		}
 	}
 	
+	summary.dataframe$focal<-as.character(summary.dataframe$focal) #because we do not want a factor
 	deltaAIC<-summary.dataframe$AIC-min(summary.dataframe$AIC)
 	relativeLikelihood<-exp(-0.5 * deltaAIC)
 	AICweight<-relativeLikelihood/sum(relativeLikelihood)
