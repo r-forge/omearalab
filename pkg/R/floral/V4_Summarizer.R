@@ -13,6 +13,8 @@ while(1<2) { #this will keep looping, updating the summary
 	
 	totalRuns<-0
 	completedRuns<-0
+	maxStringLength=nchar(2^S) #assuming character states are single digits only works up to 2^3 states. If the max state is 64, diversitree counts 01, 02, etc.
+
 	
 	summary.dataframe<-data.frame()
 	
@@ -30,7 +32,6 @@ while(1<2) { #this will keep looping, updating the summary
 						lsString=paste(paste("ls -1 ",dirRoot,' | grep -c final.matrix.all',sep="",collapse=""))
 						print(lsString)
 						finalMatrixAllCount=suppressWarnings(as.numeric(system(lsString,intern=TRUE)))
-						maxStringLength=nchar(2^S) #assuming character states are single digits only works up to 2^3 states. If the max state is 64, diversitree counts 01, 02, etc.
 						if(finalMatrixAllCount>0) {
 							completedRuns<-completedRuns+1
 							suppressWarnings(rm(final.matrix.all)) #just to make sure anything we append is new
@@ -40,7 +41,7 @@ while(1<2) { #this will keep looping, updating the summary
 							qIndices<-grep("^q\\d",row.names(final.matrix.all),perl=TRUE)
 							lambdaIndices<-grep("^lambda\\d",row.names(final.matrix.all),perl=TRUE)
 							muIndices<-grep("^mu\\d",row.names(final.matrix.all),perl=TRUE)
-							tmp.dataframe<-data.frame(vectorToString(focalVector),transitionModelIndex,transitionModels[transitionModelIndex,4],diversificationModelIndex,diversificationModels[diversificationModelIndex,5],final.matrix.all[which(row.names(final.matrix.all)=="lnLik"),1],final.matrix.all[which(row.names(final.matrix.all)=="AIC"),1],final.matrix.all[which(row.names(final.matrix.all)=="k_all"),1],final.matrix.all[which(row.names(final.matrix.all)=="k_q"),1],final.matrix.all[which(row.names(final.matrix.all)=="k_lambda"),1],final.matrix.all[which(row.names(final.matrix.all)=="k_mu"),1]) 
+							tmp.dataframe<-data.frame(paste(getFocalSummaryLabel(focalVector,S=7,any="x"),sep="",collapse=""),transitionModelIndex,transitionModels[transitionModelIndex,4],diversificationModelIndex,diversificationModels[diversificationModelIndex,5],final.matrix.all[which(row.names(final.matrix.all)=="lnLik"),1],final.matrix.all[which(row.names(final.matrix.all)=="AIC"),1],final.matrix.all[which(row.names(final.matrix.all)=="k_all"),1],final.matrix.all[which(row.names(final.matrix.all)=="k_q"),1],final.matrix.all[which(row.names(final.matrix.all)=="k_lambda"),1],final.matrix.all[which(row.names(final.matrix.all)=="k_mu"),1]) 
 							names(tmp.dataframe)<-c("focal","T","TransitionModel","D","DiversificationModel","lnLik","AIC","k_all","k_q","k_lambda","k_mu")	
 							tmp.dataframe<-cbind(tmp.dataframe,data.frame(matrix(final.matrix.all[qIndices,1],nrow=1,dimnames=list("",names(final.matrix.all[qIndices,1])))),data.frame(matrix(final.matrix.all[lambdaIndices,1],nrow=1,dimnames=list("",names(final.matrix.all[lambdaIndices,1])))),data.frame(matrix(final.matrix.all[muIndices,1],nrow=1,dimnames=list("",names(final.matrix.all[muIndices,1])))))
 							summary.dataframe<-rbind(summary.dataframe,tmp.dataframe)
@@ -52,8 +53,34 @@ while(1<2) { #this will keep looping, updating the summary
 		}
 	}
 	
+	deltaAIC<-summary.dataframe$AIC-min(summary.dataframe$AIC)
+	relativeLikelihood<-exp(-0.5 * deltaAIC)
+	AICweight<-relativeLikelihood/sum(relativeLikelihood)
+	summmary.dataframe<-cbind(deltaAIC,AICweight,summary.dataframe)
 	
+	#now time to make nice names for things
+	for (charStateI in 1:((2^S))) { 
+		binaryStateIVector<-digitsBase(charStateI-1,ndigits=S)[,1]
+		iLabelShort<-sprintf(paste("%0",maxStringLength,"d",sep=""),charStateI)
+		iLabelLong<-vectorToString(binaryStateIVector)
+		names(summary.dataframe)[which(names(summary.dataframe) == paste("lambda",iLabelShort,sep="",collapse=""))]<-paste("lambda",iLabelLong,sep="",collapse="")
+		names(summary.dataframe)[which(names(summary.dataframe) == paste("mu",iLabelShort,sep="",collapse=""))]<-paste("mu",iLabelLong,sep="",collapse="")
+		for (charStateJ in 1:((2^S))) { 
+			binaryStateJVector<-digitsBase(charStateJ-1,ndigits=S)[,1]
+			jLabelShort<-sprintf(paste("%0",maxStringLength,"d",sep=""),charStateJ)
+			jLabelLong<-vectorToString(binaryStateJVector)
+			numberMismatches=vectorMismatch(binaryStateIVector,binaryStateJVector) #so we have two vectors, say 00101 and 00110 (though as length 5 vectors). Doing v1==v2 leads to T T T F F. T=1 for R and F=0, so 1-(v1==v2) = c(1-1,1-1,1-1,1-0,1-0), sum of which is the number of mismatches
+			if (numberMismatches==1) {
+				names(summary.dataframe)[which(names(summary.dataframe) == paste("q",iLabelShort,jLabelShort,sep="",collapse=""))]<-paste("q",iLabelLong,"_",jLabelLong,sep="",collapse="")			
+			}
+			else {
+				names(summary.dataframe)[which(names(summary.dataframe) == paste("q",iLabelShort,jLabelShort,sep="",collapse=""))]<-paste("q",iLabelLong,"_",jLabelLong,"_disallowed",sep="",collapse="")			
+			}
+		}
+	}
+
+	system("cp ../Summaries/RateSummary.txt ../Summaries/PreviousRateSummary.txt")
+	system("cp ../Summaries/RateSummary.Rsave ../Summaries/PreviousRateSummary.Rsave")
 	write.table(summary.dataframe,file="../Summaries/RateSummary.txt",sep="\t")
 	save(summary.dataframe,file="../Summaries/RateSummary.Rsave",compress=TRUE)
-
 }
