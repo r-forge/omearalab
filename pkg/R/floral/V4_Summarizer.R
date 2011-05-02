@@ -56,7 +56,7 @@ while(1<2) { #this will keep looping, updating the summary
 	deltaAIC<-summary.dataframe$AIC-min(summary.dataframe$AIC)
 	relativeLikelihood<-exp(-0.5 * deltaAIC)
 	AICweight<-relativeLikelihood/sum(relativeLikelihood)
-	summmary.dataframe<-cbind(deltaAIC,AICweight,summary.dataframe)
+	summary.dataframe<-cbind(deltaAIC,AICweight,summary.dataframe)
 	
 	#now time to make nice names for things
 	for (charStateI in 1:((2^S))) { 

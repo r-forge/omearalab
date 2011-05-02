@@ -281,3 +281,19 @@ getAllInterestingFocalVectorsStringsEfficient<-function(S) {
 	return(focalVectorList)
 }
 
+summarizeModelWeights<-function(summary.dataframe=summary.dataframe,S=S,transitionModels=transitionModels, diversificationModels=diversificationModels) {
+	modelWeights<-matrix(0,nrow=1+dim(transitionModels)[1],ncol=1+dim(diversificationModels)[1])
+	for (transitionIndex in 1:dim(transitionModels)[1]) {
+		t.summary.dataframe<-subset(summary.dataframe,T==transitionIndex)
+		modelWeights[transitionIndex,1+dim(diversificationModels)[1] ] <-sum(t.summary.dataframe$AICweight)
+		for (diversificationIndex in 1:dim(diversificationModels)[1]) {
+			td.summary.dataframe<-subset(t.summary.dataframe,D==diversificationIndex)
+			modelWeights[transitionIndex,diversificationIndex]<-sum(td.summary.dataframe$AICweight)
+			modelWeights[1+dim(transitionModels)[1],diversificationIndex]<- modelWeights[1+dim(transitionModels)[1],diversificationIndex] + modelWeights[transitionIndex,diversificationIndex]
+		}
+	}
+	modelWeights[1+dim(transitionModels)[1],1+dim(diversificationModels)[1] ]<-1
+	dimnames(modelWeights)<-list(c(transitionModels$description,"diversification totals"),c(diversificationModels$description,"transition totals"))
+	print(round(modelWeights),digits=3)
+	return(modelWeights)
+}
