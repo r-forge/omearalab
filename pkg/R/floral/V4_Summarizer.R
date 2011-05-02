@@ -9,7 +9,13 @@ focalVectorList<-getAllInterestingFocalVectorsStringsEfficient(S)
 
 while(1<2) { #this will keep looping, updating the summary
 
+	loadedOld<-FALSE
 	system("rsync -a bomeara@login.newton.utk.edu:/data/abc/RunsApril2011/ /Users/bomeara/Sites/Floral/RunsApril2011/")
+	try(load("../Summaries/RateSummary.Rsave"))
+	if (length(which(ls()=="summary.dataframe"))==1) {
+		old.summary.dataframe<-summary.dataframe
+		loadedOld<-TRUE
+	}
 	
 	totalRuns<-0
 	completedRuns<-0
@@ -27,25 +33,35 @@ while(1<2) { #this will keep looping, updating the summary
 					if(numberFocalCombos(focalVector) >= diversificationModels$min_focalcombos[diversificationModelIndex]) { #if there aren't enough combos to make the model appropriate, don't run it
 						totalRuns<-totalRuns+1
 						#yay! Now we can run!
-						nameRoot<-paste("T",transitionModelIndex,"_D",diversificationModelIndex,"_",vectorToString(getFocalSummaryLabel(focalVector,S,"x")),sep="",collapse="")
-						dirRoot<-paste("../ActualRuns/T",transitionModelIndex,"/T",transitionModelIndex,"_D",diversificationModelIndex,"/",nameRoot,sep="",collapse="")
-						lsString=paste(paste("ls -1 ",dirRoot,' | grep -c final.matrix.all',sep="",collapse=""))
-						print(lsString)
-						finalMatrixAllCount=suppressWarnings(as.numeric(system(lsString,intern=TRUE)))
-						if(finalMatrixAllCount>0) {
-							completedRuns<-completedRuns+1
-							suppressWarnings(rm(final.matrix.all)) #just to make sure anything we append is new
-							suppressWarnings(rm(tmp.dataframe)) #ditto
-							finalMatrixFullPath<-paste(dirRoot,"/Steb1Perianth_Steb2PerFusSDS_Steb3SymSDS_Steb4StamNo_Steb5Syncarpy_Steb6SeedNo_Steb8Ovary.final.matrix.all",sep="")
-							load(finalMatrixFullPath)
-							qIndices<-grep("^q\\d",row.names(final.matrix.all),perl=TRUE)
-							lambdaIndices<-grep("^lambda\\d",row.names(final.matrix.all),perl=TRUE)
-							muIndices<-grep("^mu\\d",row.names(final.matrix.all),perl=TRUE)
-							tmp.dataframe<-data.frame(paste(getFocalSummaryLabel(focalVector,S=7,any="x"),sep="",collapse=""),transitionModelIndex,transitionModels[transitionModelIndex,4],diversificationModelIndex,diversificationModels[diversificationModelIndex,5],final.matrix.all[which(row.names(final.matrix.all)=="lnLik"),1],final.matrix.all[which(row.names(final.matrix.all)=="AIC"),1],final.matrix.all[which(row.names(final.matrix.all)=="k_all"),1],final.matrix.all[which(row.names(final.matrix.all)=="k_q"),1],final.matrix.all[which(row.names(final.matrix.all)=="k_lambda"),1],final.matrix.all[which(row.names(final.matrix.all)=="k_mu"),1]) 
-							names(tmp.dataframe)<-c("focal","T","TransitionModel","D","DiversificationModel","lnLik","AIC","k_all","k_q","k_lambda","k_mu")	
-							tmp.dataframe<-cbind(tmp.dataframe,data.frame(matrix(final.matrix.all[qIndices,1],nrow=1,dimnames=list("",names(final.matrix.all[qIndices,1])))),data.frame(matrix(final.matrix.all[lambdaIndices,1],nrow=1,dimnames=list("",names(final.matrix.all[lambdaIndices,1])))),data.frame(matrix(final.matrix.all[muIndices,1],nrow=1,dimnames=list("",names(final.matrix.all[muIndices,1])))))
-							summary.dataframe<-rbind(summary.dataframe,tmp.dataframe)
-							print(paste("completed run ",completedRuns,"/",totalRuns,sep=""))
+						tryLoad==TRUE
+						if (loadedOld==TRUE) { #see if we've already loaded this
+							if(length(which(old.summary.dataframe$T==transitionModelIndex & old.summary.dataframe$D==diversificationModelIndex & old.summary.dataframe$focal==paste(getFocalSummaryLabel(focalVector,S=7,any="x"),sep="",collapse="") ))==1) {
+								tryLoad<-FALSE #it's already in the old.summary.dataframe
+								completedRuns<-completedRuns+1
+								print(paste("already have completed run ",completedRuns,"/",totalRuns,sep=""))
+							}
+						}
+						if(tryLoad==TRUE) {
+							nameRoot<-paste("T",transitionModelIndex,"_D",diversificationModelIndex,"_",vectorToString(getFocalSummaryLabel(focalVector,S,"x")),sep="",collapse="")
+							dirRoot<-paste("../ActualRuns/T",transitionModelIndex,"/T",transitionModelIndex,"_D",diversificationModelIndex,"/",nameRoot,sep="",collapse="")
+							lsString=paste(paste("ls -1 ",dirRoot,' | grep -c final.matrix.all',sep="",collapse=""))
+							print(lsString)
+							finalMatrixAllCount=suppressWarnings(as.numeric(system(lsString,intern=TRUE)))
+							if(finalMatrixAllCount>0) {
+								completedRuns<-completedRuns+1
+								suppressWarnings(rm(final.matrix.all)) #just to make sure anything we append is new
+								suppressWarnings(rm(tmp.dataframe)) #ditto
+								finalMatrixFullPath<-paste(dirRoot,"/Steb1Perianth_Steb2PerFusSDS_Steb3SymSDS_Steb4StamNo_Steb5Syncarpy_Steb6SeedNo_Steb8Ovary.final.matrix.all",sep="")
+								load(finalMatrixFullPath)
+								qIndices<-grep("^q\\d",row.names(final.matrix.all),perl=TRUE)
+								lambdaIndices<-grep("^lambda\\d",row.names(final.matrix.all),perl=TRUE)
+								muIndices<-grep("^mu\\d",row.names(final.matrix.all),perl=TRUE)
+								tmp.dataframe<-data.frame(paste(getFocalSummaryLabel(focalVector,S=7,any="x"),sep="",collapse=""),transitionModelIndex,transitionModels[transitionModelIndex,4],diversificationModelIndex,diversificationModels[diversificationModelIndex,5],final.matrix.all[which(row.names(final.matrix.all)=="lnLik"),1],final.matrix.all[which(row.names(final.matrix.all)=="AIC"),1],final.matrix.all[which(row.names(final.matrix.all)=="k_all"),1],final.matrix.all[which(row.names(final.matrix.all)=="k_q"),1],final.matrix.all[which(row.names(final.matrix.all)=="k_lambda"),1],final.matrix.all[which(row.names(final.matrix.all)=="k_mu"),1]) 
+								names(tmp.dataframe)<-c("focal","T","TransitionModel","D","DiversificationModel","lnLik","AIC","k_all","k_q","k_lambda","k_mu")	
+								tmp.dataframe<-cbind(tmp.dataframe,data.frame(matrix(final.matrix.all[qIndices,1],nrow=1,dimnames=list("",names(final.matrix.all[qIndices,1])))),data.frame(matrix(final.matrix.all[lambdaIndices,1],nrow=1,dimnames=list("",names(final.matrix.all[lambdaIndices,1])))),data.frame(matrix(final.matrix.all[muIndices,1],nrow=1,dimnames=list("",names(final.matrix.all[muIndices,1])))))
+								summary.dataframe<-rbind(summary.dataframe,tmp.dataframe)
+								print(paste("loaded completed run ",completedRuns,"/",totalRuns,sep=""))
+							}
 						}
 					}
 				}
@@ -65,6 +81,7 @@ while(1<2) { #this will keep looping, updating the summary
 		iLabelLong<-vectorToString(binaryStateIVector)
 		names(summary.dataframe)[which(names(summary.dataframe) == paste("lambda",iLabelShort,sep="",collapse=""))]<-paste("lambda",iLabelLong,sep="",collapse="")
 		names(summary.dataframe)[which(names(summary.dataframe) == paste("mu",iLabelShort,sep="",collapse=""))]<-paste("mu",iLabelLong,sep="",collapse="")
+		print(paste("changing names for ",iLabelLong))
 		for (charStateJ in 1:((2^S))) { 
 			binaryStateJVector<-digitsBase(charStateJ-1,ndigits=S)[,1]
 			jLabelShort<-sprintf(paste("%0",maxStringLength,"d",sep=""),charStateJ)
@@ -81,6 +98,9 @@ while(1<2) { #this will keep looping, updating the summary
 
 	system("cp ../Summaries/RateSummary.txt ../Summaries/PreviousRateSummary.txt")
 	system("cp ../Summaries/RateSummary.Rsave ../Summaries/PreviousRateSummary.Rsave")
+	if(loadedOld==TRUE) {
+		summary.dataframe<-rbind(old.summary.dataframe,summary.data.frame)
+	}
 	write.table(summary.dataframe,file="../Summaries/RateSummary.txt",sep="\t")
 	save(summary.dataframe,file="../Summaries/RateSummary.Rsave",compress=TRUE)
 }
