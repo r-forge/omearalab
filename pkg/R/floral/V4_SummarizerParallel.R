@@ -3,7 +3,10 @@ library(sfsmisc) #for counting in binary
 library(partitions)
 library(gmp) #for dealing with big integers
 source("V4_UtilityFns.R")
+library(doMC)
 library(foreach)
+
+registerDoMC(14) #keep two cores free
 
 
 focalVectorList<-getAllInterestingFocalVectorsStringsEfficient(S)
