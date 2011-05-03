@@ -6,7 +6,7 @@ source("V4_UtilityFns.R")
 library(doMC)
 library(foreach)
 
-registerDoMC(14) #keep two cores free
+registerDoMC(6) #This has a lot of I/O, so make it smaller
 
 
 focalVectorList<-getAllInterestingFocalVectorsStringsEfficient(S)
@@ -62,6 +62,9 @@ summarizeIndiv<-function(actualT,actualD,focalVectorList) {
 								tmp.dataframe<-cbind(tmp.dataframe,data.frame(matrix(final.matrix.all[qIndices,1],nrow=1,dimnames=list("",names(final.matrix.all[qIndices,1])))),data.frame(matrix(final.matrix.all[lambdaIndices,1],nrow=1,dimnames=list("",names(final.matrix.all[lambdaIndices,1])))),data.frame(matrix(final.matrix.all[muIndices,1],nrow=1,dimnames=list("",names(final.matrix.all[muIndices,1])))))
 								summary.dataframe<-rbind(summary.dataframe,tmp.dataframe)
 								print(paste("loaded completed run ",completedRuns,"/",totalRuns,sep=""))
+								if(completedRuns%%100==0) {
+									save(summary.dataframe,file=paste("../Summaries/IntermediateRateSummaryT",actualT,"D",actualD,".Rsave"),compress=TRUE)
+								}
 							}
 						}
 					}
