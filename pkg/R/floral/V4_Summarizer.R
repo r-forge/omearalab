@@ -102,11 +102,11 @@ while(1<2) { #this will keep looping, updating the summary
 		names(summary.dataframe)<-names(old.summary.dataframe)
 	}
 
-	system("cp ../Summaries/RateSummary.txt ../Summaries/PreviousRateSummary.txt")
+	#system("cp ../Summaries/RateSummary.txt ../Summaries/PreviousRateSummary.txt")
 	system("cp ../Summaries/RateSummary.Rsave ../Summaries/PreviousRateSummary.Rsave")
 	if(loadedOld==TRUE) {
 		summary.dataframe<-rbind(old.summary.dataframe,summary.data.frame)
 	}
-	write.table(summary.dataframe,file="../Summaries/RateSummary.txt",sep="\t")
+	#write.table(summary.dataframe,file="../Summaries/RateSummary.txt",sep="\t")
 	save(summary.dataframe,file="../Summaries/RateSummary.Rsave",compress=TRUE)
 }
