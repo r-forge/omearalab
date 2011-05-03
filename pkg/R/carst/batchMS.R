@@ -17,7 +17,6 @@ colMin<-function(x,na.rm=TRUE) {
 }
 
 colCountIf<-function(x,val) {
-	print(paste("dim(x)=",dim(x)))
 	countVec<-rep(NA,dim(x)[2])
 	for (i in 1:dim(x)[2]) {
 		countVec[i]=length(which(x[,i]==val))
@@ -157,6 +156,7 @@ generateThetaIndividuals<-function(popVector,popIntervalsList=generateIntervals(
 }
 
 #now we will generate all possible assignments of pairwise migration. Again, we want to keep the total number of free parameters (times, thetas, migration rates) under our chosen max
+#allow a model where migrations change anywhere along branch, or only at coalescent nodes? The problem with the latter is that you can't fit some reasonable models: i.e., two populations persisting through time. Problem with the former is parameter space
 generateMigrationIndividuals<-function(popVector,thetaIndividualsList=generateThetaIndividuals(popVector), maxK=max(1,floor(sum(popVector)/20))) {
 	migrationIndividualsList<-list()
 	for (i in 1:length(thetaIndividualsList)) {
