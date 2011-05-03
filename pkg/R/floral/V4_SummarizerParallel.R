@@ -98,9 +98,9 @@ summarizeIndiv<-function(actualT,actualD,focalVectorList) {
 		}
 	}
 	
-	save(summary.dataframe,file=paste("../Summaries/RateSummaryT",actualT,"D",actualD,".Rsave",compress=TRUE)
+	save(summary.dataframe,file=paste("../Summaries/RateSummaryT",actualT,"D",actualD,".Rsave"),compress=TRUE)
 	return(paste("T",actualT,"D",actualD,completedRuns,"/",totalRuns))
 }
 
-finalresult<-foreach(actualT=tVector) %:% foreach(actualD=dVector) %doPar% { summarizeIndiv(actualT,actualD,focalVectorList) }
+finalresult<-foreach(actualT=tVector) %:% foreach(actualD=dVector) %dopar% { summarizeIndiv(actualT,actualD,focalVectorList) }
 print(finalResult)
