@@ -18,7 +18,7 @@ summarizeIndiv<-function(actualT,actualD,focalVectorList) {
 
 	runName<-paste("RunT",actualT,"D",actualD," ",sep="")
 	loadedOld<-FALSE
-	try(paste("../Summaries/RateSummaryT",actualT,"D",actualD,".Rsave"))
+	try(load(paste("../Summaries/RateSummaryT",actualT,"D",actualD,".Rsave")))
 
 	if (length(which(ls()=="summary.dataframe"))==1) {
 		old.summary.dataframe<-summary.dataframe
