@@ -3,20 +3,28 @@ library(sfsmisc) #for counting in binary
 library(partitions)
 library(gmp) #for dealing with big integers
 source("V4_UtilityFns.R")
+library(doMC)
+library(foreach)
+
+registerDoMC(6) #This has a lot of I/O, so make it run on fewer than the available number of processsors
 
 
 focalVectorList<-getAllInterestingFocalVectorsStringsEfficient(S)
 
-while(1<2) { #this will keep looping, updating the summary
+tVector=c(1:dim(transitionModels)[1])
+dVector=c(1:dim(diversificationModels)[1])
 
+summarizeIndiv<-function(actualT,actualD,focalVectorList) {
+
+	runName<-paste("RunT",actualT,"D",actualD," ",sep="")
 	loadedOld<-FALSE
-	system("rsync -a bomeara@login.newton.utk.edu:/data/abc/RunsApril2011/ /Users/bomeara/Sites/Floral/RunsApril2011/")
-	try(load("../Summaries/RateSummary.Rsave"))
+	try(paste("../Summaries/RateSummaryT",actualT,"D",actualD,".Rsave"))
+
 	if (length(which(ls()=="summary.dataframe"))==1) {
 		old.summary.dataframe<-summary.dataframe
 		loadedOld<-TRUE
 	}
-	print(paste("loaded old summary = ",loadedOld))
+	print(paste(runName," loaded old summary = ",loadedOld))
 	totalRuns<-0
 	completedRuns<-0
 	maxStringLength=nchar(2^S) #assuming character states are single digits only works up to 2^3 states. If the max state is 64, diversitree counts 01, 02, etc.
@@ -34,25 +42,22 @@ while(1<2) { #this will keep looping, updating the summary
 						totalRuns<-totalRuns+1
 						#yay! Now we can run!
 						tryLoad<-TRUE
+						nameRoot<-paste("T",transitionModelIndex,"_D",diversificationModelIndex,"_",vectorToString(getFocalSummaryLabel(focalVector,S,"x")),sep="",collapse="")
+						print(paste(runName," Looking at ",nameRoot))
 						if (loadedOld==TRUE) { #see if we've already loaded this
 							if(length(which(old.summary.dataframe$T==transitionModelIndex & old.summary.dataframe$D==diversificationModelIndex & old.summary.dataframe$focal==paste(getFocalSummaryLabel(focalVector,S=7,any="x"),sep="",collapse="") ))==1) {
 								tryLoad<-FALSE #it's already in the old.summary.dataframe
 								completedRuns<-completedRuns+1
-								print(paste("already have completed run ",completedRuns,"/",totalRuns,sep=""))
+								print(paste(runName,"     already have completed run ",completedRuns,"/",totalRuns,sep=""))
 							}
 						}
 						if(tryLoad==TRUE) {
-							nameRoot<-paste("T",transitionModelIndex,"_D",diversificationModelIndex,"_",vectorToString(getFocalSummaryLabel(focalVector,S,"x")),sep="",collapse="")
 							dirRoot<-paste("../ActualRuns/T",transitionModelIndex,"/T",transitionModelIndex,"_D",diversificationModelIndex,"/",nameRoot,sep="",collapse="")
-							lsString=paste(paste("ls -1 ",dirRoot,' | grep -c final.matrix.all',sep="",collapse=""))
-							print(lsString)
-							finalMatrixAllCount=suppressWarnings(as.numeric(system(lsString,intern=TRUE)))
-							if(finalMatrixAllCount>0) {
+							suppressWarnings(rm(final.matrix.all)) #just to make sure anything we append is new
+							suppressWarnings(rm(tmp.dataframe)) #ditto
+							try(load(paste(dirRoot,"/Steb1Perianth_Steb2PerFusSDS_Steb3SymSDS_Steb4StamNo_Steb5Syncarpy_Steb6SeedNo_Steb8Ovary.final.matrix.all",sep="")))
+							if(length(which(ls()=="final.matrix.all"))==1) {
 								completedRuns<-completedRuns+1
-								suppressWarnings(rm(final.matrix.all)) #just to make sure anything we append is new
-								suppressWarnings(rm(tmp.dataframe)) #ditto
-								finalMatrixFullPath<-paste(dirRoot,"/Steb1Perianth_Steb2PerFusSDS_Steb3SymSDS_Steb4StamNo_Steb5Syncarpy_Steb6SeedNo_Steb8Ovary.final.matrix.all",sep="")
-								load(finalMatrixFullPath)
 								qIndices<-grep("^q\\d",row.names(final.matrix.all),perl=TRUE)
 								lambdaIndices<-grep("^lambda\\d",row.names(final.matrix.all),perl=TRUE)
 								muIndices<-grep("^mu\\d",row.names(final.matrix.all),perl=TRUE)
@@ -60,7 +65,11 @@ while(1<2) { #this will keep looping, updating the summary
 								names(tmp.dataframe)<-c("focal","T","TransitionModel","D","DiversificationModel","lnLik","AIC","k_all","k_q","k_lambda","k_mu")	
 								tmp.dataframe<-cbind(tmp.dataframe,data.frame(matrix(final.matrix.all[qIndices,1],nrow=1,dimnames=list("",names(final.matrix.all[qIndices,1])))),data.frame(matrix(final.matrix.all[lambdaIndices,1],nrow=1,dimnames=list("",names(final.matrix.all[lambdaIndices,1])))),data.frame(matrix(final.matrix.all[muIndices,1],nrow=1,dimnames=list("",names(final.matrix.all[muIndices,1])))))
 								summary.dataframe<-rbind(summary.dataframe,tmp.dataframe)
-								print(paste("loaded completed run ",completedRuns,"/",totalRuns,sep=""))
+								print(paste(runName,"     loaded completed run ",completedRuns,"/",totalRuns,sep=""))
+								if(completedRuns%%100==0) { #note that this omits the last completed run, still in RateSummaryT...
+									save(summary.dataframe,file=paste("../Summaries/IntermediateRateSummaryT",actualT,"D",actualD,".Rsave"),compress=TRUE)
+								}
+
 							}
 						}
 					}
@@ -77,13 +86,14 @@ while(1<2) { #this will keep looping, updating the summary
 	
 	#now time to make nice names for things
 	if (loadedOld==FALSE) {
+		print(paste(runName," now doing nice names for summary.dataframe"))
 		for (charStateI in 1:((2^S))) { 
 			binaryStateIVector<-digitsBase(charStateI-1,ndigits=S)[,1]
 			iLabelShort<-sprintf(paste("%0",maxStringLength,"d",sep=""),charStateI)
 			iLabelLong<-vectorToString(binaryStateIVector)
 			names(summary.dataframe)[which(names(summary.dataframe) == paste("lambda",iLabelShort,sep="",collapse=""))]<-paste("lambda",iLabelLong,sep="",collapse="")
 			names(summary.dataframe)[which(names(summary.dataframe) == paste("mu",iLabelShort,sep="",collapse=""))]<-paste("mu",iLabelLong,sep="",collapse="")
-			print(paste("changing names for ",iLabelLong))
+#			print(paste("changing names for ",iLabelLong))
 			for (charStateJ in 1:((2^S))) { 
 				binaryStateJVector<-digitsBase(charStateJ-1,ndigits=S)[,1]
 				jLabelShort<-sprintf(paste("%0",maxStringLength,"d",sep=""),charStateJ)
@@ -102,11 +112,23 @@ while(1<2) { #this will keep looping, updating the summary
 		names(summary.dataframe)<-names(old.summary.dataframe)
 	}
 
-	#system("cp ../Summaries/RateSummary.txt ../Summaries/PreviousRateSummary.txt")
-	system("cp ../Summaries/RateSummary.Rsave ../Summaries/PreviousRateSummary.Rsave")
 	if(loadedOld==TRUE) {
+		print(paste(runName," now doing rbind for old and new summary.dataframe"))
 		summary.dataframe<-rbind(old.summary.dataframe,summary.data.frame)
 	}
-	#write.table(summary.dataframe,file="../Summaries/RateSummary.txt",sep="\t")
-	save(summary.dataframe,file="../Summaries/RateSummary.Rsave",compress=TRUE)
+	print(paste(runName," finished pulling in data, now saving at ",date()))
+	save(summary.dataframe,file=paste("../Summaries/RateSummaryT",actualT,"D",actualD,".Rsave"),compress=TRUE)
+	print(paste(runName," finished saving at ",date()))
+	return(paste("T",actualT,"D",actualD,completedRuns,"/",totalRuns))
 }
+
+loopCount<-0
+while(1<2) { #this will keep looping, updating the summary
+		loopCount<-loopCount+1
+		print(paste("Now starting loop ",loopCount," on ",date()))
+		system("rsync -a bomeara@login.newton.utk.edu:/data/abc/RunsApril2011/ /Users/bomeara/Sites/Floral/RunsApril2011/")
+		print(paste("Finished rsync for loop ",loopCount," at ",date()))
+		finalresult<-foreach(actualT=tVector) %:% foreach(actualD=dVector) %dopar% { summarizeIndiv(actualT,actualD,focalVectorList) }
+		print(finalResult)
+}
+
