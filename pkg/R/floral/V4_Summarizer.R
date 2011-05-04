@@ -19,7 +19,7 @@ summarizeIndiv<-function(actualT,actualD,focalVectorList) {
 	runName<-paste("RunT",actualT,"D",actualD," ",sep="")
 	loadedOld<-FALSE
 	try(load(paste("../Summaries/RateSummaryT",actualT,"D",actualD,".Rsave")))
-
+	old.summary.dataframe<-data.frame()
 	if (length(which(ls()=="summary.dataframe"))==1) {
 		old.summary.dataframe<-summary.dataframe
 		loadedOld<-TRUE
@@ -35,8 +35,8 @@ summarizeIndiv<-function(actualT,actualD,focalVectorList) {
 	suppressWarnings(system("mkdir -p ../Summaries"))
 	for (focalIndex in 1:length(focalVectorList)) {
 		focalVector<-stringToVector(unlist(focalVectorList[[focalIndex]]))
-		for (transitionModelIndex in 1:dim(transitionModels)[1]) {
-			for (diversificationModelIndex in 1:dim(diversificationModels)[1]) {
+		for (transitionModelIndex in actualT:actualT) {
+			for (diversificationModelIndex in actualD:actualD) {
 				if (numberFocalCombos(focalVector) >= transitionModels$min_focalcombos[transitionModelIndex]) { #if there aren't enough combos to make the model appropriate, don't run it
 					if(numberFocalCombos(focalVector) >= diversificationModels$min_focalcombos[diversificationModelIndex]) { #if there aren't enough combos to make the model appropriate, don't run it
 						totalRuns<-totalRuns+1
