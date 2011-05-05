@@ -6,7 +6,7 @@ source("V4_UtilityFns.R")
 library(doMC)
 library(foreach)
 
-registerDoMC(6) #This has a lot of I/O, so make it run on fewer than the available number of processsors
+registerDoMC(3) #This has a lot of I/O and memory, so make it run on fewer than the available number of processsors
 
 
 focalVectorList<-getAllInterestingFocalVectorsStringsEfficient(S)
@@ -55,7 +55,7 @@ summarizeIndiv<-function(actualT,actualD,focalVectorList) {
 							dirRoot<-paste("../ActualRuns/T",transitionModelIndex,"/T",transitionModelIndex,"_D",diversificationModelIndex,"/",nameRoot,sep="",collapse="")
 							suppressWarnings(rm(final.matrix.all)) #just to make sure anything we append is new
 							suppressWarnings(rm(tmp.dataframe)) #ditto
-							try(load(paste(dirRoot,"/Steb1Perianth_Steb2PerFusSDS_Steb3SymSDS_Steb4StamNo_Steb5Syncarpy_Steb6SeedNo_Steb8Ovary.final.matrix.all",sep="")))
+							suppressWarnings(try(load(paste(dirRoot,"/Steb1Perianth_Steb2PerFusSDS_Steb3SymSDS_Steb4StamNo_Steb5Syncarpy_Steb6SeedNo_Steb8Ovary.final.matrix.all",sep="")),silent=TRUE))
 							if(length(which(ls()=="final.matrix.all"))==1) {
 								completedRuns<-completedRuns+1
 								qIndices<-grep("^q\\d",row.names(final.matrix.all),perl=TRUE)
@@ -129,6 +129,6 @@ while(1<2) { #this will keep looping, updating the summary
 		system("rsync -a bomeara@login.newton.utk.edu:/data/abc/RunsApril2011/ /Users/bomeara/Sites/Floral/RunsApril2011/")
 		print(paste("Finished rsync for loop ",loopCount," at ",date()))
 		finalresult<-foreach(actualT=tVector) %:% foreach(actualD=dVector) %dopar% { summarizeIndiv(actualT,actualD,focalVectorList) }
-		print(finalResult)
+	#	print(finalResult)
 }
 
