@@ -128,7 +128,7 @@ while(1<2) { #this will keep looping, updating the summary
 		print(paste("Now starting loop ",loopCount," on ",date()))
 		system("rsync -a bomeara@login.newton.utk.edu:/data/abc/RunsApril2011/ /Users/bomeara/Sites/Floral/RunsApril2011/")
 		print(paste("Finished rsync for loop ",loopCount," at ",date()))
-		finalresult<-foreach(actualT=tVector) %:% foreach(actualD=dVector) %dopar% { summarizeIndiv(actualT,actualD,focalVectorList) }
+		foreach(actualT=tVector) %:% foreach(actualD=dVector) %dopar% { summarizeIndiv(actualT,actualD,focalVectorList) }
 	#	print(finalResult)
 }
 
