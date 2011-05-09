@@ -119,6 +119,11 @@ summarizeIndiv<-function(actualT,actualD,focalVectorList) {
 	print(paste(runName," finished pulling in data, now saving at ",date()))
 	save(summary.dataframe,file=paste("../Summaries/RateSummaryT",actualT,"D",actualD,".Rsave"),compress=TRUE)
 	print(paste(runName," finished saving at ",date()))
+	if (actualT==5) {
+		if (actualD==6) {
+			system('nohup R CMD BATCH V4_Summarizer.R > /dev/null &')
+		}
+	}
 	return(paste("T",actualT,"D",actualD,completedRuns,"/",totalRuns))
 }
 
