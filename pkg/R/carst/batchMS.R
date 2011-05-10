@@ -160,6 +160,9 @@ generateThetaIndividuals<-function(popVector,popIntervalsList=generateIntervals(
 generateMigrationIndividuals<-function(popVector,thetaIndividualsList=generateThetaIndividuals(popVector), maxK=max(1,floor(sum(popVector)/20))) {
 	migrationIndividualsList<-list()
 	for (i in 1:length(thetaIndividualsList)) {
+		collapseMatrix<-popIntervalsList[[i]]$collapseMatrix
+		numFinalPops<-dim(collapseMatrix)[1]
+		
 		#things to consider: migration between each subpop, as subpops coalesce
 	}
 }

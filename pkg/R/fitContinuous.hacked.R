@@ -1,3 +1,5 @@
+library(corpcor)
+
 `fitContinuous.hacked` <-
 function(phy, data, data.names=NULL, model=c("BM", "OU", "lambda", "kappa", "delta", "EB", "white", "trend"), bounds=NULL,  meserr=NULL, userstart=NULL)
 {
