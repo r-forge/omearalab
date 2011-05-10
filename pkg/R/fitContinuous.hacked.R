@@ -1,5 +1,32 @@
 library(corpcor)
 
+dmvnormPseudoinverse<-function (x, mean, sigma, log = FALSE) {
+    if (is.vector(x)) {
+        x <- matrix(x, ncol = length(x))
+    }
+    if (missing(mean)) {
+        mean <- rep(0, length = ncol(x))
+    }
+    if (missing(sigma)) {
+        sigma <- diag(ncol(x))
+    }
+    if (NCOL(x) != NCOL(sigma)) {
+        stop("x and sigma have non-conforming size")
+    }
+    if (!isSymmetric(sigma, tol = sqrt(.Machine$double.eps))) {
+        stop("sigma must be a symmetric matrix")
+    }
+    if (length(mean) != NROW(sigma)) {
+        stop("mean and sigma have non-conforming size")
+    }
+    distval <- mahalanobis(x, center = mean, cov = pseudoinverse(sigma),inverted=TRUE)
+    logdet <- sum(log(eigen(sigma, symmetric = TRUE, only.values = TRUE)$values))
+    logretval <- -(ncol(x) * log(2 * pi) + logdet + distval)/2
+    if (log) 
+        return(logretval)
+    exp(logretval)
+}
+
 `fitContinuous.hacked` <-
 function(phy, data, data.names=NULL, model=c("BM", "OU", "lambda", "kappa", "delta", "EB", "white", "trend"), bounds=NULL,  meserr=NULL, userstart=NULL)
 {
@@ -362,7 +389,6 @@ function(ds, print=TRUE)
 		vcvOrig<-vcv.phylo(tree)
 		foo<-function(x) {
 			vcv <- ouMatrix(vcvOrig, exp(x[2]))
-			
 			## t<-ouTree(tree, exp(x[2]))
 			##vcv<-vcv.phylo(t)
 			
@@ -371,8 +397,7 @@ function(ds, print=TRUE)
 			
 			mu<-phylogMean(vv, y)
 			mu<-rep(mu, n)
-			
-			-dmvnorm(y, mu, vv, log=T)
+			-dmvnormPseudoinverse(y, mu, vv, log=T)
 		}
 		
 		outTries<-list()
@@ -381,7 +406,6 @@ function(ds, print=TRUE)
 		start=c(log(beta.start), -50)
 		outTries[[1]]<-nlm(foo, p=start)
 		#outTries[[1]]<-optim(foo, p=start, lower=lower, upper=upper, method="L")
-		
 		# Second one: try one with very strong constraints
 		tv<-var(y)
 		start=log(c(tv*2000, 1000))
@@ -492,7 +516,6 @@ phylogMean<-function(phyvcv, data)
 	
 	m1<-pseudoinverse(t(o) %*% ci %*% o)
 	m2<-t(o) %*% ci %*% data
-	
 	return(m1 %*% m2)
 	
 	}
