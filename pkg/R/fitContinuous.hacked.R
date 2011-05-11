@@ -191,11 +191,21 @@ function(ds, print=TRUE)
 		lower=log(bounds[1,c("beta","lambda")])
 		upper=log(bounds[2,c("beta","lambda")])
 		
-		
+		tryFoo<-function(x) {
+			badLnL=100000
+			result<-try(foo(x))
+			if (is.finite(result)) {
+				return(result)
+			}
+			else {
+				return(badLnL)
+			}
+		}
+			
 		foo<-function(x) {
 
 
-			vcv<-vcv.phylo(tree)
+			vcv<-vcv.phylo(phy) #change back to tree
 
 			index			<-	matrix(TRUE, n,n)
 			diag(index)		<- FALSE
@@ -209,9 +219,11 @@ function(ds, print=TRUE)
 			mu<-rep(mu, n)
 			
 			-dmvnorm(y, mu, vv, log=T)
+			print(-dmvnorm(y, mu, vv, log=T))
+			#print(paste("y=", y, "mu=", mu, "vv=", vv))
 		}
 
-		o<-nlm(foo, p=start)
+		o<-nlm(tryFoo, p=start)
 		#o<-optim(foo, p=start, lower=lower, upper=upper, method="L")
 			
 		results<-list(lnl=-o$minimum, beta=exp(o$estimate[1]), lambda=exp(o$estimate[2]))	
@@ -241,6 +253,7 @@ function(ds, print=TRUE)
 			mu<-rep(mu, n)
 			
 			-dmvnorm(y, mu, vv, log=T)
+			#print(-dmvnorm(y, mu, vv, log=T))
 		}
 
 		o<-nlm(foo, p=start)
