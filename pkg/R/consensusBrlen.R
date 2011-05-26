@@ -13,26 +13,24 @@ isClade<-function(phy,taxonlist) {
 	}
 }
 
-rootAndMakePhylo4<-function(phy) {
-	return(as(root(phy,outgroup=c(1:length(phy$tip.label)),resolve.root=TRUE),"phylo4")
-}
-
 edgeLengthTaxset<-function(phy,taxonlist) {
 	return(edgeLength(phy,MRCA(phy,taxonlist)))
 }
 
-summarizeNode<-function(nodeId,focalTree,sourceTreeList) {
+summarizeNode<-function(nodeId,focalTree,sourceTreeList,print.progress) {
 	matchingVector<-unlist(lapply(sourceTreeList,isClade,descendants(focalTree,nodeId,type="tips")))
 	proportion<-sum(matchingVector) / length(matchingVector)
 	lengths<-unlist(lapply(sourceTreeList[matchingVector],edgeLengthTaxset,descendants(focalTree,nodeId,type="tips")))
 	result<-c(nodeId,proportion,mean(lengths,na.rm=TRUE),median(lengths,na.rm=TRUE),sd(lengths,na.rm=TRUE))
+	if (print.progress) {
+		print(result)
+	}
 	names(result)<-c("nodeId","proportion","mean_brlen","median_brlen","sd_brlen")
-	print(result)
 	return(result)
 }
 
 #trees should be rooted
-consensusBrlen<-function(focalTree,sourceTreeList,type=c("proportion","mean_brlen","median_brlen","sd_brlen")) {
+consensusBrlen<-function(focalTree,sourceTreeList,type=c("proportion","mean_brlen","median_brlen","sd_brlen"),print.progress=TRUE,return.val="tree") {
 	type<-match.arg(type)
 	if (class(focalTree)!="phylo4") {
 		focalTree<-as(focalTree,"phylo4")
@@ -42,29 +40,23 @@ consensusBrlen<-function(focalTree,sourceTreeList,type=c("proportion","mean_brle
 	}
 	allNodes<-nodeId(focalTree,"all")
 	allNodes<-allNodes[which(allNodes!=nodeId(focalTree,"root"))] #do not care about root edge
-	allResults<-sapply(allNodes,summarizeNode,focalTree,sourceTreeList)
-	newEdgeLengths<-edgeLength(focalTree)
-	for (nodeIndex in 1:length(allNodes)) {
-	#	print(paste("Old edge length for node",allNodes[nodeIndex],"is",edgeLength(focalTree,allNodes[nodeIndex])))
-		print(names(newEdgeLengths))
-		print(names(getEdge(focalTree,allNodes[nodeIndex]))[1])
-		print(allResults[which(row.names(allResults)==type),nodeIndex])
-		newEdgeLengths[ which(names(newEdgeLengths)==getEdge(focalTree,allNodes[nodeIndex])) ]<-allResults[which(row.names(allResults)==type),nodeIndex]
-	#	print(paste("New edge length",edgeLength(focalTree,allNodes[nodeIndex])))
-	#	print(focalTree)
+	if (print.progress) {
+		print(c("nodeId","proportion","mean_brlen","median_brlen","sd_brlen"))
 	}
-	edgeLength(focalTree)<-newEdgeLengths
-#	print(allResults)
-	return(focalTree)
+	allResults<-sapply(allNodes,summarizeNode,focalTree,sourceTreeList,print.progress)
+	if (return.val=="tree") {
+		newEdgeLengths<-edgeLength(focalTree)
+		newNodeLabels<-nodeLabels(focalTree)
+		for (nodeIndex in 1:length(allNodes)) {
+			newEdgeLengths[ which(names(newEdgeLengths)==getEdge(focalTree,allNodes[nodeIndex])) ]<-allResults[which(row.names(allResults)==type),nodeIndex]
+			newNodeLabels[ which(names(newNodeLabels)==allNodes[nodeIndex]) ] <- round(allResults[which(row.names(allResults)=="proportion"),nodeIndex],2)
+		}
+		edgeLength(focalTree)<-newEdgeLengths
+		nodeLabels(focalTree)<-newNodeLabels
+		return(focalTree)
+	}
+	else {
+		return(allResults)
+	}
 }
 
-
-
-##########Scratch space
-sourceTreeList<-list(b)
-for (i in 2:6) {
-	sourceTreeList[[i]]<-b
-}
-for (i in 7:11) {
-	sourceTreeList[[i]]<-as(root(rcoal(16),outgroup=c(1:16),resolve.root=TRUE),"phylo4")
-}
