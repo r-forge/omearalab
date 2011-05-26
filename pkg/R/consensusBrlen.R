@@ -21,7 +21,10 @@ summarizeNode<-function(nodeId,focalTree,sourceTreeList,print.progress) {
 	matchingVector<-unlist(lapply(sourceTreeList,isClade,descendants(focalTree,nodeId,type="tips")))
 	proportion<-sum(matchingVector) / length(matchingVector)
 	lengths<-unlist(lapply(sourceTreeList[matchingVector],edgeLengthTaxset,descendants(focalTree,nodeId,type="tips")))
-	result<-c(nodeId,proportion,mean(lengths,na.rm=TRUE),median(lengths,na.rm=TRUE),sd(lengths,na.rm=TRUE))
+	result<-c(nodeId,NA,NA,NA,NA)
+	if (sum(is.na(lengths))<length(lengths)) {
+		result<-c(nodeId,proportion,mean(lengths,na.rm=TRUE),median(lengths,na.rm=TRUE),sd(lengths,na.rm=TRUE))
+	}
 	if (print.progress) {
 		print(result)
 	}
@@ -48,7 +51,11 @@ consensusBrlen<-function(focalTree,sourceTreeList,type=c("proportion","mean_brle
 		newEdgeLengths<-edgeLength(focalTree)
 		newNodeLabels<-nodeLabels(focalTree)
 		for (nodeIndex in 1:length(allNodes)) {
-			newEdgeLengths[ which(names(newEdgeLengths)==getEdge(focalTree,allNodes[nodeIndex])) ]<-allResults[which(row.names(allResults)==type),nodeIndex]
+			newLength<-allResults[which(row.names(allResults)==type),nodeIndex]
+			if (is.na(newLength)) {
+				newLength=0
+			}
+			newEdgeLengths[ which(names(newEdgeLengths)==getEdge(focalTree,allNodes[nodeIndex])) ]<-newLength
 			newNodeLabels[ which(names(newNodeLabels)==allNodes[nodeIndex]) ] <- round(allResults[which(row.names(allResults)=="proportion"),nodeIndex],2)
 		}
 		edgeLength(focalTree)<-newEdgeLengths
