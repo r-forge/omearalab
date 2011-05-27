@@ -21,11 +21,8 @@ dmvnormPseudoinverse<-function (x, mean, sigma, log = FALSE) {
         stop("mean and sigma have non-conforming size")
     }
     distval <- mahalanobis(x, center = mean, cov = pseudoinverse(sigma),inverted=TRUE)
-  #  print(paste("distval=",distval))
     logdet <- sum(log(eigen(sigma, symmetric = TRUE, only.values = TRUE)$values))
-  #  print(paste("logdet=",logdet))
     logretval <- -(ncol(x) * log(2 * pi) + logdet + distval)/2
- #   print(paste("logretval=",logretval))
     if (log) 
         return(logretval)
     exp(logretval)
@@ -209,7 +206,7 @@ function(ds, print=TRUE)
 		foo<-function(x) {
 
 
-			vcv<-vcv.phylo(phy) #change back to tree
+			vcv<-vcv.phylo(tree) #change back to tree
 
 			index			<-	matrix(TRUE, n,n)
 			diag(index)		<- FALSE
@@ -223,8 +220,6 @@ function(ds, print=TRUE)
 			mu<-rep(mu, n)
 			
 			-dmvnorm(y, mu, vv, log=T)
-			print(-dmvnorm(y, mu, vv, log=T))
-			#print(paste("y=", y, "mu=", mu, "vv=", vv))
 		}
 
 		o<-nlm(tryFoo, p=start)
@@ -267,8 +262,6 @@ function(ds, print=TRUE)
 			mu<-rep(mu, n)
 			
 			-dmvnorm(y, mu, vv, log=T)
-			print(-dmvnorm(y, mu, vv, log=T))
-			#print(paste("y=", y, "mu=", mu, "vv=", vv))
 		}
 
 		o<-nlm(tryFoo, p=start)
@@ -290,7 +283,6 @@ function(ds, print=TRUE)
 		start<-log(userstart)
 	
 	}
-	#print(paste("userstart is ", userstart, "log(userstart) is ",start,sep=" ",collapse=" "))
 		lower=log(bounds[1,c("beta","delta")])
 		upper=log(bounds[2,c("beta","delta")])
 		
@@ -322,7 +314,6 @@ function(ds, print=TRUE)
 			#}
 			mu<-phylogMean(vv, y)
 			mu<-rep(mu, n)
-			#print(paste("delta = ",exp(x[2]),"beta = ",exp(x[1]), "lnL=",-dmvnorm(y, mu, vv, log=T)))
 			-dmvnorm(y, mu, vv, log=T)
 		}
 		#o<-optim(foo, p=start, lower=lower, upper=upper, method="SANN")
@@ -426,7 +417,6 @@ function(ds, print=TRUE)
 			
 			mu<-phylogMean(vv, y)
 			mu<-rep(mu, n)
-			#print(paste("beta = ",exp(x[1]),"alpha = ",exp(x[2])))
 			-dmvnormPseudoinverse(y, mu, vv, log=T)
 		}
 		
