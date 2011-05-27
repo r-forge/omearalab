@@ -1,7 +1,7 @@
 library(corpcor)
 
 dmvnormPseudoinverse<-function (x, mean, sigma, log = FALSE) {
-	print("in dmvnormPseudoinverse")
+	#print("in dmvnormPseudoinverse")
     if (is.vector(x)) {
         x <- matrix(x, ncol = length(x))
     }
@@ -21,11 +21,11 @@ dmvnormPseudoinverse<-function (x, mean, sigma, log = FALSE) {
         stop("mean and sigma have non-conforming size")
     }
     distval <- mahalanobis(x, center = mean, cov = pseudoinverse(sigma),inverted=TRUE)
-    print(paste("distval=",distval))
+  #  print(paste("distval=",distval))
     logdet <- sum(log(eigen(sigma, symmetric = TRUE, only.values = TRUE)$values))
-    print(paste("logdet=",logdet))
+  #  print(paste("logdet=",logdet))
     logretval <- -(ncol(x) * log(2 * pi) + logdet + distval)/2
-    print(paste("logretval=",logretval))
+ #   print(paste("logretval=",logretval))
     if (log) 
         return(logretval)
     exp(logretval)
@@ -409,7 +409,8 @@ function(ds, print=TRUE)
 	## modified 12 dec 07 to call ouMatrix(x) instead of vcv.phylo(ouTree(x))
 
 		k<-3
-		
+		nlm.print.level<-0
+		failureCountSwitch<-50
 		start=log(c(beta.start, 0.5))
 		lower=log(bounds[1,c("beta","alpha")])
 		upper=log(bounds[2,c("beta","alpha")])
@@ -425,7 +426,7 @@ function(ds, print=TRUE)
 			
 			mu<-phylogMean(vv, y)
 			mu<-rep(mu, n)
-			print(paste("beta = ",exp(x[1]),"alpha = ",exp(x[2])))
+			#print(paste("beta = ",exp(x[1]),"alpha = ",exp(x[2])))
 			-dmvnormPseudoinverse(y, mu, vv, log=T)
 		}
 		
@@ -438,21 +439,31 @@ function(ds, print=TRUE)
 		# Second one: try one with very strong constraints
 		tv<-var(y)
 		start=log(c(tv*2000, 1000))
-		outTries[[2]]<-nlm(foo, p=start)
+		outTries[[2]]<-nlm(foo, p=start,print.level=nlm.print.level)
 		#outTries[[2]]<-optim(foo, p=start, lower=lower, upper=upper, method="L")
 	
 
 	
 		# Try ten random ones
 		for(i in 1:10){
+			failureCount<-0
 			while(1) {
-
 				lower=c(runif(2, min=-20, max=-1))
 				upper=lower+runif(2, min=0, max=10)
 				start=c(runif(1, min=lower[1], max=upper[1]), runif(1, min=lower[2], max=upper[2]))
-				te<-try(outTries[[i+2]]<-nlm(foo, p=start), silent=T)
+				te<-try(outTries[[i+2]]<-nlm(foo, p=start,print.level=nlm.print.level,interlim=25), silent=T)
+				#print(te)
 				#te<-try(outTries[[i+2]]<-optim(foo, p=start, lower=lower, upper=upper, method="L"), silent=T)
 				if(class(te)!="try-error") break
+				failureCount<-failureCount+1
+				if (failureCount>failureCountSwitch) { #nlm isn't working, let's try optim
+					toptim<-try(outTries[[i+2]]<-optim(foo, p=start, lower=lower, upper=upper, method="L"), silent=T)
+					if (class(toptim)!="try-error") {
+						outTries[[i+2]]$estimate<-outTries[[i+2]]$par
+						outTries[[i+2]]$minimum<-outTries[[i+2]]$value
+						break
+					}
+				}
 				}
 				
 		}
@@ -461,14 +472,25 @@ function(ds, print=TRUE)
 		atry<- -5:4
 		stry<- log(tv*2*exp(atry))
 		for(i in 1:10){
+			failureCount<-0
 			while(1) {
-
 				lower=c(-20, -20)
 				upper=c(10, 10)
 				start=c(stry[i], atry[i])
-				te<-try(outTries[[i+12]]<-nlm(foo, p=start), silent=T)
+				te<-try(outTries[[i+12]]<-nlm(foo, p=start,print.level=nlm.print.level,interlim=25), silent=T)
+				#print(te)
 				#te<-try(outTries[[i+12]]<-optim(foo, p=start, lower=lower, upper=upper, method="L"), silent=T)
 				if(class(te)!="try-error") break
+				failureCount<-failureCount+1
+				if (failureCount>failureCountSwitch) { #nlm isn't working, let's try optim
+					toptim<-try(outTries[[i+12]]<-optim(foo, p=start, lower=lower, upper=upper, method="L"), silent=T)
+					if (class(toptim)!="try-error") {
+						outTries[[i+12]]$estimate<-outTries[[i+12]]$par
+						outTries[[i+12]]$minimum<-outTries[[i+12]]$value
+						break
+					}
+				}
+
 				}
 				
 		}
@@ -479,8 +501,8 @@ function(ds, print=TRUE)
 		ltry<-numeric(ntries)
 		lsol<-matrix(nrow= ntries, ncol=2)
 		for(j in 1:ntries) {
-				ltry[j]<-outTries[[j]]$value
-				lsol[j,]<-exp(outTries[[j]]$par)
+				ltry[j]<-outTries[[j]]$minimum
+				lsol[j,]<-exp(outTries[[j]]$estimate)
 			}
 
 		ltd<-ltry-min(ltry)
@@ -494,7 +516,7 @@ function(ds, print=TRUE)
 			
 		if(out$convergence!=0) {out$message="Warning: may not have converged to a proper solution."}
 
-		results<-list(lnl=-o$minimum, beta=exp(o$estimate[1]), alpha=exp(o$estimate[2]))	#convergence & message?		
+		results<-list(lnl=-out$minimum, beta=exp(out$estimate[1]), alpha=exp(out$estimate[2]))	#convergence & message?		
 		#results<-list(lnl=-out$value, beta= exp(out$par[1]), alpha=exp(out$par[2]), convergence=out$convergence, message=out$message, k=k)
 
 
