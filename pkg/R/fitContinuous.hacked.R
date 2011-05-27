@@ -1,6 +1,7 @@
 library(corpcor)
 
 dmvnormPseudoinverse<-function (x, mean, sigma, log = FALSE) {
+	print("in dmvnormPseudoinverse")
     if (is.vector(x)) {
         x <- matrix(x, ncol = length(x))
     }
@@ -20,8 +21,11 @@ dmvnormPseudoinverse<-function (x, mean, sigma, log = FALSE) {
         stop("mean and sigma have non-conforming size")
     }
     distval <- mahalanobis(x, center = mean, cov = pseudoinverse(sigma),inverted=TRUE)
+    print(paste("distval=",distval))
     logdet <- sum(log(eigen(sigma, symmetric = TRUE, only.values = TRUE)$values))
+    print(paste("logdet=",logdet))
     logretval <- -(ncol(x) * log(2 * pi) + logdet + distval)/2
+    print(paste("logretval=",logretval))
     if (log) 
         return(logretval)
     exp(logretval)
@@ -421,6 +425,7 @@ function(ds, print=TRUE)
 			
 			mu<-phylogMean(vv, y)
 			mu<-rep(mu, n)
+			print(paste("beta = ",exp(x[1]),"alpha = ",exp(x[2])))
 			-dmvnormPseudoinverse(y, mu, vv, log=T)
 		}
 		
