@@ -1,5 +1,6 @@
 source("V4_UtilityFns.R")
 setwd("/Users/bomeara/Sites/Floral/RunsApril2011/Summaries")
+ls()
 highlevel.dataframe<-data.frame()
 for (T in 1:5) {
 	for (D in 1:6) {
@@ -15,9 +16,10 @@ for (T in 1:5) {
 	}
 }
 
-rm(summary.dataframe)
+rm("summary.dataframe")
 highlevel.dataframe->summary.dataframe
-rm(highlevel.dataframe)
+rm("highlevel.dataframe")
+ls()
 deltaAIC<-summary.dataframe$AIC-min(summary.dataframe$AIC)
 relativeLikelihood<-exp(-0.5 * deltaAIC)
 AICweight<-relativeLikelihood/sum(relativeLikelihood)
