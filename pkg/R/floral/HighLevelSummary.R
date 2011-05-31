@@ -16,10 +16,10 @@ for (T in 1:5) {
 	}
 }
 
-highlevel.dataframe->summary.dataframe
 ls()
-deltaAIC<-summary.dataframe$AIC-min(summary.dataframe$AIC)
+deltaAIC<-highlevel.dataframe$AIC-min(highlevel.dataframe$AIC)
 relativeLikelihood<-exp(-0.5 * deltaAIC)
 AICweight<-relativeLikelihood/sum(relativeLikelihood)
-summary.dataframe<-cbind(deltaAIC,AICweight,summary.dataframe)
-summarizeModelWeights(summary.dataframe=summary.dataframe,S=S,transitionModels=transitionModels, diversificationModels=diversificationModels)
+highlevel.dataframe<-cbind(deltaAIC,AICweight,highlevel.dataframe)
+save(highlevel.dataframe,file="Highlevel.dataframe.Rsave",compress=TRUE)
+summarizeModelWeights(summary.dataframe=highlevel.dataframe,S=S,transitionModels=transitionModels, diversificationModels=diversificationModels)
