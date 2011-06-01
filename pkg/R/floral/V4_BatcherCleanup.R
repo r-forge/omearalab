@@ -8,19 +8,26 @@ source("/data/abc/RunsApril2011/UnifiedApproachScripts/V4_UtilityFns.R")
 focalVectorList<-getAllInterestingFocalVectorsStringsEfficient(S)
 
 totalRuns<-0
+totalPossibleRuns<-0
+doneRuns<-0
+insufficientNumbers<-0
 runsInFile<-0
 pbsCommands=""
+print(c("Theoretical # runs","Runs without enough combos","Possibly valid runs","Completed valid runs"))
 
 for (focalIndex in 1:length(focalVectorList)) {
 	focalVector<-stringToVector(unlist(focalVectorList[[focalIndex]]))
 	for (transitionModelIndex in 1:dim(transitionModels)[1]) {
-		mkdirCmd=paste("mkdir -p ",paste("/data/abc/RunsApril2011/ActualRuns/T",transitionModelIndex,sep="",collapse=""),sep="",collapse="")
-		suppressWarnings(system(mkdirCmd))
+		#mkdirCmd=paste("mkdir -p ",paste("/data/abc/RunsApril2011/ActualRuns/T",transitionModelIndex,sep="",collapse=""),sep="",collapse="")
+		#suppressWarnings(system(mkdirCmd))
 		for (diversificationModelIndex in 1:dim(diversificationModels)[1]) {
-			mkdirCmd=paste("mkdir -p ",paste("/data/abc/RunsApril2011/ActualRuns/T",transitionModelIndex,"/T",transitionModelIndex,"_D",diversificationModelIndex,sep="",collapse=""),sep="",collapse="")
-			suppressWarnings(system(mkdirCmd))
+			#mkdirCmd=paste("mkdir -p ",paste("/data/abc/RunsApril2011/ActualRuns/T",transitionModelIndex,"/T",transitionModelIndex,"_D",diversificationModelIndex,sep="",collapse=""),sep="",collapse="")
+			#suppressWarnings(system(mkdirCmd))
+			totalPossibleRuns<-totalPossibleRuns+1
+			insufficientNumbers<-insufficientNumbers+1
 			if (numberFocalCombos(focalVector) >= transitionModels$min_focalcombos[transitionModelIndex]) { #if there aren't enough combos to make the model appropriate, don't run it
 				if(numberFocalCombos(focalVector) >= diversificationModels$min_focalcombos[diversificationModelIndex]) { #if there aren't enough combos to make the model appropriate, don't run it
+					insufficientNumbers<-insufficientNumbers-1 #we did run it
 					totalRuns<-totalRuns+1
 					#yay! Now we can run!
 					nameRoot<-paste("T",transitionModelIndex,"_D",diversificationModelIndex,"_",vectorToString(getFocalSummaryLabel(focalVector,S,"x")),sep="",collapse="")
@@ -53,7 +60,7 @@ for (focalIndex in 1:length(focalVectorList)) {
 						pbsCommands=paste(pbsCommands,"\nrm ",' *.csv *.t ',sep="")
 						runsInFile=runsInFile+1
 						print(paste("Queuing run ",nameRoot," at ",date(),sep="",collapse=""))
-						if (runsInFile>1) { #change this to deal with remnants
+						if (runsInFile>0) { #change this to deal with remnants
 							cat(pbsCommands,file=paste(dirRoot,'/run.sh',sep=""),append=FALSE)
 							print(pbsCommands)
 							#print(paste("cd ",paste("../ActualRuns/P",partitionSchemeText,sep="",collapse=""),"/",nameRoot,sep=""))
@@ -63,16 +70,20 @@ for (focalIndex in 1:length(focalVectorList)) {
 							system("chmod u+x run.sh")
 							system("qsub run.sh")
 							setwd(origWD)
-							Sys.sleep(10)
+							Sys.sleep(2)
 							runsInFile=0
 							pbsCommands=""
 						}
-						while(as.numeric(system("qstat | grep -c bomeara",intern=TRUE))>300) {
+						while(as.numeric(system("qstat | grep -c bomeara",intern=TRUE))>600) {
 							Sys.sleep(117)
 						}
-					}			
+					}
+					else {
+						doneRuns<-doneRuns+1
+					}
 				}
 			}
 		}
+		print(c(totalPossibleRuns,insufficientNumbers,totalRuns,doneRuns))
 	}
 }
