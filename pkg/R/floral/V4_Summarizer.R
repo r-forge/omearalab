@@ -23,6 +23,7 @@ summarizeIndiv<-function(actualT,actualD,focalVectorList) {
 	if (length(which(ls()=="summary.dataframe"))==1) {
 		old.summary.dataframe<-summary.dataframe
 		loadedOld<-TRUE
+		print(paste("length of original old.summary.dataframe = ",dim(old.summary.dataframe)[2]))
 	}
 	print(paste(runName," loaded old summary = ",loadedOld))
 	totalRuns<-0
@@ -66,7 +67,7 @@ summarizeIndiv<-function(actualT,actualD,focalVectorList) {
 								tmp.dataframe<-cbind(tmp.dataframe,data.frame(matrix(final.matrix.all[qIndices,1],nrow=1,dimnames=list("",names(final.matrix.all[qIndices,1])))),data.frame(matrix(final.matrix.all[lambdaIndices,1],nrow=1,dimnames=list("",names(final.matrix.all[lambdaIndices,1])))),data.frame(matrix(final.matrix.all[muIndices,1],nrow=1,dimnames=list("",names(final.matrix.all[muIndices,1])))))
 								summary.dataframe<-rbind(summary.dataframe,tmp.dataframe)
 								print(paste(runName,"     loaded completed run ",completedRuns,"/",totalRuns,sep=""))
-								if(completedRuns%%100==0) { #note that this omits the last completed run, still in RateSummaryT...
+								if(completedRuns%%20==0) { #note that this omits the last completed run, still in RateSummaryT...
 									save(summary.dataframe,file=paste("../Summaries/IntermediateRateSummaryT",actualT,"D",actualD,".Rsave"),compress=TRUE)
 								}
 
@@ -111,17 +112,18 @@ summarizeIndiv<-function(actualT,actualD,focalVectorList) {
 	else {
 		names(summary.dataframe)<-names(old.summary.dataframe)
 	}
-
+	save(summary.dataframe,file=paste("../Summaries/PreMergeRateSummaryT",actualT,"D",actualD,".Rsave"),compress=TRUE)
 	if(loadedOld==TRUE) {
 		print(paste(runName," now doing rbind for old and new summary.dataframe"))
 		summary.dataframe<-rbind(old.summary.dataframe,summary.data.frame)
+		print(paste(runName," now finished doing rbind for old and new summary.dataframe"))
 	}
 	print(paste(runName," finished pulling in data, now saving at ",date()))
 	save(summary.dataframe,file=paste("../Summaries/RateSummaryT",actualT,"D",actualD,".Rsave"),compress=TRUE)
 	print(paste(runName," finished saving at ",date()))
 	if (actualT==5) {
 		if (actualD==6) {
-			system('nohup R CMD BATCH V4_Summarizer.R > /dev/null &')
+			#system('nohup R CMD BATCH V4_Summarizer.R > /dev/null &')
 		}
 	}
 	return(paste("T",actualT,"D",actualD,completedRuns,"/",totalRuns))

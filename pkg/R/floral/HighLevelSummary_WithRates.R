@@ -6,7 +6,7 @@ for (T in 1:5) {
 	for (D in 1:6) {
 		load(paste("RateSummaryT",T,"D",D,".Rsave"))
 		if (T+D==2) { #first one
-			highlevel.dataframe<-summary.dataframe[,3:13]
+			highlevel.dataframe<-summary.dataframe[,3:(dim(summary.dataframe)[2])]
 		}
 		else {
 			highlevel.dataframe<-rbind(highlevel.dataframe,summary.dataframe[,3:(dim(summary.dataframe)[2])])
