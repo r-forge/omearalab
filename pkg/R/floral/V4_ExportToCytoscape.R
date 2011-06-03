@@ -27,22 +27,29 @@ qDataFrame$q=qDataFrame$q/min(qDataFrame$q)
 print(qDataFrame)
 write.table(qDataFrame,file="~/Sites/Floral/RunsApril2011/Summaries/Cytoscape_edges.txt",quote=FALSE,sep="\t",row.names=FALSE,col.names=TRUE)
 
-nodesDataFrame<-data.frame()
+#nodesDataFrame<-data.frame()
 #now the nodes
-for (comboDecimal in 1:S^7) {
+try(for (comboDecimal in 1:S^7) {
   comboName<-comboAsBinaryString(comboDecimal,S)
   birthRate<-as.vector(bestValues[1,which(names(bestValues)==paste("lambda",comboName,sep=""))])
   deathRate<-as.vector(bestValues[1,which(names(bestValues)==paste("mu",comboName,sep=""))])
   diversificationRate<-birthRate-deathRate
   turnoverRate<-birthRate+deathRate
-   tmp.dataFrame<-data.frame(comboName,birthRate,deathRate,diversificationRate,turnoverRate)
+  tmp.dataFrame<-data.frame(comboName,birthRate,deathRate,diversificationRate,turnoverRate)
   names(tmp.dataFrame)<-c("combo","birth","death","diversification","turnover")
-  tmp.dataFrame<-data.frame(5)
- if (comboDecimal==1) {
-   nodesDataFrame<-tmp.dataFrame
+ # tmp.dataFrame<-data.frame(5)
+if (comboDecimal==1) {
+   ndf2<-tmp.dataFrame
   }
   else {
-    nodesDataFrame<-rbind(nodesDataFrame,tmp.dataFrame)
+    print(comboDecimal)
+    print(tmp.dataFrame)
+    ndf2<-rbind(ndf2,tmp.dataFrame)
+    rm(tmp.dataFrame)
+    print("done rbinding")
   }
-  print(nodesDataFrame)
-}
+  print(dim(ndf2))
+  ndf3<-ndf2
+  print("done if else")
+})
+print("done combo decimal")
