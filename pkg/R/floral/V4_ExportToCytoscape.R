@@ -27,6 +27,33 @@ qDataFrame$q=qDataFrame$q/min(qDataFrame$q)
 print(qDataFrame)
 write.table(qDataFrame,file="~/Sites/Floral/RunsApril2011/Summaries/Cytoscape_edges.txt",quote=FALSE,sep="\t",row.names=FALSE,col.names=TRUE)
 
+
+#get info on number of combos
+sourcetraits="../SourceData/Steb7binaryJan19prunenoper_BCOPrune.csv"
+file<-sourcetraits
+phy<-"../SourceData/floral_1.nex"
+tree<-read.nexus(phy)
+data<-read.csv(file)
+colnamesVector<-colnames(data)
+names<-colnamesVector[2:length(colnamesVector)]
+#keep only 1 (1st 25%) and 2 (2nd 25%) in Selection column
+#subdata<-subset(data,data$Selection<=2)
+#already done, so just
+subdata<-data #to minimize recoding
+
+#delete taxa with missing data anywhere
+for (colToExamine in 2:length(colnamesVector)) {
+	subdata<-subdata[subdata[,colToExamine]!="?",]
+}
+
+comboCounts<-rep(0,2^7)
+for(i in 1:dim(subdata)[1]) {
+  currentVector<-as.numeric(unlist(subdata[i,2:8]))
+  comboDecimal<-comboAsDecimal(currentVector,S)
+  comboCounts[comboDecimal]<-comboCounts[comboDecimal]+1
+}
+comboProportions<-comboCounts/(sum(comboCounts))
+
 #nodesDataFrame<-data.frame()
 #now the nodes
 try(for (comboDecimal in 1:S^7) {
@@ -35,8 +62,8 @@ try(for (comboDecimal in 1:S^7) {
   deathRate<-as.vector(bestValues[1,which(names(bestValues)==paste("mu",comboName,sep=""))])
   diversificationRate<-birthRate-deathRate
   turnoverRate<-birthRate+deathRate
-  tmp.dataFrame<-data.frame(comboName,birthRate,deathRate,diversificationRate,turnoverRate)
-  names(tmp.dataFrame)<-c("combo","birth","death","diversification","turnover")
+  tmp.dataFrame<-data.frame(comboName,birthRate,deathRate,diversificationRate,turnoverRate,comboCounts[comboDecimal],comboProportions[comboDecimal],vectorMismatch(comboAsBinaryVector(1,S),comboAsBinaryVector(comboDecimal,S)))
+  names(tmp.dataFrame)<-c("combo","birth","death","diversification","turnover","number_taxa_with_state","proportion_taxa_with_state","steps_from_root")
  # tmp.dataFrame<-data.frame(5)
 if (comboDecimal==1) {
    ndf2<-tmp.dataFrame
@@ -53,3 +80,5 @@ if (comboDecimal==1) {
   print("done if else")
 })
 print("done combo decimal")
+print(ndf3)
+write.table(ndf3,file="~/Sites/Floral/RunsApril2011/Summaries/Cytoscape_nodes.txt",quote=FALSE,sep="\t",row.names=FALSE,col.names=TRUE)
