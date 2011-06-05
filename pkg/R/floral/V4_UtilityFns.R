@@ -267,7 +267,8 @@ convertFocalLabelToFocalVector<-function(focalLabel,S,uncertainty="2") {
 	return(focalVector)
 }
 
-getAllInterestingFocalVectorsStringsEfficient<-function(S) {
+#this was the old one, found out it missed some focal vector (things that started with 2****)
+getAllInterestingFocalVectorsStringsEfficientOLD<-function(S) {
 	focalVectorList<-list()
 	possibleFocalLabels<-blockparts(1:S,2*S,include.fewer=TRUE)
 	which(apply(possibleFocalLabels,2,max)>2)->badMaxVals #0 and 1 are obvious: here, 2 is used instead of * for focal sets allowing multiple combos: 001* = 0010 & 0011
@@ -279,6 +280,25 @@ getAllInterestingFocalVectorsStringsEfficient<-function(S) {
 		names(focalVectorList[[length(focalVectorList)]])<-focalLabel
 	}
 	return(focalVectorList)
+}
+
+#Here's the new one that includes 2******
+getAllInterestingFocalVectorsStringsEfficient<-function(S) {
+  focalVectorList<-list()
+   maxNumber<-3^S #could have state 0, 1, or 2
+   for (i in 0:(maxNumber-1)) {
+      #print(paste("now working on branch ",i))
+      focalVectorLabel<-vectorToString(toBinLarge(i,3,S))
+     # print(focalVectorLabel)
+      focalVector<-convertFocalLabelToFocalVector(focalVectorLabel,S,"2")
+      #print(focalVector)
+#      names(focalVector)<-focalVectorLabel
+#      print(focalVectorLabel)
+      focalVectorList<-append(focalVectorList,vectorToString(focalVector))
+      names(focalVectorList[[i+1]])<-focalVectorLabel
+     # print(focalVectorList)
+   }
+   return(focalVectorList)
 }
 
 summarizeModelWeights<-function(summary.dataframe=summary.dataframe,S=S,transitionModels=transitionModels, diversificationModels=diversificationModels) {
