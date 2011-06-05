@@ -74,7 +74,7 @@ for (focalIndex in 1:length(focalVectorList)) {
 							runsInFile=0
 							pbsCommands=""
 						}
-						while(as.numeric(system("/home/bomeara/bin/nicecountQWme",intern=TRUE))>10) {
+						while(as.numeric(system("/home/bomeara/bin/nicecountQWme",intern=TRUE))>100) {
 							Sys.sleep(117)
 						}
 					}
