@@ -18,11 +18,11 @@ print(c("Theoretical # runs","Runs without enough combos","Possibly valid runs",
 for (focalIndex in 1:length(focalVectorList)) {
 	focalVector<-stringToVector(unlist(focalVectorList[[focalIndex]]))
 	for (transitionModelIndex in 1:dim(transitionModels)[1]) {
-		#mkdirCmd=paste("mkdir -p ",paste("/data/abc/RunsApril2011/ActualRuns/T",transitionModelIndex,sep="",collapse=""),sep="",collapse="")
-		#suppressWarnings(system(mkdirCmd))
+		mkdirCmd=paste("mkdir -p ",paste("/data/abc/RunsApril2011/ActualRuns/T",transitionModelIndex,sep="",collapse=""),sep="",collapse="")
+		suppressWarnings(system(mkdirCmd))
 		for (diversificationModelIndex in 1:dim(diversificationModels)[1]) {
-			#mkdirCmd=paste("mkdir -p ",paste("/data/abc/RunsApril2011/ActualRuns/T",transitionModelIndex,"/T",transitionModelIndex,"_D",diversificationModelIndex,sep="",collapse=""),sep="",collapse="")
-			#suppressWarnings(system(mkdirCmd))
+			mkdirCmd=paste("mkdir -p ",paste("/data/abc/RunsApril2011/ActualRuns/T",transitionModelIndex,"/T",transitionModelIndex,"_D",diversificationModelIndex,sep="",collapse=""),sep="",collapse="")
+			suppressWarnings(system(mkdirCmd))
 			totalPossibleRuns<-totalPossibleRuns+1
 			insufficientNumbers<-insufficientNumbers+1
 			if (numberFocalCombos(focalVector) >= transitionModels$min_focalcombos[transitionModelIndex]) { #if there aren't enough combos to make the model appropriate, don't run it
@@ -49,7 +49,7 @@ for (focalIndex in 1:length(focalVectorList)) {
 							#else if (partitionSize<=3) {
 							#	queue="long*" #24 hr
 							#}
-							queue="long*"
+							queue="medium*"
 							pbsCommands=paste(pbsCommands,'\n#$ -q ',queue,sep="")
 							pbsCommands=paste(pbsCommands,'#$ -M omeara.brian@gmail.com', '#$ -m beas', '#$ -S /bin/bash',sep="\n")
 							pbsCommands=paste(pbsCommands,"\n","#$ -N R_",gsub("_","",partitionSchemeText),"\n", 'module load R/2.12.0',sep="")
@@ -74,7 +74,7 @@ for (focalIndex in 1:length(focalVectorList)) {
 							runsInFile=0
 							pbsCommands=""
 						}
-						while(as.numeric(system("qstat | grep -c bomeara",intern=TRUE))>222) {
+						while(as.numeric(system("/home/bomeara/bin/nicecountQWme",intern=TRUE))>10) {
 							Sys.sleep(117)
 						}
 					}
