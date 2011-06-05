@@ -1,6 +1,6 @@
 #this will export the correct formats for cytoscape
 source("~/Sites/Floral/RunsApril2011/UnifiedApproachScripts/V4_UtilityFns.R")
-load("~/Sites/Floral/RunsApril2011/Summaries/RateSummaryT 1 D 5 .Rsave") #replace with frame of all data
+load("~/Sites/Floral/RunsApril2011/Summaries/RateSummaryT 1 D 6 .Rsave") #replace with frame of all data
 sdf<-summary.dataframe #just to save on typing
 rm(summary.dataframe)
 bestValues<-sdf[which.max(sdf$AICweight),]
@@ -82,3 +82,5 @@ if (comboDecimal==1) {
 print("done combo decimal")
 print(ndf3)
 write.table(ndf3,file="~/Sites/Floral/RunsApril2011/Summaries/Cytoscape_nodes.txt",quote=FALSE,sep="\t",row.names=FALSE,col.names=TRUE)
+
+subdata

@@ -47,9 +47,9 @@ for (focalIndex in 1:length(focalVectorList)) {
 							#	queue="short*" #2 hr
 							#}
 							#else if (partitionSize<=3) {
-							#	queue="medium*" #24 hr
+							#	queue="long*" #24 hr
 							#}
-							queue="medium*"
+							queue="long*"
 							pbsCommands=paste(pbsCommands,'\n#$ -q ',queue,sep="")
 							pbsCommands=paste(pbsCommands,'#$ -M omeara.brian@gmail.com', '#$ -m beas', '#$ -S /bin/bash',sep="\n")
 							pbsCommands=paste(pbsCommands,"\n","#$ -N R_",gsub("_","",partitionSchemeText),"\n", 'module load R/2.12.0',sep="")
@@ -74,7 +74,7 @@ for (focalIndex in 1:length(focalVectorList)) {
 							runsInFile=0
 							pbsCommands=""
 						}
-						while(as.numeric(system("qstat | grep -c bomeara",intern=TRUE))>600) {
+						while(as.numeric(system("qstat | grep -c bomeara",intern=TRUE))>222) {
 							Sys.sleep(117)
 						}
 					}
