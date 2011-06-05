@@ -52,7 +52,7 @@ for (focalIndex in 1:length(focalVectorList)) {
 							queue="medium*"
 							pbsCommands=paste(pbsCommands,'\n#$ -q ',queue,sep="")
 							pbsCommands=paste(pbsCommands,'#$ -M omeara.brian@gmail.com', '#$ -m beas', '#$ -S /bin/bash',sep="\n")
-							pbsCommands=paste(pbsCommands,"\n","#$ -N R_",gsub("_","",partitionSchemeText),"\n", 'module load R/2.12.0',sep="")
+							pbsCommands=paste(pbsCommands,"\n","#$ -N R_",vectorToString(getFocalSummaryLabel(focalVector,S,"x")),"\n", 'module load R/2.12.0',sep="")
 						}
 						pbsCommands=paste(pbsCommands,"\n",'cd /data/abc/RunsApril2011/ActualRuns/T',transitionModelIndex,"/T",transitionModelIndex,"_D",diversificationModelIndex,"/",nameRoot,sep="",collapse="")
 						pbsCommands=paste(pbsCommands,"\n","/data/apps/R/R-2.12.0/bin/R CMD BATCH run.R",sep="")
