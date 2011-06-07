@@ -1,43 +1,10 @@
 library(corpcor)
 
-dmvnormPseudoinverse<-function (x, mean, sigma, log = FALSE) {
-	#print("in dmvnormPseudoinverse")
-    if (is.vector(x)) {
-        x <- matrix(x, ncol = length(x))
-    }
-    if (missing(mean)) {
-        mean <- rep(0, length = ncol(x))
-    }
-    if (missing(sigma)) {
-        sigma <- diag(ncol(x))
-    }
-    if (NCOL(x) != NCOL(sigma)) {
-        stop("x and sigma have non-conforming size")
-    }
-    if (!isSymmetric(sigma, tol = sqrt(.Machine$double.eps))) {
-        stop("sigma must be a symmetric matrix")
-    }
-    if (length(mean) != NROW(sigma)) {
-        stop("mean and sigma have non-conforming size")
-    }
-    #print("sigma")
-    #print(sigma)
-    #print(" starting mahalanobis") 
-    distval <- mahalanobis(x, center = mean, cov = pseudoinverse(sigma),inverted=TRUE)
-    #print(" finishing mahalanobis") 
-
-    logdet <- sum(log(eigen(sigma, symmetric = TRUE, only.values = TRUE)$values))
-    logretval <- -(ncol(x) * log(2 * pi) + logdet + distval)/2
-    #print("leaving dmvnormPseudoinverse")
-    if (log) 
-        return(logretval)
-    exp(logretval)
-}
 
 `fitContinuous.hacked` <-
-function(phy, data, data.names=NULL, model=c("BM", "OU", "lambda", "kappa", "delta", "EB", "white", "trend"), bounds=NULL,  meserr=NULL, userstart=NULL)
+function(phy, data, data.names=NULL, model=c("BM", "OU", "lambda", "kappa", "delta", "EB", "white", "trend"), bounds=NULL,  meserr=NULL, userstart=NULL, badLnL=10000)
 {
-	
+	#print(badLnL)
 	# sort is T because sub-functions assume data are in
 	# this particular order
 	
@@ -83,6 +50,7 @@ function(phy, data, data.names=NULL, model=c("BM", "OU", "lambda", "kappa", "del
     #--------------------------------
 	ds			<- list()
    		ds$tree 		<- td$phy          # TIP data 
+   		ds$badLnL <- badLnL
     #--------------------------------
     #--- SET MODEL SPECIFICATIONS ---
     #--------------------------------
@@ -146,6 +114,7 @@ function(ds, print=TRUE)
 {
 	bounds 	<- ds$bounds
 	model 	<- ds$model
+	badLnL	<- ds$badLnL
 	n 		<- length(ds$data)
 	userstart <- ds$userstart
 
@@ -171,21 +140,22 @@ function(ds, print=TRUE)
 		vcv<-vcv.phylo(tree)
 
 		start=log(beta.start)
-		lower=log(bounds[1,"beta"])
-		upper=log(bounds[2,"beta"])
+		#lower=log(bounds[1,"beta"])
+		#upper=log(bounds[2,"beta"])
 		
 		tryFoo<-function(x) {
 			options(warn=-1) #do this so that warnings and error get surpressed. Gets generated from exp(param)=Inf in phylogmean
 			#print ("in tryFoo")
-			badLnL=100000
+			#badLnL=100000
 			result<-try(foo(x), silent=T)
-			if (is.finite(result)) {
+			if (is.finite(result) && result < log(.Machine$double.xmax)) {
 				return(result)
 			}
 			else {
 				#print("in badLnL")
 				return(badLnL)
 			}
+		options(warn=0) 
 		}
 		
 		foo<-function(x) {
@@ -209,21 +179,23 @@ function(ds, print=TRUE)
 		k<-3
 		
 		start=log(c(beta.start, 0.5))
-		lower=log(bounds[1,c("beta","lambda")])
-		upper=log(bounds[2,c("beta","lambda")])
+		#lower=log(bounds[1,c("beta","lambda")])
+		#upper=log(bounds[2,c("beta","lambda")])
 		
 		tryFoo<-function(x) {
 			options(warn=-1) #do this so that warnings and error get surpressed. Gets generated from exp(param)=Inf in phylogmean
 			#print ("in tryFoo")
-			badLnL=100000
+			#badLnL=100000
 			result<-try(foo(x), silent=T)
-			if (is.finite(result)) {
+			if (is.finite(result) && result < log(.Machine$double.xmax)) {
+				#print(paste("in is.finite, result =", result))
 				return(result)
 			}
 			else {
 				#print("in badLnL")
 				return(badLnL)
 			}
+		options(warn=0) 
 		}
 			
 		foo<-function(x) {
@@ -265,19 +237,20 @@ function(ds, print=TRUE)
 	} else if (model=="kappa"){
 		k<-3
 		start=log(c(beta.start, 0.5))
-		lower=log(bounds[1,c("beta","kappa")])
-		upper=log(bounds[2,c("beta","kappa")])
+		#lower=log(bounds[1,c("beta","kappa")])
+		#upper=log(bounds[2,c("beta","kappa")])
 				
 		tryFoo<-function(x) {
 			options(warn=-1) #do this so that warnings and error get surpressed. Gets generated from exp(param)=Inf in phylogmean
-			badLnL=100000
+			#badLnL=100000
 			result<-try(foo(x), silent=T)
-			if (is.finite(result)) {
+			if (is.finite(result) && result < log(.Machine$double.xmax)) {
 				return(result)
 			}
 			else {
 				return(badLnL)
 			}
+		options(warn=0) 
 		}
 		
 		foo<-function(x) {
@@ -315,19 +288,23 @@ function(ds, print=TRUE)
 		start<-log(userstart)
 	
 	}
-		lower=log(bounds[1,c("beta","delta")])
-		upper=log(bounds[2,c("beta","delta")])
+		#lower=log(bounds[1,c("beta","delta")])
+		#upper=log(bounds[2,c("beta","delta")])
 		
 		tryFoo<-function(x) {
 			options(warn=-1) #do this so that warnings and error get surpressed. Gets generated from exp(param)=Inf in phylogmean
-			badLnL=100000
+			#badLnL=100000
 			result<-try(foo(x), silent=T)
-			if (is.finite(result)) {
+			#print(paste("badLnL in delta is set to",badLnL))
+			if (is.finite(result) && result < log(.Machine$double.xmax)) {
+				#print(paste("in is.finite, result =", result))
 				return(result)
 			}
 			else {
 				return(badLnL)
+				#print("in badLnL")
 			}
+		options(warn=0) 
 		}
 		
 		foo<-function(x) {
@@ -340,7 +317,7 @@ function(ds, print=TRUE)
 			
 			diag(vv)<-diag(vv)+meserr^2
 			#determinantVCV<-det(vv)
-			#badLnL=100000
+			badLnL=100000
 			#if (determinantVCV==0){ #old delta had bounds, so couldn't get very low values and so didn't get singular matrices. Now that can happen, so have to guard against it
 			#	warning("Possibly singular variance-covariance matrix, so giving this particular parameter combination a very bad likelihood score (rather than crashing)")
 			#	return(badLnL)
@@ -360,10 +337,22 @@ function(ds, print=TRUE)
 		
 		k<-2
 		start=c(mean(y), log(var(y)))
-		lower=c(-Inf, log(bounds[1,"nv"]))
-		upper=c(Inf, log(bounds[2, "nv"]))
+		#lower=c(-Inf, log(bounds[1,"nv"]))
+		#upper=c(Inf, log(bounds[2, "nv"]))
 		
-		lnl.noise<- function (p, x, se)
+		tryLnl.noise<-function (p, x, se) {
+			options(warn=-1) #do this so that warnings and error get surpressed. Gets generated from exp(param)=Inf in phylogmean
+			#badLnL=100000
+			result<-try(Lnl.noise(p, x, se), silent=T)
+			if (is.finite(result) && result < log(.Machine$double.xmax)) {
+				return(result)
+			}
+			else {
+				return(badLnL)
+			}
+		}
+		
+		Lnl.noise<- function (p, x, se)
 		# p is the vector of parameters, tree is not needed
 		# x and se are trait means and std errors
 		{
@@ -379,7 +368,7 @@ function(ds, print=TRUE)
   			-dmvnorm(x, M, VV, log=TRUE)
 		}
 
-		o<- nlm(lnl.noise, p=start, x=y, se=meserr)		
+		o<- nlm(tryLnl.noise, p=start, x=y, se=meserr)		
 		#o<- optim(start, fn=lnl.noise, x=y, se=meserr, lower=lower, upper=upper, method="L")
 		
 		results<-list(lnl=-o$minimum, beta=exp(o$estimate[1]), nv=exp(o$estimate[2]))	
@@ -398,11 +387,22 @@ function(ds, print=TRUE)
 			if(is.ultrametric(tree))
 				cat("WARNING: Cannot estimate a trend with an ultrametric tree; lnl will be the same as the BM model")
 		}
-		lower=c(-Inf, log(bounds[1,"beta"]), bounds[1,"mu"])
-		upper=c(Inf, log(bounds[2,"beta"]), bounds[2,"mu"])
+		#lower=c(-Inf, log(bounds[1,"beta"]), bounds[1,"mu"])
+		#upper=c(Inf, log(bounds[2,"beta"]), bounds[2,"mu"])
 		
-
-		lnl.BMtrend<- function(p, vcv, x, se)
+		tryLnl.BMtrend <-function(p, vcv, x, se) {
+			options(warn=-1) #do this so that warnings and error get surpressed. Gets generated from exp(param)=Inf in phylogmean
+			#badLnL=100000
+			result<-try(Lnl.BMtrend(p, vcv, x, se), silent=T)
+			if (is.finite(result) && result < log(.Machine$double.xmax)) {
+				return(result)
+			}
+			else {
+				return(badLnL)
+			}
+		}
+		
+		Lnl.BMtrend<- function(p, vcv, x, se)
 		# p is vector of parameters, tr is tree
 		# x and se are vectors of trait means and standard errors
 		{
@@ -419,7 +419,7 @@ function(ds, print=TRUE)
   			- dmvnorm(x, M, VV, log=TRUE)
   		}
 
-		o<- nlm(lnl.BMtrend, p=p0, vcv=vcv, x=y, se=meserr)
+		o<- nlm(tryLnl.BMtrend, p=p0, vcv=vcv, x=y, se=meserr)
 		#o<- optim(p0, fn=lnl.BMtrend, vcv=vcv, x=y, se=meserr, lower=lower, upper=upper, method="L")
 		
 		names(o$par)<-NULL
@@ -436,23 +436,24 @@ function(ds, print=TRUE)
 		nlm.print.level<-0
 		failureCountSwitch<-50
 		start=log(c(beta.start, 0.5))
-		lower=log(bounds[1,c("beta","alpha")])
-		upper=log(bounds[2,c("beta","alpha")])
+		#lower=log(bounds[1,c("beta","alpha")])
+		#upper=log(bounds[2,c("beta","alpha")])
 	
 		vcvOrig<-vcv.phylo(tree)
 
 		tryFoo<-function(x) {
 			options(warn=-1) #do this so that warnings and error get surpressed. Gets generated from exp(param)=Inf in phylogmean
 			#print ("in tryFoo")
-			badLnL=100000
+			#badLnL=100000
 			result<-try(foo(x), silent=T)
-			if (is.finite(result)) {
+			if (is.finite(result) && result < log(.Machine$double.xmax)) {
 				return(result)
 			}
 			else {
 				#print("in badLnL")
 				return(badLnL)
 			}
+		options(warn=0) 
 		}
 		
 		foo<-function(x) {
@@ -552,11 +553,12 @@ function(ds, print=TRUE)
 		us<-lsol[gc,1]
 		usc<-sum((us-min(us))>0.01)			
 		out<-outTries[[b[1]]]	
+		print(out)
+	
 		if(usc>1) {out$message="Warning: likelihood surface is flat."}
 			
-		if(out$convergence!=0) {out$message="Warning: may not have converged to a proper solution."}
 
-		results<-list(lnl=-out$minimum, beta=exp(out$estimate[1]), alpha=exp(out$estimate[2]))	#convergence & message?		
+		results<-list(lnl=-out$minimum, beta=exp(out$estimate[1]), alpha=exp(out$estimate[2]))	
 		#results<-list(lnl=-out$value, beta= exp(out$par[1]), alpha=exp(out$par[2]), convergence=out$convergence, message=out$message, k=k)
 
 
@@ -567,21 +569,22 @@ function(ds, print=TRUE)
 
 		k<-3
 		start=c(log(beta.start), 0.01)
-		lower=c(log(bounds[1,"beta"]),bounds[1,"a"])
-		upper=c(log(bounds[2,"beta"]),bounds[2,"a"])
+		#lower=c(log(bounds[1,"beta"]),bounds[1,"a"])
+		#upper=c(log(bounds[2,"beta"]),bounds[2,"a"])
 		
 		tryFoo<-function(x) {
 			options(warn=-1) #do this so that warnings and error get surpressed. Gets generated from exp(param)=Inf in phylogmean
 			#print ("in tryFoo")
-			badLnL=100000
+			#badLnL=100000
 			result<-try(foo(x), silent=T)
-			if (is.finite(result)) {
+			if (is.finite(result) && result < log(.Machine$double.xmax)) {
 				return(result)
 			}
 			else {
 				#print("in badLnL")
 				return(badLnL)
 			}
+		options(warn=0) 
 		}
 		
 		foo<-function(x) {
@@ -613,9 +616,41 @@ function(ds, print=TRUE)
 }
 
 
+dmvnormPseudoinverse<-function (x, mean, sigma, log = FALSE) {
+	#print("in dmvnormPseudoinverse")
+    if (is.vector(x)) {
+        x <- matrix(x, ncol = length(x))
+    }
+    if (missing(mean)) {
+        mean <- rep(0, length = ncol(x))
+    }
+    if (missing(sigma)) {
+        sigma <- diag(ncol(x))
+    }
+    if (NCOL(x) != NCOL(sigma)) {
+        stop("x and sigma have non-conforming size")
+    }
+    if (!isSymmetric(sigma, tol = sqrt(.Machine$double.eps))) {
+        stop("sigma must be a symmetric matrix")
+    }
+    if (length(mean) != NROW(sigma)) {
+        stop("mean and sigma have non-conforming size")
+    }
+    #print("sigma")
+    #print(sigma)
+    #print(" starting mahalanobis") 
+    distval <- mahalanobis(x, center = mean, cov = pseudoinverse(sigma),inverted=TRUE)
+    #print(" finishing mahalanobis") 
 
-phylogMean<-function(phyvcv, data) 
-{
+    logdet <- sum(log(eigen(sigma, symmetric = TRUE, only.values = TRUE)$values))
+    logretval <- -(ncol(x) * log(2 * pi) + logdet + distval)/2
+    #print("leaving dmvnormPseudoinverse")
+    if (log) 
+        return(logretval)
+    exp(logretval)
+}
+
+phylogMean<-function(phyvcv, data) {
 	o<-rep(1, length(data))
 	#print("phyvcv in phylogMean")
 	#print(phyvcv)
@@ -630,10 +665,10 @@ phylogMean<-function(phyvcv, data)
 	m2<-t(o) %*% ci %*% data
 	return(m1 %*% m2)
 	
-	}
+}
 	
-ouMatrix <- function(vcvMatrix, alpha) 
-{
+	
+ouMatrix <- function(vcvMatrix, alpha) {
 ## follows Hansen 1997; does not assume ultrametricity (AH 12 dec 07)
 ## vectorized by LJH
   vcvDiag<-diag(vcvMatrix)
@@ -645,4 +680,3 @@ ouMatrix <- function(vcvMatrix, alpha)
   vcvRescaled = (1 / (2 * alpha)) * exp(-alpha * Tij) * (1 - exp(-2 * alpha * vcvMatrix))
   return(vcvRescaled) 
 }
-    	
