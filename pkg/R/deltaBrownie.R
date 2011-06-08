@@ -1,8 +1,8 @@
 #this code should find the best break among alternate morphological models
 
-library(phylobase)
-library(RBrownie)
-library(geiger) 
+#library(phylobase)
+#library(RBrownie)
+#library(geiger) 
 
 
 #for three-taxa with real names example (short example)
@@ -12,7 +12,7 @@ library(geiger)
 #tree2<-rcoal(5, tip.label)
 
 
-##tip.label<-c("Bipes_biporus", "Bipes_cannaliculatus", "Bipes_tridactylus", "Bipes_alvarezi", "Bipes_sp")
+#tip.label<-c("Bipes_biporus", "Bipes_cannaliculatus", "Bipes_tridactylus", "Bipes_alvarezi", "Bipes_sp")
 #completeTree<-rcoal(5, tip.label)
 
 #completeBipesData<-read.table("/Users/halamillo/Desktop/completeBipes.txt", row.names=1)
@@ -257,12 +257,14 @@ all.test.results<-cbind(all.test.results,dAICc, AICcweight)
 
 colnames(all.test.results)[6]<-"-LnL"
 
-result.object<-vector("list",2)
-names(result.object)<-c("all.test.results", "tree.with.shift")
+result.object<-vector("list",3)
+names(result.object)<-c("all.test.results", "rate.at.shift", "tree.with.shift")
 
 result.object$all.test.results<-all.test.results
-result.object$trees.list.phy<-phy.brownie.list.w.data[[result.object$all.test.results$Tree[which((result.object$all.test.results$AICcweight)==max(result.object$all.test.results$AICcweight))]]]
 
+result.object$rate.at.shift<-result.object$all.test.results[which(result.object$all.test.results$AICcweight==max(result.object$all.test.results$AICcweight)),]
+
+result.object$tree.with.shift<-phy.brownie.list.w.data[[result.object$all.test.results$Tree[which((result.object$all.test.results$AICcweight)==max(result.object$all.test.results$AICcweight))]]]
 #result.object<-c(all.test.results, trees.list.phy)
 #return(all.test.results)
 return(result.object)

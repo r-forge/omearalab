@@ -1,8 +1,8 @@
 setwd("/data/cichlids/")
 
-ntax.vector=c(2^4, 2^5, 2^6, 2^7, 2^8)
+ntax.vector=c(2^4, 2^5, 2^6, 2^7)
 shape.vector=c("balanced", "right")
-rate.vector=c(0.1, 0.5, 1, 2, 10)
+rate.vector=c(0.1, 0.5, 1, 2, 10, 100, 500)
 change.position.vector=c("root", "quarter", "cherry")
 reps.per.combination=1
 
@@ -11,18 +11,21 @@ reps.per.combination=1
 
 
 for(rep in 1:reps.per.combination){
-	for(ntax.index in 1:length(ntax.vector)){
-		ntax=ntax.vector[ntax.index]
 	
-		for(shape.index in 1:length(shape.vector)){
-			shape=shape.vector[shape.index]
+	
+	for(shape.index in 1:length(shape.vector)){
+		shape=shape.vector[shape.index]
 		
 			for(rate.index in 1:length(rate.vector)){
 				rate=rate.vector[rate.index]
-				
+		
 				for(change.position.index in 1:length(change.position.vector)){
 					change=change.position.vector[change.position.index]
-					
+				
+				for(ntax.index in 1:length(ntax.vector)){
+					ntax=ntax.vector[ntax.index]
+				
+						
 					fileNameRoot<-paste("ntax.",ntax,".shape.",shape,".rate.",rate,".change.",change,".rep.",rep,sep="",collapse="")
 					batchFileName<-paste(fileNameRoot,".R",sep="",collapse="")
 					cat("library(geiger)\n","library(RBrownie)\n",sep="",file=batchFileName,append=FALSE)
