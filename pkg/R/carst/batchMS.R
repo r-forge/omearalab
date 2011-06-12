@@ -40,10 +40,123 @@ popinterval<-function(collapseMatrix,complete=FALSE) {
 	return(pInt)
 }
 
-thetaindividual<-function(collapseMatrix,complete=FALSE,thetaMap) {
-	tI<-list(collapseMatrix=collapseMatrix,complete=complete,thetaMap=thetaMap)
-	class(tI)<-"thetaindividual"
+n0multiplierindividual<-function(collapseMatrix,complete=FALSE,n0multiplierMap) {
+	tI<-list(collapseMatrix=collapseMatrix,complete=complete,n0multiplierMap=n0multiplierMap)
+	class(tI)<-"n0multiplierindividual"
 	return(tI)
+}
+
+migrationindividual<-function(collapseMatrix,complete=FALSE,n0multiplierMap,migrationArray) {
+  tI<-list(collapseMatrix=collapseMatrix,complete=complete,n0multiplierMap=n0multiplierMap,migrationArray=migrationArray)
+	class(tI)<-"migrationindividual"
+	return(tI)
+}
+
+msIndividualParameters<-function(migrationIndividual) {
+  collapseMatrix<-migrationIndividual$collapseMatrix
+  complete<-migrationIndividual$complete
+  n0multiplierMap<-migrationIndividual$n0multiplierMap
+  migrationArray<-migrationIndividual$migrationArray
+  parameterList<-c()
+  if (max(collapseMatrix,na.rm=TRUE)>0) {
+    for (i in 1: max(collapseMatrix,na.rm=TRUE)) {
+      parameterList<-append(parameterList,paste("collapse_",i,sep="")) 
+    }
+  }
+  for (i in 1:max(n0multiplierMap,na.rm=TRUE)) {
+    parameterList<-append(parameterList,paste("n0multiplier_",i,sep="")) 
+  }
+  for (i in 1:max(migrationArray,na.rm=TRUE)) {
+    parameterList<-append(parameterList,paste("migration_",i,sep="")) 
+  }
+  return(parameterList)
+}
+
+createMSstringSpecific<-function(popVector,migrationIndividual,parameterVector,nTrees=1) {
+  collapseMatrix<-migrationIndividual$collapseMatrix
+  complete<-migrationIndividual$complete
+  n0multiplierMap<-migrationIndividual$n0multiplierMap
+  migrationArray<-migrationIndividual$migrationArray
+  nPop<-length(popVector)
+  numSteps<-dim(collapseMatrix)[2]
+  parameterList<- msIndividualParameters(migrationIndividual)
+  n0multiplierParameters<-parameterVector[grep("n0multiplier",parameterList)]
+  migrationParameters<-parameterVector[grep("migration",parameterList)]
+  collapseParameters<-parameterVector[grep("collapse",parameterList)]
+
+  if (length(parameterList) != length(parameterVector) ) {
+    stop(paste("Incorrect parameterVector: you passed ",length(parameterVector),"entries but it needs",length(parameterList),"entries:",paste(parameterList,sep=" ",collapse="")))
+  }
+  else {
+    msString<-paste(sum(popVector),nTrees,"-T -I",nPop,paste(popVector,sep=" ", collapse=" "),sep=" ")
+
+    #do values at present
+    initialN0multipler<-""
+    for (i in 1:nPop) {
+     initialN0multipler<-paste(initialN0multipler,"-n",i,n0multiplierParameters[n0multiplierMap[i,1] ],sep=" ")
+    }
+ 
+    initialMigration<-"-ma"
+    for (i in 1:nPop) {
+      for (j in 1:nPop) {
+       if (i==j) {
+          initialMigration<-paste(initialMigration, "x", sep=" ") 
+       }
+       else {
+         initialMigration<-paste(initialMigration, migrationParameters[migrationArray[i,j,1] ],sep=" ")
+       }
+      }
+    }
+    msString<-paste(msString,initialN0multipler,initialMigration,sep=" ")
+    
+    #is there a collapse in the first gen?
+    if (max(collapseMatrix[,1],na.rm=TRUE)>0) { #remember that everything goes to the lowest index population with state ==1
+      initialCollapse<-""
+      popsToCollapse<-which(collapseMatrix[,1]==1)
+      for (i in 2:length(popsToCollapse)) {
+        initialCollapse<-paste(initialCollapse, "-ej", collapseParameters[1], popsToCollapse[i], popsToCollapse[1]  ,sep=" ")       
+      }
+      msString<-paste(msString,initialCollapse,sep=" ")
+    }
+    
+    #now go back in time
+    if (numSteps>1) {
+      for (generation in 2:numSteps) {
+        collapseTime<-collapseParameters[generation-1]
+        n0multiplierPositions<-which(!is.na(n0multiplierMap[,generation]))
+        for (n0multiplierPosIndex in 1:length(n0multiplierPositions)) {
+          n0multiplierPos<-n0multiplierPositions[n0multiplierPosIndex]
+          msString<-paste(msString,"-en",collapseTime,n0multiplierPos,n0multiplierParameters[n0multiplierMap[n0multiplierPos,generation] ],sep=" ")
+        }
+
+        for (fromPos in 1:nPop) {
+          for (toPos in 1:nPop) {
+            migrationArrayValue<-migrationArray[fromPos,toPos,generation]
+           if (!is.na(migrationArrayValue) ) {
+            msString<-paste(msString,"-em",collapseTime,fromPos,toPos,migrationParameters[migrationArrayValue],sep=" ")              
+           }
+          }
+        }
+        
+        
+       #is there a collapse in this gen?
+       if (max(collapseMatrix[,generation],na.rm=TRUE)>0) { #remember that everything goes to the lowest index population with state ==1
+        initialCollapse<-""
+        popsToCollapse<-which(collapseMatrix[,generation]==1)
+        for (i in 2:length(popsToCollapse)) {
+          initialCollapse<-paste(initialCollapse, "-ej", collapseParameters[generation], popsToCollapse[i], popsToCollapse[1]  ,sep=" ")       
+        }
+        msString<-paste(msString,initialCollapse,sep=" ")
+    }
+
+      }
+    }
+    return(msString)
+  }
+}
+
+createMSstringGeneric<-function(popVector,migrationIndividual,parameterVector,nTrees=1) {
+  return(createMSstringSpecific(popVector,migrationIndividual,msIndividualParameters(migrationIndividual),nTrees)) 
 }
 
 returnIncompletes<-function(popIntervalsList) {
@@ -129,40 +242,82 @@ kPopInterval<-function(popInterval) {
 	return(length(which(maxVector>0)))
 }
 
-#the basic idea here is that at each population in each time interval there is a theta. These can all be set to the same value, allowed to vary, or assigned in clumps (i.e., pops 1, 3, and 6 have the same theta value)
+kCollapseMatrix<-function(collapseMatrix) {
+  #returns the number of free parameters needed for that interval object. For example, having everything collapse in one step requires one param (the tMRCA). Having one collapse then a second requires two. Having no collapse requires 0
+	maxVector<-colMax(collapseMatrix)
+	return(length(which(maxVector>0)))
+}
+
+#the basic idea here is that at each population in each time interval there is a n0multiplier. These can all be set to the same value, allowed to vary, or assigned in clumps (i.e., pops 1, 3, and 6 have the same n0multiplier value)
 #this generates all such mappings, subject to staying within the maximum number of free parameters
-generateThetaIndividuals<-function(popVector,popIntervalsList=generateIntervals(popVector),maxK=max(1,floor(sum(popVector)/20))) {
-	thetaIndividualsList<-list()
+generateN0multiplierIndividuals<-function(popVector,popIntervalsList=generateIntervals(popVector),maxK=max(1,floor(sum(popVector)/20))) {
+	n0multiplierIndividualsList<-list()
 	for (i in 1:length(popIntervalsList)) {
-		thetaMapTemplate<-1+0*popIntervalsList[[i]]$collapseMatrix  #will have all the populations, all with either NA or 1
-		numLineages=sum(thetaMapTemplate,na.rm=TRUE)
+		n0multiplierMapTemplate<-1+0*popIntervalsList[[i]]$collapseMatrix  #will have all the populations, all with either NA or 1
+		numLineages=sum(n0multiplierMapTemplate,na.rm=TRUE)
 		possibleMappings<-compositions(numLineages)
 		for (mappingIndex in 1:dim(possibleMappings)[2]) {
 			thisMapping<-possibleMappings[,mappingIndex]
 			if ((length(which(thisMapping>0))+kPopInterval(popIntervalsList[[i]]) )<=maxK) { #only do it on those mappings that have not too many free parameters
-				thetaMap<-thetaMapTemplate
-				whichPositions <- which(thetaMap==1)
+				n0multiplierMap<-n0multiplierMapTemplate
+				whichPositions <- which(n0multiplierMap==1)
 				for (positionIndex in 1:length(whichPositions)) {
 					position=whichPositions[positionIndex]
 					paramPosition<-which(thisMapping>0)[1]
-					thetaMap[position]=paramPosition #the position of the first parameter
+					n0multiplierMap[position]=paramPosition #the position of the first parameter
 					thisMapping[paramPosition]=thisMapping[paramPosition]-1 #now we've used up one of those parameters. If there are no more intervals assigned that parameter, it will drop to 0
 				}
-				thetaIndividualsList[[length(thetaIndividualsList)+1]]<-thetaindividual(popIntervalsList[[i]]$collapseMatrix, popIntervalsList[[i]]$complete, thetaMap)
+				n0multiplierIndividualsList[[length(n0multiplierIndividualsList)+1]]<-n0multiplierindividual(popIntervalsList[[i]]$collapseMatrix, popIntervalsList[[i]]$complete, n0multiplierMap)
 			}
 		}
 	}
-	return(thetaIndividualsList)
+	return(n0multiplierIndividualsList)
 }
 
-#now we will generate all possible assignments of pairwise migration. Again, we want to keep the total number of free parameters (times, thetas, migration rates) under our chosen max
-#allow a model where migrations change anywhere along branch, or only at coalescent nodes? The problem with the latter is that you can't fit some reasonable models: i.e., two populations persisting through time. Problem with the former is parameter space
-generateMigrationIndividuals<-function(popVector,thetaIndividualsList=generateThetaIndividuals(popVector), maxK=max(1,floor(sum(popVector)/20))) {
-	migrationIndividualsList<-list()
-	for (i in 1:length(thetaIndividualsList)) {
-		collapseMatrix<-popIntervalsList[[i]]$collapseMatrix
-		numFinalPops<-dim(collapseMatrix)[1]
-		
-		#things to consider: migration between each subpop, as subpops coalesce
-	}
+kN0multiplierMap<-function(n0multiplierMap) {
+  return(max(n0multiplierMap,na.rm=TRUE)) 
 }
+
+#now we will generate all possible assignments of pairwise migration. Again, we want to keep the total number of free parameters (times, n0multipliers, migration rates) under our chosen max
+#allow a model where migrations change anywhere along branch, or only at coalescent nodes? The problem with the latter is that you can't fit some reasonable models: i.e., two populations persisting through time. Problem with the former is parameter space
+generateMigrationIndividuals<-function(popVector,n0multiplierIndividualsList=generateN0multiplierIndividuals(popVector), maxK=max(1,floor(sum(popVector)/20))) {
+	migrationIndividualsList<-list()
+	for (i in 1:length(n0multiplierIndividualsList)) {
+		collapseMatrix<-n0multiplierIndividualsList[[i]]$collapseMatrix
+    n0multiplierMap<-n0multiplierIndividualsList[[i]]$n0multiplierMap
+		numFinalPops<-dim(collapseMatrix)[1]
+    numSteps<-dim(collapseMatrix)[2]
+    migrationTemplate<-array(data=NA,dim=c(numFinalPops,numFinalPops,numSteps),dimnames=c("from","to","generation"))
+    for (interval in 1:numSteps) {
+       for (fromPop in 1:numFinalPops) {
+          for (toPop in 1:numFinalPops) {
+            if (fromPop!=toPop) {
+             if (!is.na(collapseMatrix[fromPop,interval]) && !is.na(collapseMatrix[toPop,interval])) {
+                migrationTemplate[fromPop,toPop,interval]<-1
+              }
+            }
+          }
+       }
+    }
+    numPairs=sum(migrationTemplate,na.rm=TRUE)
+		possibleMappings<-compositions(numPairs)
+
+   for (mappingIndex in 1:dim(possibleMappings)[2]) {
+			thisMapping<-possibleMappings[,mappingIndex]
+			if ((length(which(thisMapping>0)) + kCollapseMatrix(collapseMatrix) + kN0multiplierMap(n0multiplierMap) )<=maxK) { #only do it on those mappings that have not too many free parameters
+				migrationArray<-migrationTemplate
+				whichPositions <- which(migrationArray==1)
+				for (positionIndex in 1:length(whichPositions)) {
+					position=whichPositions[positionIndex]
+					paramPosition<-which(thisMapping>0)[1]
+					migrationArray[position]=paramPosition #the position of the first parameter
+					thisMapping[paramPosition]=thisMapping[paramPosition]-1 #now we've used up one of those parameters. If there are no more intervals assigned that parameter, it will drop to 0
+				}
+				migrationIndividualsList[[length(migrationIndividualsList)+1]]<-migrationindividual(n0multiplierIndividualsList[[i]]$collapseMatrix, n0multiplierIndividualsList[[i]]$complete, n0multiplierMap, migrationArray)
+			}
+		}		
+	}
+  return(migrationIndividualsList)
+}
+
+
