@@ -354,3 +354,11 @@ createAssignment<-function(popVector,file="assign.txt") {
   write.table(assignFrame,file=file,quote=FALSE,sep="\t",row.names=FALSE,col.names=FALSE)
 }
 
+convertOutputVectorToLikelihood<-function(outputVector,nTrees) {
+  outputVector<-as.numeric(outputVector)
+  outputVector[which(outputVector==0)]<-0.1
+  outputVector<-outputVector/nTrees
+  outputVector<-log(outputVector)
+  lnL<-sum(outputVector)
+  return(lnL)
+}
