@@ -79,16 +79,15 @@ createMSstringSpecific<-function(popVector,migrationIndividual,parameterVector,n
   migrationArray<-migrationIndividual$migrationArray
   nPop<-length(popVector)
   numSteps<-dim(collapseMatrix)[2]
-  parameterList<- msIndividualParameters(migrationIndividual)
-  n0multiplierParameters<-parameterVector[grep("n0multiplier",parameterList)]
-  migrationParameters<-parameterVector[grep("migration",parameterList)]
-  collapseParameters<-parameterVector[grep("collapse",parameterList)]
+   n0multiplierParameters<-parameterVector[grep("n0multiplier",names(parameterVector))]
+  migrationParameters<-parameterVector[grep("migration",names(parameterVector))]
+  collapseParameters<-parameterVector[grep("collapse",names(parameterVector))]
 
-  if (length(parameterList) != length(parameterVector) ) {
-    stop(paste("Incorrect parameterVector: you passed ",length(parameterVector),"entries but it needs",length(parameterList),"entries:",paste(parameterList,sep=" ",collapse="")))
+  if (1>2 ) {
+   # stop(paste("Incorrect parameterVector: you passed ",length(parameterVector),"entries but it needs",length(parameterList),"entries:",paste(parameterList,sep=" ",collapse="")))
   }
   else {
-    msString<-paste(sum(popVector),nTrees,"-T -I",nPop,paste(popVector,sep=" ", collapse=" "),sep=" ")
+    msString<-paste("-T -I",nPop,paste(popVector,sep=" ", collapse=" "),sep=" ")
 
     #do values at present
     initialN0multipler<-""
@@ -151,7 +150,11 @@ createMSstringSpecific<-function(popVector,migrationIndividual,parameterVector,n
 
       }
     }
-    return(msString)
+    nsam<-sum(popVector)
+    nreps<-nTrees
+    opts<-msString
+    returnobject<-list(nsam=nsam,nreps=nreps,opts=opts)
+    return(returnobject)
   }
 }
 
@@ -221,7 +224,7 @@ completeIntervals<-function(popIntervalsList) {
 }
 
 
-generateIntervals<-function(popVector,maxK=max(1,floor(sum(popVector)/20))) {
+generateIntervals<-function(popVector,maxK=max(1,floor(sum(popVector)/5))) {
 	#popVector is samples from each pop: c(5,6,2) means 5 samples from pop 1, 6 from pop 2, and 2 from pop3
 	#maxK is the maximum number of free parameters you want. By default, allows one free parameter for every 20 samples
 	nPop <- length(popVector)
@@ -250,7 +253,7 @@ kCollapseMatrix<-function(collapseMatrix) {
 
 #the basic idea here is that at each population in each time interval there is a n0multiplier. These can all be set to the same value, allowed to vary, or assigned in clumps (i.e., pops 1, 3, and 6 have the same n0multiplier value)
 #this generates all such mappings, subject to staying within the maximum number of free parameters
-generateN0multiplierIndividuals<-function(popVector,popIntervalsList=generateIntervals(popVector),maxK=max(1,floor(sum(popVector)/20))) {
+generateN0multiplierIndividuals<-function(popVector,popIntervalsList=generateIntervals(popVector),maxK=max(1,floor(sum(popVector)/5))) {
 	n0multiplierIndividualsList<-list()
 	for (i in 1:length(popIntervalsList)) {
 		n0multiplierMapTemplate<-1+0*popIntervalsList[[i]]$collapseMatrix  #will have all the populations, all with either NA or 1
@@ -280,7 +283,7 @@ kN0multiplierMap<-function(n0multiplierMap) {
 
 #now we will generate all possible assignments of pairwise migration. Again, we want to keep the total number of free parameters (times, n0multipliers, migration rates) under our chosen max
 #allow a model where migrations change anywhere along branch, or only at coalescent nodes? The problem with the latter is that you can't fit some reasonable models: i.e., two populations persisting through time. Problem with the former is parameter space
-generateMigrationIndividuals<-function(popVector,n0multiplierIndividualsList=generateN0multiplierIndividuals(popVector), maxK=max(1,floor(sum(popVector)/20))) {
+generateMigrationIndividuals<-function(popVector,n0multiplierIndividualsList=generateN0multiplierIndividuals(popVector), maxK=max(1,floor(sum(popVector)/5))) {
 	migrationIndividualsList<-list()
 	for (i in 1:length(n0multiplierIndividualsList)) {
 		collapseMatrix<-n0multiplierIndividualsList[[i]]$collapseMatrix
@@ -320,4 +323,34 @@ generateMigrationIndividuals<-function(popVector,n0multiplierIndividualsList=gen
   return(migrationIndividualsList)
 }
 
+loadMS<-function(popVector,migrationIndividual,parameterVector,nTrees=1,msLocation="/usr/local/bin/ms") {
+  msCallInfo<-createMSstringSpecific(popVector,migrationIndividual,parameterVector,nTrees)
+  geneTrees<-system(paste(msLocation,msCallInfo$nsam,msCallInfo$nreps,msCallInfo$opts," | grep ';'"),intern=TRUE)
+  return(geneTrees)
+}
+
+saveMS<-function(popVector,migrationIndividual,parameterVector,nTrees=1,msLocation="/usr/local/bin/ms",file="sim.tre") {
+  msCallInfo<-createMSstringSpecific(popVector,migrationIndividual,parameterVector,nTrees)
+  returnCode<-system(paste(msLocation,msCallInfo$nsam,msCallInfo$nreps,msCallInfo$opts," | grep ';' >",file),intern=FALSE)
+  return(returnCode)
+}
+
+createAssignment<-function(popVector,file="assign.txt") {
+  alphabet<-strsplit("ABCDEFGHIJKLMNOPQRSTUVWXYZ","")[[1]]
+  assignFrame<-data.frame()
+  indivTotal<-0
+  for(popIndex in 1:length(popVector)) {
+    popLabel<-alphabet[popIndex]
+    for(indivIndex in 1:popVector[popIndex]) {
+      indivTotal<-indivTotal+1
+      if(indivTotal==1) {
+        assignFrame<-data.frame(popLabel,indivTotal) 
+      }
+      else {
+       assignFrame<-rbind(assignFrame,data.frame(popLabel, indivTotal))
+      }
+    }
+  }
+  write.table(assignFrame,file=file,quote=FALSE,sep="\t",row.names=FALSE,col.names=FALSE)
+}
 
