@@ -44,6 +44,9 @@ result.iterateNonCensored<-bipes.results
 
 #Stuff that is R but iscommented out is to fix
 getModelAveragedRates<-function(phy, result.iterateNonCensored) {
+	if(class(phy)!="phylo4") {
+		phy<-as(phy,"phylo4")
+	}
 	node.vector<-c()
 	nodeList<-nodeId(phy,type=c("all"))	
 	rate.matrix<-matrix(data=0, nrow=length(nodeList), ncol=2)  #this is where we will stick the model-averaged rates
@@ -84,4 +87,47 @@ getModelAveragedRates<-function(phy, result.iterateNonCensored) {
 	}
 	rownames(rate.matrix)<-nodeList
 	return(rate.matrix)
+}
+
+
+avgRateNodeShiftInfo<-function(avg.rates.object){
+
+		rates.table<-avg.rates.object
+		
+		rate.diff.matrix<-matrix(data=0, nrow=dim(rates.table)[1], ncol=1)
+		
+		for(rate.index in 1:dim(rates.table)[1]){
+		
+			rate.diff.matrix[rate.index]<-(rates.table[rate.index, 1] - rates.table[rate.index, 2])
+		}	
+		
+		rate.diff.matrix<-abs(rate.diff.matrix)
+
+		Avg.rt.shift<-which(rate.diff.matrix == max(rate.diff.matrix))
+
+		best.rates<-rates.table[Avg.rt.shift, 1:2]
+		
+		proportional.change<-max(rates.table[Avg.rt.shift, 1:2])/min(rates.table[Avg.rt.shift, 1:2])
+		
+		which(max(rates.table[Avg.rt.shift, 1:2]) == rates.table[Avg.rt.shift, 1:2]) ->pos
+		
+		if (pos == 2) {	type<-c("increase")
+			}
+				else{ type<-("decrease")
+				}
+				
+		result.object<-vector("list",4)
+		
+		names(result.object)<-c("avg.rate.node.shift", "best.avg.rates", "proportional.change", "type.of.change")
+	
+		result.object$avg.rate.node.shift<-Avg.rt.shift
+	
+		result.object$best.avg.rates<-best.rates
+		
+		result.object$proportional.change<-proportional.change
+		
+		result.object$type.of.change<-type
+	
+		return(result.object)
+		
 }
