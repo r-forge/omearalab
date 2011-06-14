@@ -36,6 +36,7 @@ getRatesAtBreak<-function(phy, BMS.node) {
 #result.iterateNonCensored<-bipes.results
 
 
+#Stuff that is R but iscommented out is to fix
 getModelAveragedRates<-function(phy, result.iterateNonCensored) {
 	if(class(phy)!="phylo4") {
 		phy<-as(phy,"phylo4")
@@ -92,4 +93,76 @@ avgRateNodeShiftInfo<-function(avg.rates.object){
 		result.object$proportional.change<-proportional.change
 		result.object$type.of.change<-type
 		return(result.object)
+}
+
+nodesToEdges<-function(phy) {
+  if(class(phy)!="phylo4") {
+    phy<-as(phy,"phylo4") 
+  }
+  nodeVector<-nodeId(phy)
+  edgeVector<-rep(NA,length(nodeVector))
+  edgesMatrix<-edges(phy)
+  for (nodeIndex in 1:length(nodeVector)) {
+     node<-nodeVector[nodeIndex]
+     edgeVector[nodeIndex]<-which(edgesMatrix[,2]==node)
+  }
+  finaldataframe<-data.frame(nodes=nodeVector,edges=edgeVector)
+  return(finaldataframe)
+}
+
+#this function just plots the lines and labels. It is normally called by plotAvgRates for one tree, but you can call
+#  it separately with a nonzero yOffset to plot multiple trees in one plot
+
+#todo: makes sure splitpos is changed to match what it is in setting the break point in the multiple rate testing loop.Basically, if the split is set to happen a third of the way up the branch, allow for this (change getRatesAtBreak, too, to avoid assuming this happens at 0.5)
+linesAvgRates<-function(phy,avgRates,globalMin=min(avgRates),globalMax=max(avgRates),yOffset=0,show.tip.label=TRUE,splitpos=0.5,grayMax=0.8,lwd=4,textThreshold=1.5,rounddigits=1) {
+  if(class(phy)!="phylo4") {
+    phy<-as(phy,"phylo4") 
+  }
+  rateRatios01<-avgRates[,1]/avgRates[,2]
+  rateRatios10<-avgRates[,2]/avgRates[,1]
+  
+  
+  xxyy<-phyloXXYY(phy)
+  nodesToEdges.df<-nodesToEdges(phy)
+  vert0<-xxyy$segs$v0x
+  
+  x0 = xxyy$segs$v0x #modified from treePlot.R in phylobase
+  y0 = xxyy$segs$v0y+yOffset
+  x1 = xxyy$segs$h1x
+  y1 = xxyy$segs$h1y+yOffset
+ # y1=y0
+  xmid<-splitpos*x0+(1-splitpos)*x1
+  ymid<-splitpos*y0+(1-splitpos)*y1
+  for (nodeIndex in 1:dim(avgRates)[1]) {
+    node<-as.numeric(row.names(avgRates)[nodeIndex])
+    #print(xxyy$eorder)
+    #print(nodesToEdges.df[,1])
+    #print(node)
+    segmentPointer<-which(xxyy$eorder==nodesToEdges.df[(which(nodesToEdges.df[,1]==node)),2])
+    rate0<-avgRates[nodeIndex,1]
+    rate0proportion<-(rate0-globalMin)/(globalMax-globalMin)
+    rate1<-avgRates[nodeIndex,2]
+    rate1proportion<-(rate1-globalMin)/(globalMax-globalMin)
+    rate0rescaled<-rate0/min(rate0,rate1)
+    rate1rescaled<-rate1/min(rate0,rate1)
+    #remember, with gray, 0=black, 1=white. 
+    #vertical lines
+    lines(x=c(x0[segmentPointer],x0[segmentPointer]),y=c(y0[segmentPointer],y1[segmentPointer]),col=gray((1-rate0proportion)*grayMax),lwd=lwd)
+    #horizontal lines
+    lines(x=c(x0[segmentPointer],xmid[segmentPointer]),y=c(y1[segmentPointer],y1[segmentPointer]),col=gray((1-rate0proportion)*grayMax),lwd=lwd)
+    lines(x=c(xmid[segmentPointer],x1[segmentPointer]),y=c(y1[segmentPointer],y1[segmentPointer]),col=gray((1-rate1proportion)*grayMax),lwd=lwd)
+    writeText<-FALSE
+    if (max(rate1rescaled,rate0rescaled)>textThreshold) {
+      writeText<-TRUE 
+    }
+    if (writeText) {
+      text(x=xmid[segmentPointer],y=y1[segmentPointer],labels=paste(round(rate0rescaled,digits=rounddigits),":",round(rate1rescaled,digits=rounddigits),sep=""),pos=3) 
+    }
+  }
+}
+
+plotAvgRates<-function(phy,avgRates,globalMin=min(avgRates),globalMax=max(avgRates),yOffset=0,show.tip.label=TRUE) {
+  xxyy<-phyloXXYY(phy)
+  plot(x=xxyy$xx,y=xxyy$yy,type="n",bty="n",xlab="",ylab="",xaxt="n",yaxt="n")
+  linesAvgRates(phy,avgRates,globalMin,globalMax,yOffset,show.tip.label)
 }
