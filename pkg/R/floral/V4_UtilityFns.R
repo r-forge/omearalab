@@ -64,6 +64,7 @@ extralistD<-c("lambdaAll", "lambdaF lambdaN", "lambdaAll muAll", "lambdaF lambda
 #Global definitions
 nchar=7
 S=nchar
+partitionSize<-nchar
 
 #utility functions
 toBinLarge<-function (x, base = 2, ndigits = 2^S)  #modification from sfsmisc package to deal with large numbers
