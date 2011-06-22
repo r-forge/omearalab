@@ -17,7 +17,7 @@ print(c("Theoretical # runs","Runs without enough combos","Possibly valid runs",
 
 for (focalIndex in 1:length(focalVectorList)) {
 	focalVector<-stringToVector(unlist(focalVectorList[[focalIndex]]))
-	if (getFocalSummaryLabel(focalVector,S,"x")[1]=="x") { #only doing the non 2xxxxxx models
+	if (getFocalSummaryLabel(focalVector,S,"x")[1]!="x") { #only doing the non 2xxxxxx models
 		for (transitionModelIndex in 1:dim(transitionModels)[1]) {
 			mkdirCmd=paste("mkdir -p ",paste("/data/abc/RunsApril2011/ActualRuns/T",transitionModelIndex,sep="",collapse=""),sep="",collapse="")
 			suppressWarnings(system(mkdirCmd))
@@ -43,7 +43,7 @@ for (focalIndex in 1:length(focalVectorList)) {
 							cat(runCommand,file=paste(dirRoot,'/run.R',sep=""),append=FALSE)
 							if (getFocalSummaryLabel(focalVector,S,"x")[1]=="x") { #only doing the 2xxxxxx models
 								pbsCommands=paste('#!/bin/bash','#$ -cwd','#$ -o /dev/null','#$ -e /dev/null',sep="\n")
-								queue="medium*"
+								queue="long*"
 								#if (partitionSize==1) {
 								#	queue="short*" #2 hr
 								#}
