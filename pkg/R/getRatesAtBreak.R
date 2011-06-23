@@ -37,7 +37,7 @@ getRatesAtBreak<-function(phy, BMS.node) {
 
 
 #Stuff that is R but iscommented out is to fix
-getModelAveragedRates<-function(phy, result.iterateNonCensored) {
+getModelAveragedRates<-function(phy, result.iterateNonCensored, change.position=0.5) {
 	if(class(phy)!="phylo4") {
 		phy<-as(phy,"phylo4")
 	}
@@ -49,7 +49,7 @@ getModelAveragedRates<-function(phy, result.iterateNonCensored) {
 		model.rates[1]<-result.iterateNonCensored$all.test.results$Rate_in_state_0[modelIndex] #CHECK THIS SYNTAX, make sure it works for BM1, too
 		model.rates[2]<-result.iterateNonCensored$all.test.results$Rate_in_state_1[modelIndex] #ditto
 		AICcweight<-result.iterateNonCensored$all.test.results$AICcweight[modelIndex]
-		BMS.node<-result.iterateNonCensored$all.test.results$NodeShift[modelIndex] #does this need to be the NodeShift column?
+		BMS.node<-result.iterateNonCensored$all.test.results$NodeShift[modelIndex] 
 		rate.choice<-matrix(data=NA, nrow=length(nodeList), ncol=2)
 		if(result.iterateNonCensored$all.test.results$Model[modelIndex]=="BM1") {
 			rate.choice<-matrix(data=0, nrow=length(nodeList), ncol=2)
@@ -113,8 +113,8 @@ nodesToEdges<-function(phy) {
 #this function just plots the lines and labels. It is normally called by plotAvgRates for one tree, but you can call
 #  it separately with a nonzero yOffset to plot multiple trees in one plot
 
-#todo: makes sure splitpos is changed to match what it is in setting the break point in the multiple rate testing loop.Basically, if the split is set to happen a third of the way up the branch, allow for this (change getRatesAtBreak, too, to avoid assuming this happens at 0.5)
-linesAvgRates<-function(phy,avgRates,globalMin=min(avgRates),globalMax=max(avgRates),yOffset=0,show.tip.label=TRUE,splitpos=0.5,grayMax=0.8,lwd=4,textThreshold=1.5,rounddigits=1) {
+#todo: makes sure change.position is changed to match what it is in setting the break point in the multiple rate testing loop.Basically, if the split is set to happen a third of the way up the branch, allow for this (change getRatesAtBreak, too, to avoid assuming this happens at 0.5)
+linesAvgRates<-function(phy,avgRates,globalMin=min(avgRates),globalMax=max(avgRates),yOffset=0,show.tip.label=TRUE,change.position=0.5,grayMax=0.8,lwd=2,textThreshold=1.5,rounddigits=1) {
   if(class(phy)!="phylo4") {
     phy<-as(phy,"phylo4") 
   }
@@ -131,8 +131,8 @@ linesAvgRates<-function(phy,avgRates,globalMin=min(avgRates),globalMax=max(avgRa
   x1 = xxyy$segs$h1x
   y1 = xxyy$segs$h1y+yOffset
  # y1=y0
-  xmid<-splitpos*x0+(1-splitpos)*x1
-  ymid<-splitpos*y0+(1-splitpos)*y1
+  xmid<-change.position*x0+(1-change.position)*x1
+  ymid<-change.position*y0+(1-change.position)*y1
   for (nodeIndex in 1:dim(avgRates)[1]) {
     node<-as.numeric(row.names(avgRates)[nodeIndex])
     #print(xxyy$eorder)
@@ -156,7 +156,9 @@ linesAvgRates<-function(phy,avgRates,globalMin=min(avgRates),globalMax=max(avgRa
       writeText<-TRUE 
     }
     if (writeText) {
-      text(x=xmid[segmentPointer],y=y1[segmentPointer],labels=paste(round(rate0rescaled,digits=rounddigits),":",round(rate1rescaled,digits=rounddigits),sep=""),pos=3) 
+      text(x=xmid[segmentPointer],y=y1[segmentPointer],labels=paste(round(rate0rescaled,digits=rounddigits),":",round(rate1rescaled,digits=rounddigits),sep=""),pos=3)
+      rect(2,2,3,4, col=rgb(0,0,0,0.1), border=FALSE) #xleft, ybottom, xright, ytop; co=rgb(r,g,b,transparency)
+       
     }
   }
 }

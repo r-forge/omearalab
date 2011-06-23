@@ -1,13 +1,13 @@
 #setwd("/data/cichlids/")
-counter<-0
+#counter<-0
 
-ntax.vector=c(2^4, 2^5, 2^6, 2^7, 2^8)
-shape.vector=c("balanced", "right")
-rate.vector=c(0.1, 0.5, 1, 2, 10)
-change.position.vector=c("root", "quarter", "cherry")
-reps.per.combination=10
+#ntax.vector=c(2^4, 2^5, 2^6, 2^7, 2^8)
+#shape.vector=c("balanced", "right")
+#rate.vector=c(0.1, 0.5, 1, 2, 10, 100, 250, 500)
+#change.position.vector=c("root", "quarter", "cherry")
+#reps.per.combination=10
 
-numberRuns=length(ntax.vector)*length(shape.vector)*length(rate.vector)*length(change.position.vector)*(reps.per.combination)
+#numberRuns=length(ntax.vector)*length(shape.vector)*length(rate.vector)*length(change.position.vector)*(reps.per.combination)
 
 
 
@@ -15,14 +15,14 @@ numberRuns=length(ntax.vector)*length(shape.vector)*length(rate.vector)*length(c
 counter<-0
 ntax.vector=c(2^4, 2^5, 2^6, 2^7) #4
 shape.vector=c("balanced", "right") #2
-rate.vector=c(0.1, 0.5, 1, 2, 10) #5
+rate.vector=c(0.1, 0.5, 1, 2, 10, 100, 250, 500) #5
 change.position.vector=c("root", "quarter", "cherry") #3
-reps.per.combination=1
+reps.per.combination=6
 
 
 
 
-
+setwd("/Users/hugo/Desktop/data.frames.6.21.11_2")
 allresults.data.frame<-data.frame()
 
 
@@ -47,9 +47,16 @@ for(rep in 1:reps.per.combination){
 					if(system(paste("ls results* | grep -c results.",fileNameRoot,".data.frame",sep="",collapse=""),intern=TRUE)==1) {#list all files 
 						load(paste("results.",fileNameRoot,".data.frame",sep="",collapse=""))->loadedobjects
 						print(paste("loaded in ",loadedobjects))
-						input.df<-eval(parse(text=paste("results.",fileNameRoot,sep="",collapse="")))
-						extrainfo.df<-cbind(ntax,shape,rate,change,rep,input.df)
-						allresults.data.frame<-rbind(allresults.data.frame, extrainfo.df)
+						input.df<-eval(parse(text=paste("results.",fileNameRoot,"$all.test.results", sep="",collapse="")))
+						if (!is.null(input.df)) {
+							extrainfo.df<-cbind(ntax,shape,rate,change,rep,input.df)
+							#print(paste("dim(input.df)=",paste(dim(input.df),sep=" ",collapse=" "),"dim(extrainfo.df)=",paste(dim(extrainfo.df),sep=" ",collapse=" "),"dim(allresults.data.frame)=",paste(dim(allresults.data.frame),sep=" ",collapse=" ")))
+
+							allresults.data.frame<-rbind(allresults.data.frame, extrainfo.df)
+						}
+						else {
+							print(paste("results.",fileNameRoot,".data.frame is the old style run that is missing all.test.results. Shame!",sep="",collapse=""))	
+						}
 						
 					}
 					else {
@@ -61,7 +68,7 @@ for(rep in 1:reps.per.combination){
 	}
 }
 
-
+save(allresults.data.frame,file="allresults.data.frame",compress=TRUE)
 
 
 

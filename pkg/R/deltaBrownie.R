@@ -355,3 +355,24 @@ blMultiplier<-function(phy,rate, change, shape){
 #	print(edgeLength(phy4))
 	return(as(phy4,"phylo"))	
 }
+
+
+transformBLbasedonnode<-function(phy,rate, focal.node){
+	phy4<-as(phy, 'phylo4')
+	focal.edge<-edgeLength(phy4)[which(edgeId(phy4)==getEdge(phy4,focal.node))]
+	transformed.focal.edge<-0.5*(focal.edge + rate*focal.edge)
+	edgeLength(phy4)[which(edgeId(phy4)==getEdge(phy4,focal.node))]<-transformed.focal.edge
+	
+	rest.clade<-descendants(phy4, focal.node, type="all")
+	
+	
+	if(length(rest.clade)>1){
+		for(node.index in 1:length(rest.clade)){
+			new.focal.node=rest.clade[node.index]
+			edgeLength(phy4)[which(edgeId(phy4)==getEdge(phy4,new.focal.node))]<-edgeLength(phy4)[which(edgeId(phy4)==getEdge(phy4,new.focal.node))]*rate
+		}	
+	}
+	
+#	print(edgeLength(phy4))
+	return(as(phy4,"phylo"))	
+}
