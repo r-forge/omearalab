@@ -13,11 +13,12 @@ doneRuns<-0
 insufficientNumbers<-0
 runsInFile<-0
 pbsCommands=""
+submittedRuns<-0
 print(c("Theoretical # runs","Runs without enough combos","Possibly valid runs","Completed valid runs"))
 
 for (focalIndex in 1:length(focalVectorList)) {
 	focalVector<-stringToVector(unlist(focalVectorList[[focalIndex]]))
-	if (getFocalSummaryLabel(focalVector,S,"x")[1]=="x") { #only doing the non 2xxxxxx models
+	if (getFocalSummaryLabel(focalVector,S,"x")[1]=="x") { #only doing the  2xxxxxx models
 		for (transitionModelIndex in 1:dim(transitionModels)[1]) {
 			mkdirCmd=paste("mkdir -p ",paste("/data/abc/RunsApril2011/ActualRuns/T",transitionModelIndex,sep="",collapse=""),sep="",collapse="")
 			suppressWarnings(system(mkdirCmd))
@@ -38,27 +39,26 @@ for (focalIndex in 1:length(focalVectorList)) {
 						lsString=paste(paste("ls -1 ",dirRoot,' | grep -c final.matrix.all',sep="",collapse=""))
 						#print(lsString)
 						finalMatrixAllCount=suppressWarnings(as.numeric(system(lsString,intern=TRUE)))
+						pbsCommands<-""
 						if(finalMatrixAllCount==0) {
 							runCommand=paste("source('/data/abc/RunsApril2011/UnifiedApproachScripts/V4_Commands.R')\ndoUnifiedRun(F='",vectorToString(focalVector),"',T=",transitionModelIndex,",D=",diversificationModelIndex,",S=",partitionSize,")",sep="",collapse="")
 							cat(runCommand,file=paste(dirRoot,'/run.R',sep=""),append=FALSE)
-							if (getFocalSummaryLabel(focalVector,S,"x")[1]=="x") { #only doing the 2xxxxxx models
-								pbsCommands=paste('#!/bin/bash','#$ -cwd','#$ -o /dev/null','#$ -e /dev/null',sep="\n")
-								queue="medium*"
-								#if (partitionSize==1) {
-								#	queue="short*" #2 hr
-								#}
-								#else if (partitionSize<=3) {
-								#	queue="long*" #24 hr
-								#}
-								#queue="medium*"
-								pbsCommands=paste(pbsCommands,'\n#$ -q ',queue,sep="")
-								pbsCommands=paste(pbsCommands,'#$ -M omeara.brian@gmail.com', '#$ -m beas', '#$ -S /bin/bash',sep="\n")
-								pbsCommands=paste(pbsCommands,"\n","#$ -N R_",vectorToString(getFocalSummaryLabel(focalVector,S,"x")),"_t",transitionModelIndex,"d",diversificationModelIndex,"\n", 'module load R/2.12.0',sep="")
-							}
-							pbsCommands=paste(pbsCommands,"\n",'cd /data/abc/RunsApril2011/ActualRuns/T',transitionModelIndex,"/T",transitionModelIndex,"_D",diversificationModelIndex,"/",nameRoot,sep="",collapse="")
-							pbsCommands=paste(pbsCommands,"\n","/data/apps/R/R-2.12.0/bin/R CMD BATCH run.R",sep="")
+							pbsCommands<-paste('#!/bin/bash','#$ -cwd','#$ -o /dev/null','#$ -e /dev/null',sep="\n")
+							queue="long*"
+							#if (partitionSize==1) {
+							#	queue="short*" #2 hr
+							#}
+							#else if (partitionSize<=3) {
+							#	queue="long*" #24 hr
+							#}
+							#queue="medium*"
+							pbsCommands<-paste(pbsCommands,'\n#$ -q ',queue,sep="")
+							pbsCommands<-paste(pbsCommands,'#$ -M omeara.brian@gmail.com', '#$ -m beas', '#$ -S /bin/bash',sep="\n")
+							pbsCommands<-paste(pbsCommands,"\n","#$ -N R",vectorToString(getFocalSummaryLabel(focalVector,S,"x")),"t",transitionModelIndex,"d",diversificationModelIndex,"\n", 'module load R/2.12.0',sep="")
+							pbsCommands<-paste(pbsCommands,"\n",'cd /data/abc/RunsApril2011/ActualRuns/T',transitionModelIndex,"/T",transitionModelIndex,"_D",diversificationModelIndex,"/",nameRoot,sep="",collapse="")
+							pbsCommands<-paste(pbsCommands,"\n","/data/apps/R/R-2.12.0/bin/R CMD BATCH run.R",sep="")
 							#print(paste(paste("../ActualRuns/P",partitionSchemeText,sep="",collapse=""),"/",nameRoot,'/run.sh',sep=""))
-							pbsCommands=paste(pbsCommands,"\nrm ",' *.csv *.t ',sep="")
+							pbsCommands<-paste(pbsCommands,"\nrm ",' *.csv *.t ',sep="")
 							runsInFile=runsInFile+1
 							print(paste("Queuing run ",nameRoot," at ",date(),sep="",collapse=""))
 							if (runsInFile>0) { #changed this to deal with remnants
@@ -69,13 +69,14 @@ for (focalIndex in 1:length(focalVectorList)) {
 								setwd(paste(paste("/data/abc/RunsApril2011/ActualRuns/T",transitionModelIndex,"/T",transitionModelIndex,"_D",diversificationModelIndex,sep="",collapse=""),"/",nameRoot,sep=""))
 								system("pwd")
 								system("chmod u+x run.sh")
-								system("qsub run.sh")
+								system("/opt/sge/bin/lx24-amd64/qsub run.sh")
 								setwd(origWD)
 								Sys.sleep(floor(runif(1,min=2,max=20)))
 								runsInFile=0
-								pbsCommands=""
+								pbsCommands<-""
+								submittedRuns<-submittedRuns+1
 							}
-							while(as.numeric(system("/home/bomeara/bin/nicecountQWme",intern=TRUE))>120) {
+							while(as.numeric(system("/home/bomeara/bin/nicecountQWme",intern=TRUE))>9000) {
 								Sys.sleep(floor(runif(1,min=100,max=200)))
 							}
 						}
@@ -85,7 +86,7 @@ for (focalIndex in 1:length(focalVectorList)) {
 					}
 				}
 			}
-			print(c(totalPossibleRuns,insufficientNumbers,totalRuns,doneRuns))
+			print(c(totalPossibleRuns,insufficientNumbers,totalRuns,doneRuns,submittedRuns))
 		}
 	}
 }
