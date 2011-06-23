@@ -71,7 +71,7 @@ for (focalIndex in 1:length(focalVectorList)) {
 								setwd(paste(paste("/data/abc/RunsApril2011/ActualRuns/T",transitionModelIndex,"/T",transitionModelIndex,"_D",diversificationModelIndex,sep="",collapse=""),"/",nameRoot,sep=""))
 								system("pwd")
 								system("chmod u+x run.sh")
-								system("qsub run.sh")
+								system("/opt/sge/bin/lx24-amd64/qsub run.sh")
 								setwd(origWD)
 								Sys.sleep(floor(runif(1,min=2,max=20)))
 								runsInFile=0
