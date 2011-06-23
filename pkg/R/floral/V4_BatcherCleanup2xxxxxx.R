@@ -71,7 +71,7 @@ for (focalIndex in 1:length(focalVectorList)) {
 								system("chmod u+x run.sh")
 								system("/opt/sge/bin/lx24-amd64/qsub run.sh")
 								setwd(origWD)
-								Sys.sleep(floor(runif(1,min=2,max=20)))
+								Sys.sleep(1)
 								runsInFile=0
 								pbsCommands<-""
 								submittedRuns<-submittedRuns+1
