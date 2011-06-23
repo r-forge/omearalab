@@ -13,6 +13,7 @@ doneRuns<-0
 insufficientNumbers<-0
 runsInFile<-0
 pbsCommands=""
+submittedRuns<-0
 print(c("Theoretical # runs","Runs without enough combos","Possibly valid runs","Completed valid runs"))
 
 for (focalIndex in 1:length(focalVectorList)) {
@@ -53,7 +54,7 @@ for (focalIndex in 1:length(focalVectorList)) {
 								#queue="medium*"
 								pbsCommands=paste(pbsCommands,'\n#$ -q ',queue,sep="")
 								pbsCommands=paste(pbsCommands,'#$ -M omeara.brian@gmail.com', '#$ -m beas', '#$ -S /bin/bash',sep="\n")
-								pbsCommands=paste(pbsCommands,"\n","#$ -N R_",vectorToString(getFocalSummaryLabel(focalVector,S,"x")),"_t",transitionModelIndex,"d",diversificationModelIndex,"\n", 'module load R/2.12.0',sep="")
+								pbsCommands=paste(pbsCommands,"\n","#$ -N R",vectorToString(getFocalSummaryLabel(focalVector,S,"x")),"t",transitionModelIndex,"d",diversificationModelIndex,"\n", 'module load R/2.12.0',sep="")
 							}
 							pbsCommands=paste(pbsCommands,"\n",'cd /data/abc/RunsApril2011/ActualRuns/T',transitionModelIndex,"/T",transitionModelIndex,"_D",diversificationModelIndex,"/",nameRoot,sep="",collapse="")
 							pbsCommands=paste(pbsCommands,"\n","/data/apps/R/R-2.12.0/bin/R CMD BATCH run.R",sep="")
@@ -74,8 +75,9 @@ for (focalIndex in 1:length(focalVectorList)) {
 								Sys.sleep(floor(runif(1,min=2,max=20)))
 								runsInFile=0
 								pbsCommands=""
+								submittedRuns<-submittedRuns+1
 							}
-							while(as.numeric(system("/home/bomeara/bin/nicecountQWme",intern=TRUE))>120) {
+							while(as.numeric(system("/home/bomeara/bin/nicecountQWme",intern=TRUE))>9000) {
 								Sys.sleep(floor(runif(1,min=100,max=200)))
 							}
 						}
@@ -85,7 +87,7 @@ for (focalIndex in 1:length(focalVectorList)) {
 					}
 				}
 			}
-			print(c(totalPossibleRuns,insufficientNumbers,totalRuns,doneRuns))
+			print(c(totalPossibleRuns,insufficientNumbers,totalRuns,doneRuns,submittedRuns))
 		}
 	}
 }
