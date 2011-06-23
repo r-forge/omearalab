@@ -43,20 +43,18 @@ for (focalIndex in 1:length(focalVectorList)) {
 						if(finalMatrixAllCount==0) {
 							runCommand=paste("source('/data/abc/RunsApril2011/UnifiedApproachScripts/V4_Commands.R')\ndoUnifiedRun(F='",vectorToString(focalVector),"',T=",transitionModelIndex,",D=",diversificationModelIndex,",S=",partitionSize,")",sep="",collapse="")
 							cat(runCommand,file=paste(dirRoot,'/run.R',sep=""),append=FALSE)
-							if (getFocalSummaryLabel(focalVector,S,"x")[1]=="x") { #only doing the 2xxxxxx models
-								pbsCommands<-paste('#!/bin/bash','#$ -cwd','#$ -o /dev/null','#$ -e /dev/null',sep="\n")
-								queue="long*"
-								#if (partitionSize==1) {
-								#	queue="short*" #2 hr
-								#}
-								#else if (partitionSize<=3) {
-								#	queue="long*" #24 hr
-								#}
-								#queue="medium*"
-								pbsCommands<-paste(pbsCommands,'\n#$ -q ',queue,sep="")
-								pbsCommands<-paste(pbsCommands,'#$ -M omeara.brian@gmail.com', '#$ -m beas', '#$ -S /bin/bash',sep="\n")
-								pbsCommands<-paste(pbsCommands,"\n","#$ -N R",vectorToString(getFocalSummaryLabel(focalVector,S,"x")),"t",transitionModelIndex,"d",diversificationModelIndex,"\n", 'module load R/2.12.0',sep="")
-							}
+							pbsCommands<-paste('#!/bin/bash','#$ -cwd','#$ -o /dev/null','#$ -e /dev/null',sep="\n")
+							queue="long*"
+							#if (partitionSize==1) {
+							#	queue="short*" #2 hr
+							#}
+							#else if (partitionSize<=3) {
+							#	queue="long*" #24 hr
+							#}
+							#queue="medium*"
+							pbsCommands<-paste(pbsCommands,'\n#$ -q ',queue,sep="")
+							pbsCommands<-paste(pbsCommands,'#$ -M omeara.brian@gmail.com', '#$ -m beas', '#$ -S /bin/bash',sep="\n")
+							pbsCommands<-paste(pbsCommands,"\n","#$ -N R",vectorToString(getFocalSummaryLabel(focalVector,S,"x")),"t",transitionModelIndex,"d",diversificationModelIndex,"\n", 'module load R/2.12.0',sep="")
 							pbsCommands<-paste(pbsCommands,"\n",'cd /data/abc/RunsApril2011/ActualRuns/T',transitionModelIndex,"/T",transitionModelIndex,"_D",diversificationModelIndex,"/",nameRoot,sep="",collapse="")
 							pbsCommands<-paste(pbsCommands,"\n","/data/apps/R/R-2.12.0/bin/R CMD BATCH run.R",sep="")
 							#print(paste(paste("../ActualRuns/P",partitionSchemeText,sep="",collapse=""),"/",nameRoot,'/run.sh',sep=""))
