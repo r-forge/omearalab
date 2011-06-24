@@ -30,10 +30,14 @@ for (focalIndex in 1:length(focalVectorList)) {
 					dirRoot<-paste("/data/abc/RunsApril2011/ActualRuns/T",transitionModelIndex,"/T",transitionModelIndex,"_D",diversificationModelIndex,"/",nameRoot,sep="",collapse="")
 					lsString=paste(paste("ls -1 ",dirRoot,' | grep -c final.matrix.all',sep="",collapse=""))
 					finalMatrixAllCount=suppressWarnings(as.numeric(system(lsString,intern=TRUE)))
+					lsString=paste(paste("ls -1 ",dirRoot,' | grep -c run.Rout',sep="",collapse=""))
+					runRoutCount=suppressWarnings(as.numeric(system(lsString,intern=TRUE)))				
 					if(finalMatrixAllCount!=0) {
-						system(paste("tail -40 ",dirRoot,"/run.Rout > ",dirRoot,"/tail.run.Rout",sep=""))
-						system(paste("zip ",dirRoot,"/run.zip ",dirRoot,"/run.Rout",sep=""))
-						system(paste("rm ",dirRoot,"/run.Rout",sep=""))
+						if (runRoutCount==1) {
+							system(paste("tail -40 ",dirRoot,"/run.Rout > ",dirRoot,"/tail.run.Rout",sep=""))
+							system(paste("zip ",dirRoot,"/run.zip ",dirRoot,"/run.Rout",sep=""))
+							system(paste("rm ",dirRoot,"/run.Rout",sep=""))
+						}
 					}
 				}
 			}
