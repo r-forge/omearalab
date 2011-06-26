@@ -1,5 +1,5 @@
 source("V4_UtilityFns.R")
-setwd("/Users/bomeara/Sites/Floral/RunsApril2011/Summaries")
+setwd("/Users/bomeara/SparkleShare/floral/RunsApril2011/Summaries")
 ls()
 highlevel.dataframe<-data.frame()
 for (T in 1:5) {
