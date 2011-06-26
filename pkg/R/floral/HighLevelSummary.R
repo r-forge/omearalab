@@ -11,7 +11,7 @@ for (T in 1:5) {
 		else {
 			highlevel.dataframe<-rbind(highlevel.dataframe,summary.dataframe[,3:13])
 		}
-		save(highlevel.dataframe,file="/Users/bomeara/Sites/Floral/RunsApril2011/Summaries/Highlevel.dataframe.Rsave",compress=TRUE)
+		save(highlevel.dataframe,file="/Users/bomeara/SparkleShare/floral/RunsApril2011/Summaries/Highlevel.dataframe.Rsave",compress=TRUE)
 		print(paste("just did  T",T,"D",D,"with length =",dim(highlevel.dataframe)[1]))
 	}
 }
@@ -21,5 +21,5 @@ deltaAIC<-highlevel.dataframe$AIC-min(highlevel.dataframe$AIC)
 relativeLikelihood<-exp(-0.5 * deltaAIC)
 AICweight<-relativeLikelihood/sum(relativeLikelihood)
 highlevel.dataframe<-cbind(deltaAIC,AICweight,highlevel.dataframe)
-save(highlevel.dataframe,file="/Users/bomeara/Sites/Floral/RunsApril2011/Summaries/Highlevel.dataframe.Rsave",compress=TRUE)
+save(highlevel.dataframe,file="/Users/bomeara/SparkleShare/floral/RunsApril2011/Summaries/Highlevel.dataframe.Rsave",compress=TRUE)
 summarizeModelWeights(summary.dataframe=highlevel.dataframe,S=S,transitionModels=transitionModels, diversificationModels=diversificationModels)
