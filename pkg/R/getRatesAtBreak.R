@@ -95,6 +95,19 @@ avgRateNodeShiftInfo<-function(avg.rates.object){
 		return(result.object)
 }
 
+NodeOfMaxProportionalChange<-function(avg.rates.object) {
+  ratioBeforeOverAfter<-avg.rates.object[,1]/avg.rates.object[,2]
+  ratioAfterOverBefore<-avg.rates.object[,2]/avg.rates.object[,1]
+  biggestSpeedup<-max(ratioBeforeOverAfter)
+  biggestSlowdown<-max(ratioAfterOverBefore)
+  if (biggestSpeedup>biggestSlowdown) {
+    return(which.max( ratioBeforeOverAfter)[1])
+  }
+  else {
+    return(which.max( ratioAfterOverBefore)[1])
+  }
+}
+
 nodesToEdges<-function(phy) {
   if(class(phy)!="phylo4") {
     phy<-as(phy,"phylo4") 
