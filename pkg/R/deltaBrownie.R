@@ -70,78 +70,63 @@ generate.simmap<-function(x, taxa.vector, change.position=0.5, digits=10, suppre
 		simmapLabel=""
 		if (rootNode(x.reorder)!=currentNode) { #don't do this for the root node
 			if (state!=-1) {
-			simmapLabel=paste(":{",state,",",sprintf(f.d, edgeLength(x.reorder,currentNode)),"}",sep="")
+				simmapLabel=paste(":{",state,",",sprintf(f.d, edgeLength(x.reorder,currentNode)),"}",sep="")
 			}
 			else {
-			if ((change.position>0 && change.position<1) || !suppress.zero) { #so, if we don't have to worry about trimming parts with zero state
-			simmapLabel=paste(":{1,",sprintf(f.d, (1-change.position)*edgeLength(x.reorder,currentNode)),":0,",sprintf(f.d, change.position*edgeLength(x.reorder,currentNode)),"}",sep="")
-		}
-		else {
-			if(change.position==0) { #suppress.zero must be true to get this far
-				simmapLabel=paste(":{1,",sprintf(f.d, edgeLength(x.reorder,currentNode)),"}",sep="")
-			}	
-			else { #change.position must be 1 and suppress.zero==true
-				simmapLabel=paste(":{0,",sprintf(f.d, edgeLength(x.reorder,currentNode)),"}",sep="")
+				if ((change.position>0 && change.position<1) || !suppress.zero) { #so, if we don't have to worry about trimming parts with zero state
+					simmapLabel=paste(":{1,",sprintf(f.d, (1-change.position)*edgeLength(x.reorder,currentNode)),":0,",sprintf(f.d, change.position*edgeLength(x.reorder,currentNode)),"}",sep="")
+				}
+				else {
+					if(change.position==0) { #suppress.zero must be true to get this far
+						simmapLabel=paste(":{1,",sprintf(f.d, edgeLength(x.reorder,currentNode)),"}",sep="")
+					}	
+					else { #change.position must be 1 and suppress.zero==true
+						simmapLabel=paste(":{0,",sprintf(f.d, edgeLength(x.reorder,currentNode)),"}",sep="")
+					}
+				}
+			}
+			if (format=="newick") {
+				simmapLabel=paste(":",sprintf(f.d, edgeLength(x.reorder,currentNode)),sep="") #in this case, override simmap. This is mostly for debugging
 			}
 		}
-	}
-	if (format=="newick") {
-		simmapLabel=paste(":",sprintf(f.d, edgeLength(x.reorder,currentNode)),sep="") #in this case, override simmap. This is mostly for debugging
-	}
-}
-if(nodeType(x.reorder)[getNode(x.reorder,currentEdge)]=="tip") {
-	description.vector[edgeIndex]=paste(names(getNode(x.reorder,currentNode)),simmapLabel,sep="")
-}
-else { #internal node, perhaps even the root
-	tmpDescription="("
-	childrenNodes<-children(x.reorder,currentNode)
-	for (childIndex in 1:length(childrenNodes)) {
-		tmpDescription=paste(tmpDescription,description.vector[which(edges(x.reorder)[,2]==childrenNodes[childIndex])],sep="")
-		if (childIndex<length(childrenNodes)) {
-			tmpDescription=paste(tmpDescription,",",sep="")
+		if(nodeType(x.reorder)[getNode(x.reorder,currentEdge)]=="tip") {
+			description.vector[edgeIndex]=paste(names(getNode(x.reorder,currentNode)),simmapLabel,sep="")
+		}
+		else { #internal node, perhaps even the root
+			tmpDescription="("
+			childrenNodes<-children(x.reorder,currentNode)
+			for (childIndex in 1:length(childrenNodes)) {
+				tmpDescription=paste(tmpDescription,description.vector[which(edges(x.reorder)[,2]==childrenNodes[childIndex])],sep="")
+				if (childIndex<length(childrenNodes)) {
+					tmpDescription=paste(tmpDescription,",",sep="")
+				}
+			}
+			tmpDescription=paste(tmpDescription,")",simmapLabel,sep="")
+			description.vector[edgeIndex]=tmpDescription
 		}
 	}
-	tmpDescription=paste(tmpDescription,")",simmapLabel,sep="")
-	description.vector[edgeIndex]=tmpDescription
-}
-}
-
-
-tree<-description.vector[nEdges(x.reorder)]
-names(tree)<-c(paste(node_number, sep=""))
-return(tree) #last element is the root
-
+	tree<-description.vector[nEdges(x.reorder)]
+	names(tree)<-c(paste(node_number, sep=""))
+	return(tree) #last element is the root
 }
 
 
 
-iterateNonCensored<-function (phy, data, name.check=TRUE) {
-	
+iterateNonCensored<-function (phy, data, name.check=TRUE) {	
 	if(name.check){
-		phy<-as(phy,"phylo")
-		
+		phy<-as(phy,"phylo")		
 #check that taxa match between data and tree
 		checked.object<-name.check(phy,data)
-		
 		if (checked.object[1] == "OK") { #pillaged kindly from Banbury
 			cat("Phylogeny and character matrix are in agreement...moving-on with the rate analysis!")
-			
-			
-			
-		} else {
+		} 
+		else {
 			warning("Phylogeny and character matrix are mismatched:\n")
-			cat("missmatched taxa have been dropped from analysis\n")
-#cat("(In case you are curious check your working directoy for files(s) with data that didn't match)\n")
-			
+			cat("missmatched taxa have been dropped from analysis\n")			
 			if (length(checked.object$Tree.not.data) > 0) {  
-#a<-checked.object$Tree.not.data
-#write(a, file="Tree.not.data.txt")
 				phy<-drop.tip(phy, checked.object$Tree.not.data)
-			}
-			
+			}			
 			if (length(checked.object$Data.not.tree) > 0) {
-#b<-checked.object$Data.not.tree
-#write(b, file="Data.not.tree.txt")
 				which(rownames(data) %in% checked.object$Data.not.tree)->rows
 				as.data.frame(data[-rows,])->data1
 				colnames(data1)<-colnames(data)
@@ -154,92 +139,82 @@ iterateNonCensored<-function (phy, data, name.check=TRUE) {
 	browniePhy<-as(phy, "brownie") #turn phy into a brownie object
 	brownie.tree1<-addData(browniePhy, tip.data=data, dataTypes=contData())  #add data to browniePhy
 	brownie.tree1@order<-"unknown"  #patch so descendants() for the root node works
-###for when we want to index all clade combos###
-	Nodes1<-grep("tip",nodeType(brownie.tree1))  #pulls out the nodes that are internal
-	Nodes2<-grep("internal",nodeType(brownie.tree1))  #pulls out the nodes that are internal
-	Nodes<-c(Nodes1, Nodes2)
-	allDec<-vector("list", length(Nodes)+1)  #creates list with as many places as there are Nodes plus 1 to make space for the TAXSET_all taxon set
-	names(allDec)<-paste("TAXSET_", Nodes,sep="") #all names are added the "TAXSET_" necessary for the brownie object to recognize them
 	
-	for (ii in 1:length(allDec)){		#this for-loop creates the required (by RBrownie) TAXSET_all taxset; thank you Conrad for patching the rootNode mess!
-		if (is.na(names(allDec[ii]))) {
-			names(allDec)[ii]<-paste("TAXSET_all")
-			allDec[[ii]]<-descendants(brownie.tree1, rootNode(brownie.tree1), type=c("tips"))
-			taxasets(brownie.tree1, taxnames=names(allDec[ii]))<-labels(allDec[[ii]])
+	Nodes<-nodeId(brownie.tree1,type="all") 
+	Nodes<-Nodes[which(Nodes!=rootNode(brownie.tree1))] #gives all the nodes except for the root node (we don't care about a rate shift on the lineage leading to our tree)
+	
+	allDescendants<-vector("list", length(Nodes)+1)  #creates list with as many places as there are Nodes plus 1 to make space for the TAXSET_all taxon set
+	names(allDescendants)<-paste("TAXSET_", Nodes,sep="") #all names are added the "TAXSET_" necessary for the brownie object to recognize them
+	
+	for (ii in 1:length(allDescendants)){		#this for-loop creates the required (by RBrownie) TAXSET_all taxset; thank you Conrad for patching the rootNode mess!
+		if (is.na(names(allDescendants[ii]))) {
+			names(allDescendants)[ii]<-paste("TAXSET_all")
+			allDescendants[[ii]]<-descendants(brownie.tree1, rootNode(brownie.tree1), type=c("tips"))
+			taxasets(brownie.tree1, taxnames=names(allDescendants[ii]))<-labels(allDescendants[[ii]])
+			taxasets(brownie.tree1, taxnames="all")<-labels(allDescendants[[ii]])		
+
 		}
 	}
-	
+	print("Finished generating all taxsets")
 	for (i in 1:length(Nodes)) {     #this for-loop creates the required (by RBrownie) TAXSETS_ for each inner node of the tree
-		allDec[[i]]<-descendants(brownie.tree1, Nodes[i], type=c("tips"))
-		taxasets(brownie.tree1, taxnames=names(allDec[i]))<-labels(allDec[[i]])
+		allDescendants[[i]]<-descendants(brownie.tree1, Nodes[i], type=c("tips"))
+		taxasets(brownie.tree1, taxnames=names(allDescendants[i]))<-labels(allDescendants[[i]])
 	}
 	
-	nombres<-vector("list", length(allDec))
+	listOfNamesForTaxaVectors<-vector("list", length(allDescendants))
 	
-	for (i in 1:length(allDec)){  #pulls out taxa that will be used in the manufacutre of taxa.vectors
-		nombres[[i]]<-labels(allDec[i][[1]])
+	for (i in 1:length(allDescendants)){  #pulls out taxa that will be used in the manufacture of taxa.vectors
+		listOfNamesForTaxaVectors[[i]]<-labels(allDescendants[i][[1]])
 	}
-	for (i in 1:length(nombres)){ # create the empty list of taxa.vectors
-		names(nombres)[i]<-paste("taxa.vector.",i, sep="")
+	for (i in 1:length(listOfNamesForTaxaVectors)){ # create the empty list of taxa.vectors
+		names(listOfNamesForTaxaVectors)[i]<-paste("taxa.vector.",i, sep="")
 	}
-	cat("nombres")
 ####so now here use each of those taxa.vectors to generate the other simmap phylogenies
 #### and read in each simmap formatted tree into an object
-	
+	print("Starting to transform trees")
 	trees.list<-c()
-	trees.list.phy<-vector("list", length(nombres))
-	for (i in 1:length(nombres)){
-		trees.list[i]<-generate.simmap(phy, nombres[i][[1]])
+	trees.list.phy<-vector("list", length(listOfNamesForTaxaVectors))
+	for (i in 1:length(listOfNamesForTaxaVectors)){
+		trees.list[i]<-generate.simmap(phy, listOfNamesForTaxaVectors[i][[1]])
 		trees.list.phy[i]<-read.simmap(text=trees.list[i])
 	}
-	cat("trees.list  ")	
 ####turn each tree into a phylo4d_ext class
 	phy.ext.list<-vector("list", length(trees.list.phy))
 	for(i in 1:length(trees.list.phy)){
-		phy.ext.list[i]<-phyext(trees.list.phy[[i]])		}	
-	cat("phy.ext.list  ")
+		phy.ext.list[i]<-phyext(trees.list.phy[[i]])		
+	}	
 ####turn each tree into a brownie class	
 	phy.brownie.list<-vector("list", length(phy.ext.list))
 	for(i in 1:length(phy.ext.list)){
-		phy.brownie.list[i]<-brownie(phy.ext.list[i])		}
-	cat("phy.brownie.list  ")	
+		phy.brownie.list[i]<-brownie(phy.ext.list[i])		
+	}
 #####add the data to each tree
 	phy.brownie.list.w.data<-vector("list", length(phy.brownie.list))
 	for(i in 1:length(phy.brownie.list)){
 		phy.brownie.list.w.data[i]<-addData(phy.brownie.list[i], tip.data=data, dataTypes=contData())
+	}	
+	print("Starting to batch to Brownie")
+	all.test.results1<-data.frame()
+	for (nodeIndex in 1:length(Nodes)) {
+		print(phy.brownie.list.w.data[[nodeIndex]])
+		Node<-Nodes[nodeIndex]
+		tmp.result<-data.frame(runNonCensored(phy.brownie.list.w.data[[nodeIndex]], models=brownie.models.continuous()[2], treeloop=T, charloop=F),NodeShift=Node)
+		if (nodeIndex==1) {
+			all.test.results1<-tmp.result
+		}
+		else {
+			all.test.results1<-rbind(all.test.results1,tmp.result)
+		}
+    print(paste("Finished node ",nodeIndex," of ",length(Nodes),sep=""))
 	}
-	cat("phy.brownie.list.w.data  ")
-	
-#generate the names list of where the tree brakes
-	NodeShift=c()
-	
-	for (i in 1:length(nombres)){
-		NodeShift[i]<-names(generate.simmap(phy, nombres[i][[1]]))
-		NodeShift[i+1]<-c("NA")
-	}
-	
-####now generate the "all" taxaset
-	all_taxa<-grep("[a-z]", tipLabels(phy.brownie.list.w.data[[1]]), value=TRUE)  ##NOTE this is only for the junk tree -- need to fix this for the real species names 
-	for(i in 1:length(phy.brownie.list.w.data)){
-		taxasets(phy.brownie.list.w.data[[i]], taxnames="all")<-all_taxa		}
-	cat("all_taxa.grep  ")
-	all.test.results1<-data.frame() #create an empty data frame as a repository of the final results
-	all.test.results2<-data.frame() #create an empty data frame as a repository of the final results
-	
-	
-	
-	all.test.results1<-runNonCensored(phy.brownie.list.w.data, models=brownie.models.continuous()[2], treeloop=T, charloop=T)
-	all.test.results2<-runNonCensored(phy.brownie.list.w.data[[1]], models=brownie.models.continuous()[1], treeloop=T, taxset="all")
-	
-	
-	
+	all.test.results2<-runNonCensored(phy.brownie.list.w.data[[Nodes+1]], models=brownie.models.continuous()[1], treeloop=T, charloop=F, taxset="all")
+	print("Finished Brownian motion single rate model")
 	newRow<-data.frame(Tree=all.test.results2$Tree, Tree.weight =all.test.results2$"Tree weight", Tree.name=all.test.results2$"Tree name", Char=all.test.results2$Char, Model=all.test.results2$Model, LnL=all.test.results2$"-LnL", AIC=all.test.results2$AIC, AICc=all.test.results2$AICc, AncState=all.test.results2$AncState, Rate_in_state_0=all.test.results2$BMrate, Rate_in_state_1=all.test.results2$BMrate)
 	
 	colnames(newRow)=c("Tree", "Tree weight", "Tree name", "Char", "Model", "-LnL", "AIC", "AICc", "AncState", "Rate_in_state_0", "Rate_in_state_1")
+	newRow<-data.frame(newRow,NodeShift=NA)
 	
 	all.test.results<-rbind(all.test.results1, newRow)
-	
-	all.test.results<-cbind(all.test.results,NodeShift)
 	
 	
 	dAIC=all.test.results$AIC-min(all.test.results$AIC)
@@ -256,19 +231,7 @@ iterateNonCensored<-function (phy, data, name.check=TRUE) {
 	all.test.results<-cbind(all.test.results,dAICc, AICcweight)
 	
 	colnames(all.test.results)[6]<-"-LnL"
-	
-	result.object<-vector("list",3)
-	names(result.object)<-c("all.test.results", "rate.at.shift", "tree.with.shift")
-	
-	result.object$all.test.results<-all.test.results
-	
-	result.object$rate.at.shift<-result.object$all.test.results[which(result.object$all.test.results$AICcweight==max(result.object$all.test.results$AICcweight)),]
-	
-	result.object$tree.with.shift<-phy.brownie.list.w.data[[result.object$all.test.results$Tree[which((result.object$all.test.results$AICcweight)==max(result.object$all.test.results$AICcweight))]]]
-#result.object<-c(all.test.results, trees.list.phy)
-#return(all.test.results)
-	return(result.object)
-	
+	return(all.test.results)	
 }
 
 
@@ -378,18 +341,18 @@ transformBLbasedonnode<-function(phy,rate, focal.node){
 }
 
 getTrueRatesBasedOnNode<-function(phy,rate0, rate1, focal.node){
-  phy<-as(phy, 'phylo4')
-  model.rates<-c(rate0,rate1)
-  rate.choice<-getRatesAtBreak(phy,focal.node)
-  node.vector<-c()
+	phy<-as(phy, 'phylo4')
+	model.rates<-c(rate0,rate1)
+	rate.choice<-getRatesAtBreak(phy,focal.node)
+	node.vector<-c()
 	nodeList<-nodeId(phy,type=c("all"))	
 	rate.matrix<-matrix(data=0, nrow=length(nodeList), ncol=2)  #this is where we will stick the true rates
-  for(nodeIndex in 1:length(nodeList)){
+	for(nodeIndex in 1:length(nodeList)){
 		each.node<-nodeList[nodeIndex]
 		for (position in 1:2) {
 			rate.matrix[nodeIndex,position] <- model.rates[1+ rate.choice[nodeIndex,position] ] 
 		}
 	}
-  return(rate.matrix)
+	return(rate.matrix)
 }
 
