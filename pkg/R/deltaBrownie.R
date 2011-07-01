@@ -387,7 +387,7 @@ getTrueRatesBasedOnNode<-function(phy,rate0, rate1, focal.node){
   for(nodeIndex in 1:length(nodeList)){
 		each.node<-nodeList[nodeIndex]
 		for (position in 1:2) {
-			rate.matrix[nodeIndex,position] <- model.rates[1+ rate.choice[nodeIndex,position] ] )
+			rate.matrix[nodeIndex,position] <- model.rates[1+ rate.choice[nodeIndex,position] ] 
 		}
 	}
   return(rate.matrix)
