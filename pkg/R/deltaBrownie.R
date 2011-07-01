@@ -376,3 +376,20 @@ transformBLbasedonnode<-function(phy,rate, focal.node){
 #	print(edgeLength(phy4))
 	return(as(phy4,"phylo"))	
 }
+
+getTrueRatesBasedOnNode<-function(phy,rate0, rate1, focal.node){
+  phy<-as(phy, 'phylo4')
+  model.rates<-c(rate0,rate1)
+  rate.choice<-getRatesAtBreak(phy,focal.node)
+  node.vector<-c()
+	nodeList<-nodeId(phy,type=c("all"))	
+	rate.matrix<-matrix(data=0, nrow=length(nodeList), ncol=2)  #this is where we will stick the true rates
+  for(nodeIndex in 1:length(nodeList)){
+		each.node<-nodeList[nodeIndex]
+		for (position in 1:2) {
+			rate.matrix[nodeIndex,position] <- model.rates[1+ rate.choice[nodeIndex,position] ] )
+		}
+	}
+  return(rate.matrix)
+}
+
