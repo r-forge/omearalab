@@ -1,13 +1,13 @@
 #this code should find the best break among alternate morphological models
 
-#library(phylobase)
-#library(RBrownie)
-#library(geiger) 
+library(phylobase)
+library(RBrownie)
+library(geiger) 
 
 
-#for three-taxa with real names example (short example)
-#tip.label<-c("Bipes_biporus", "Bipes_cannaliculatus", "Bipes_tridactylus", "Bipes_alvarezi", "Bipes_sp")
-#tree1<-rcoal(5, tip.label)
+for three-taxa with real names example (short example)
+tip.label<-c("Bipes_biporus", "Bipes_cannaliculatus", "Bipes_tridactylus", "Bipes_alvarezi", "Bipes_sp")
+tree1<-rcoal(5, tip.label)
 #tip.label2<-c("Bipes_biporus", "Bipes_cannaliculatus", "Bipes_tridactylus", "Bipes_alvarezi")
 #tree2<-rcoal(5, tip.label)
 
@@ -15,19 +15,19 @@
 #tip.label<-c("Bipes_biporus", "Bipes_cannaliculatus", "Bipes_tridactylus", "Bipes_alvarezi", "Bipes_sp")
 #completeTree<-rcoal(5, tip.label)
 
-#completeBipesData<-read.table("/Users/halamillo/Desktop/completeBipes.txt", row.names=1)
+completeBipesData<-read.table("~/Dropbox/CollabAlamilloHulseyOMeara/DebuggingCode/ExampleData4RBrownie/completeBipes.txt", row.names=1)
 
 #bipes.results<-iterateNonCensored(tree1, completeBipesData)
 
 #tip.label2<-c("Bipes_biporus", "Bipes_cannaliculatus", "Bipes_tridactylus", "Bipes_alvarezi")
 #partialTree<-rcoal(4, tip.label2)
 
-#partialBipesData<-read.table("/Users/halamillo/Desktop/partialBipes.txt", row.names=1)
+#partialBipesData<-read.table("~/Dropbox/CollabAlamilloHulseyOMeara/DebuggingCode/ExampleData4RBrownie/partialBipes.txt", row.names=1)
 
 #tip.label3<-c("Bipes_biporus", "Bipes_cannaliculatus", "Bipes_tridactylus", "Bipes_alvarezi", "Bipes_sp", "Bipes_sp2")
 #extraTree<-rcoal(6, tip.label3)
 
-#extraBipesData<-read.table("/Users/halamillo/Desktop/extraBipes.txt", row.names=1)
+#extraBipesData<-read.table("~/Dropbox/CollabAlamilloHulseyOMeara/DebuggingCode/ExampleData4RBrownie/extraBipes.txt", row.names=1)
 
 
 #data = runif((nTips(tree1)), 1, 10)
@@ -37,7 +37,7 @@
 
 #for example with dipsadine tree and junk data
 #phy<-read.tree("/Users/halamillo/Desktop/NonAcrochMonoRegCons2.phy")
-#data<-read.table("/Users/halamillo/Desktop/dipsmorphdatatabdel.txt", row.names=1)
+#data<-read.table("~/Dropbox/CollabAlamilloHulseyOMeara/DebuggingCode/ExampleData4RBrownie/dipsmorphdatatabdel.txt", row.names=1)
 
 #this is a function to convert from phylo or phylo4 to a newick string, by default in simmap1.1 format. 
 #By giving it a vector of taxon labels, it can give everything in the smallest clade containing those taxa
@@ -146,12 +146,12 @@ iterateNonCensored<-function (phy, data, name.check=TRUE) {
 	allDescendants<-vector("list", length(Nodes)+1)  #creates list with as many places as there are Nodes plus 1 to make space for the TAXSET_all taxon set
 	names(allDescendants)<-paste("TAXSET_", Nodes,sep="") #all names are added the "TAXSET_" necessary for the brownie object to recognize them
 	
-	for (ii in 1:length(allDescendants)){		#this for-loop creates the required (by RBrownie) TAXSET_all taxset; thank you Conrad for patching the rootNode mess!
-		if (is.na(names(allDescendants[ii]))) {
-			names(allDescendants)[ii]<-paste("TAXSET_all")
-			allDescendants[[ii]]<-descendants(brownie.tree1, rootNode(brownie.tree1), type=c("tips"))
-			taxasets(brownie.tree1, taxnames=names(allDescendants[ii]))<-labels(allDescendants[[ii]])
-			taxasets(brownie.tree1, taxnames="all")<-labels(allDescendants[[ii]])		
+	for (allDecIndex in 1:length(allDescendants)){		#this for-loop creates the required (by RBrownie) TAXSET_all taxset; thank you Conrad for patching the rootNode mess!
+		if (is.na(names(allDescendants[allDecIndex]))) {
+			names(allDescendants)[allDecIndex]<-paste("all")
+			allDescendants[[allDecIndex]]<-descendants(brownie.tree1, rootNode(brownie.tree1), type=c("tips"))
+			taxasets(brownie.tree1, taxnames=names(allDescendants[allDecIndex]))<-labels(allDescendants[[allDecIndex]])
+			#taxasets(brownie.tree1, taxnames="all")<-labels(allDescendants[[allDecIndex]])		
 
 		}
 	}
@@ -192,7 +192,14 @@ iterateNonCensored<-function (phy, data, name.check=TRUE) {
 	phy.brownie.list.w.data<-vector("list", length(phy.brownie.list))
 	for(i in 1:length(phy.brownie.list)){
 		phy.brownie.list.w.data[i]<-addData(phy.brownie.list[i], tip.data=data, dataTypes=contData())
-	}	
+	}
+	
+	all<-tipLabels(phy.brownie.list.w.data[[1]])
+	all<-as.character(all)
+	for(i in 1:length(phy.brownie.list.w.data)){
+			taxasets(phy.brownie.list.w.data[[i]], taxnames="all")<-all
+	}
+
 	print("Starting to batch to Brownie")
 	all.test.results1<-data.frame()
 	for (nodeIndex in 1:length(Nodes)) {
@@ -207,7 +214,7 @@ iterateNonCensored<-function (phy, data, name.check=TRUE) {
 		}
     print(paste("Finished node ",nodeIndex," of ",length(Nodes),sep=""))
 	}
-	all.test.results2<-runNonCensored(phy.brownie.list.w.data[[Nodes+1]], models=brownie.models.continuous()[1], treeloop=T, charloop=F, taxset="all")
+	all.test.results2<-runNonCensored(phy.brownie.list.w.data[[1]], models=brownie.models.continuous()[1], treeloop=T, charloop=F, taxset="all") #Brian originally had phy.brownie.list.w.data[[Nodes+1]] but that was giving a recursive indexing failed at level 2 error
 	print("Finished Brownian motion single rate model")
 	newRow<-data.frame(Tree=all.test.results2$Tree, Tree.weight =all.test.results2$"Tree weight", Tree.name=all.test.results2$"Tree name", Char=all.test.results2$Char, Model=all.test.results2$Model, LnL=all.test.results2$"-LnL", AIC=all.test.results2$AIC, AICc=all.test.results2$AICc, AncState=all.test.results2$AncState, Rate_in_state_0=all.test.results2$BMrate, Rate_in_state_1=all.test.results2$BMrate)
 	
