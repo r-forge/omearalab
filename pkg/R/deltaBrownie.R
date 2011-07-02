@@ -5,7 +5,7 @@ library(RBrownie)
 library(geiger) 
 
 
-for three-taxa with real names example (short example)
+#for three-taxa with real names example (short example)
 tip.label<-c("Bipes_biporus", "Bipes_cannaliculatus", "Bipes_tridactylus", "Bipes_alvarezi", "Bipes_sp")
 tree1<-rcoal(5, tip.label)
 #tip.label2<-c("Bipes_biporus", "Bipes_cannaliculatus", "Bipes_tridactylus", "Bipes_alvarezi")
@@ -148,7 +148,7 @@ iterateNonCensored<-function (phy, data, name.check=TRUE) {
 	
 	for (allDecIndex in 1:length(allDescendants)){		#this for-loop creates the required (by RBrownie) TAXSET_all taxset; thank you Conrad for patching the rootNode mess!
 		if (is.na(names(allDescendants[allDecIndex]))) {
-			names(allDescendants)[allDecIndex]<-paste("all")
+			names(allDescendants)[allDecIndex]<-paste("TAXASET_all")
 			allDescendants[[allDecIndex]]<-descendants(brownie.tree1, rootNode(brownie.tree1), type=c("tips"))
 			taxasets(brownie.tree1, taxnames=names(allDescendants[allDecIndex]))<-labels(allDescendants[[allDecIndex]])
 			#taxasets(brownie.tree1, taxnames="all")<-labels(allDescendants[[allDecIndex]])		
@@ -214,7 +214,8 @@ iterateNonCensored<-function (phy, data, name.check=TRUE) {
 		}
     print(paste("Finished node ",nodeIndex," of ",length(Nodes),sep=""))
 	}
-	all.test.results2<-runNonCensored(phy.brownie.list.w.data[[1]], models=brownie.models.continuous()[1], treeloop=T, charloop=F, taxset="all") #Brian originally had phy.brownie.list.w.data[[Nodes+1]] but that was giving a recursive indexing failed at level 2 error
+	
+	all.test.results2<-runNonCensored(phy.brownie.list.w.data[[max(Nodes)]], models=brownie.models.continuous()[1], treeloop=T, charloop=F, taxset="all") #Brian originally had phy.brownie.list.w.data[[Nodes+1]] but that was giving a recursive indexing failed at level 2 error
 	print("Finished Brownian motion single rate model")
 	newRow<-data.frame(Tree=all.test.results2$Tree, Tree.weight =all.test.results2$"Tree weight", Tree.name=all.test.results2$"Tree name", Char=all.test.results2$Char, Model=all.test.results2$Model, LnL=all.test.results2$"-LnL", AIC=all.test.results2$AIC, AICc=all.test.results2$AICc, AncState=all.test.results2$AncState, Rate_in_state_0=all.test.results2$BMrate, Rate_in_state_1=all.test.results2$BMrate)
 	
