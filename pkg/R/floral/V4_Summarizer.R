@@ -134,9 +134,9 @@ while(1<2) { #this will keep looping, updating the summary
 		loopCount<-loopCount+1
 		print(paste("Now starting loop ",loopCount," on ",date()))
 		for (rsyncT in 1:length(tVector)) {
-			system(paste("mkdir -p ../floralwg_ActualRuns/T",rsyncT,sep="")
+			system(paste("mkdir -p ../floralwg_ActualRuns/T",rsyncT,sep=""))
 			for (rsyncD in 1:length(dVector)) {
-				system(paste("mkdir -p ../floralwg_ActualRuns/T",rsyncT,"/T",rsyncT,"_D",rsyncD,sep="")
+				system(paste("mkdir -p ../floralwg_ActualRuns/T",rsyncT,"/T",rsyncT,"_D",rsyncD,sep=""))
 				system(paste("rsync -a bomeara@login.newton.utk.edu:/data/abc/RunsApril2011/ActualRuns/T",rsyncT,"/T",rsyncT,"_D",rsyncD,"/ /Users/bomeara/SparkleShare/floralwg_ActualRuns/T",rsyncT,"/T",rsyncT,"_D",rsyncD,"/",paste=""))
 				Sys.sleep(1200)
 			}
