@@ -18,7 +18,7 @@ summarizeIndiv<-function(actualT,actualD,focalVectorList) {
 
 	runName<-paste("RunT",actualT,"D",actualD," ",sep="")
 	loadedOld<-FALSE
-	try(load(paste("../Summaries/RateSummaryT",actualT,"D",actualD,".Rsave")))
+	try(load(paste("../floralwg_Summaries/RateSummaryT",actualT,"D",actualD,".Rsave")))
 	old.summary.dataframe<-data.frame()
 	if (length(which(ls()=="summary.dataframe"))==1) {
 		old.summary.dataframe<-summary.dataframe
@@ -33,7 +33,7 @@ summarizeIndiv<-function(actualT,actualD,focalVectorList) {
 	
 	summary.dataframe<-data.frame()
 	
-	suppressWarnings(system("mkdir -p ../Summaries"))
+	#suppressWarnings(system("mkdir -p ../Summaries"))
 	for (focalIndex in 1:length(focalVectorList)) {
 		focalVector<-stringToVector(unlist(focalVectorList[[focalIndex]]))
 		for (transitionModelIndex in actualT:actualT) {
@@ -53,7 +53,7 @@ summarizeIndiv<-function(actualT,actualD,focalVectorList) {
 							}
 						}
 						if(tryLoad==TRUE) {
-							dirRoot<-paste("../ActualRuns/T",transitionModelIndex,"/T",transitionModelIndex,"_D",diversificationModelIndex,"/",nameRoot,sep="",collapse="")
+							dirRoot<-paste("../floralwg_ActualRuns/T",transitionModelIndex,"/T",transitionModelIndex,"_D",diversificationModelIndex,"/",nameRoot,sep="",collapse="")
 							suppressWarnings(rm(final.matrix.all)) #just to make sure anything we append is new
 							suppressWarnings(rm(tmp.dataframe)) #ditto
 							suppressWarnings(try(load(paste(dirRoot,"/Steb1Perianth_Steb2PerFusSDS_Steb3SymSDS_Steb4StamNo_Steb5Syncarpy_Steb6SeedNo_Steb8Ovary.final.matrix.all",sep="")),silent=TRUE))
@@ -68,7 +68,7 @@ summarizeIndiv<-function(actualT,actualD,focalVectorList) {
 								summary.dataframe<-rbind(summary.dataframe,tmp.dataframe)
 								print(paste(runName,"     loaded completed run ",completedRuns,"/",totalRuns,sep=""))
 								if(completedRuns%%20==0) { #note that this omits the last completed run, still in RateSummaryT...
-									save(summary.dataframe,file=paste("../Summaries/IntermediateRateSummaryT",actualT,"D",actualD,".Rsave"),compress=TRUE)
+									save(summary.dataframe,file=paste("../floralwg_Summaries/IntermediateRateSummaryT",actualT,"D",actualD,".Rsave"),compress=TRUE)
 								}
 
 							}
@@ -112,14 +112,14 @@ summarizeIndiv<-function(actualT,actualD,focalVectorList) {
 	else {
 		names(summary.dataframe)<-names(old.summary.dataframe)
 	}
-	save(summary.dataframe,file=paste("../Summaries/PreMergeRateSummaryT",actualT,"D",actualD,".Rsave"),compress=TRUE)
+	save(summary.dataframe,file=paste("../floralwg_Summaries/PreMergeRateSummaryT",actualT,"D",actualD,".Rsave"),compress=TRUE)
 	if(loadedOld==TRUE) {
 		print(paste(runName," now doing rbind for old and new summary.dataframe"))
 		summary.dataframe<-rbind(old.summary.dataframe,summary.data.frame)
 		print(paste(runName," now finished doing rbind for old and new summary.dataframe"))
 	}
 	print(paste(runName," finished pulling in data, now saving at ",date()))
-	save(summary.dataframe,file=paste("../Summaries/RateSummaryT",actualT,"D",actualD,".Rsave"),compress=TRUE)
+	save(summary.dataframe,file=paste("../floralwg_Summaries/RateSummaryT",actualT,"D",actualD,".Rsave"),compress=TRUE)
 	print(paste(runName," finished saving at ",date()))
 	if (actualT==5) {
 		if (actualD==6) {
@@ -133,7 +133,14 @@ loopCount<-0
 while(1<2) { #this will keep looping, updating the summary
 		loopCount<-loopCount+1
 		print(paste("Now starting loop ",loopCount," on ",date()))
-		system("rsync -a bomeara@login.newton.utk.edu:/data/abc/RunsApril2011/ /Users/bomeara/SparkleShare/floral/RunsApril2011/")
+		for (rsyncT in 1:length(tVector)) {
+			system(paste("mkdir -p ../floralwg_ActualRuns/T",rsyncT,sep="")
+			for (rsyncD in 1:length(dVector)) {
+				system(paste("mkdir -p ../floralwg_ActualRuns/T",rsyncT,"/T",rsyncT,"_D",rsyncD,sep="")
+				system(paste("rsync -a bomeara@login.newton.utk.edu:/data/abc/RunsApril2011/ActualRuns/T",rsyncT,"/T",rsyncT,"_D",rsyncD,"/ /Users/bomeara/SparkleShare/floralwg_ActualRuns/T",rsyncT,"/T",rsyncT,"_D",rsyncD,"/",paste=""))
+				Sys.sleep(1200)
+			}
+		}
 		print(paste("Finished rsync for loop ",loopCount," at ",date()))
 		foreach(actualT=tVector) %:% foreach(actualD=dVector) %dopar% { summarizeIndiv(actualT,actualD,focalVectorList) }
 	#	print(finalResult)
