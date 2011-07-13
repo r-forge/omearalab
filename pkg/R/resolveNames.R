@@ -1,6 +1,9 @@
 library(rjson)
 #takes a list of names and sends it to the iPlant TNRS site (http://tnrs.iplantcollaborative.org/)
-#b<-fromJSON(file="http://tnrs.iplantc.org/tnrsm-svc/matchNames?retrieve=best&names=zea%20mays,acacia,solanum,saltea")
+#names<-c("zea mays","acacia","solanum","saltea","rosa_rugoso")
+#returnedNames<-resolveNames(names)
+#print(returnedNames)
+
 resolveNames<-function(names,maxPerCall=Inf) {
   names<-sapply(names,sub,pattern="_",replacement=" ")
   names<-sapply(names,URLencode)
@@ -23,7 +26,8 @@ resolveNames<-function(names,maxPerCall=Inf) {
      }
   }
   print("Ignore a warning message about incomplete final line")
+  if (length(newNames)!=length(names)) {
+    warning(paste("the input name list was",length(names),"long but the new one is ",length(newNames),"long"))
+  }
   return(newNames)
 }
-
-names<-c("zea mays","acacia","solanum","saltea","rosa_rugoso")
