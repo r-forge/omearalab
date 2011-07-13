@@ -58,7 +58,7 @@ overlayPlot<-function(phylolist, alpha=0.1) {
 #intree<-list(rcoal(10),rcoal(10),rcoal(10))
 
 #overlayPlot(intree)
-doEdTree<-function() {
+doEdTree<-function(edtree) {
 	overlayPlot(edtree)
 	
 	setwd("/Users/bomeara/Dropbox/Ed")
