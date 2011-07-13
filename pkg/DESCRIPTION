@@ -1,17 +1,12 @@
-Package: TreEvo
+Package: OMearaLab
 Type: Package
-Title: Using ABC to understand trait evolution
+Title: Utility and alpha functions
 Version: 0.1
-Date: 2011-05-26
-Author: Brian O'Meara, Barb L. Banbury
+Date: 2011-07-13
+Author: Brian O'Meara, Barb L. Banbury, Hugo Alamillo
 Maintainer: Brian O'Meara <omeara.brian@gmail.com>
-Depends: geiger, ape, gpclib, rgl, geometry, car, mixOmics, Hmisc, stats, corpcor
-Description: Various functions for estimating parameters of trait evolution using Approximate Bayesian Computation.
+Depends: geiger, ape, phylobase
+Suggests: rjson, corpcor, RBrownie, multicore 
+Description: This project hosts scripts being developed by the O'Meara lab ( http://www.brianomeara.info ), typically for use in comparative methods. This is primarily an incubator for things in a raw state (before becoming projects of their own) or one-off scripts.
 License: GPL
-Collage: approximatebayesian.R
-URL: http://treevo.R-forge.R-project.org
-Repository: CRAN
-Packaged: 2011-05-26 23:00:00; BLB
-Date/Publication: 2011-05-26 23:00:00
-
-
+URL: http://omearalab.R-forge.R-project.org

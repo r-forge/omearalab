@@ -1,1 +1,1 @@
-export(getSimulationSplits, doSimulation, summarizeTaxonStates, convertTaxonFrameToGeigerData, summaryStatsLong, boxcoxplsSummary, doRun)
+export(bigtree, browniepurelyinR, consensusBrlen, deltaBrownie, deltaBrowniePower, deltaBrowniePower4Condor, fitContinuous.hacked, forPulldeltaBrowniePowerRes, fromParadis2008, getRatesAtBreak, overlayPlot, plotPrior, pretty, r8ssummarize, resolveNames)

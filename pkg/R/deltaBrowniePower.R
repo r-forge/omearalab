@@ -55,7 +55,7 @@ for(rep in 1:reps.per.combination){
 					#MAKE SURE EACH DATA.FRAME IS SAVED AS AN R OBJECT IN ANOTHER FILE DONW
 					
 					#TO DO: SYSTEM(EZSUB R CMD BATCH BATCHFILENAME)  DONE
-					intern=TRUE captures the command as an R character vector; all other TRUE/FALSE arguements are left with their defaults, except for the command argument wich pastes the directory
+				#	intern=TRUE captures the command as an R character vector; all other TRUE/FALSE arguements are left with their defaults, except for the command argument wich pastes the directory
 					system(command=paste("/home/alamillo/bin/ezsubmediumR R CMD BATCH ", batchFileName, sep=""), intern=TRUE, ignore.stderr=FALSE, wait=TRUE, input=NULL, show.output.on.console=FALSE)
 					#Sys.sleep(5)
 					
