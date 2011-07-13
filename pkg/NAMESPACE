@@ -1,1 +1,1 @@
-export(bigtree, browniepurelyinR, consensusBrlen, deltaBrownie, deltaBrowniePower, deltaBrowniePower4Condor, fitContinuous.hacked, forPulldeltaBrowniePowerRes, fromParadis2008, getRatesAtBreak, overlayPlot, plotPrior, pretty, r8ssummarize, resolveNames)
+export(bigtree, browniepurelyinR, consensusBrlen, deltaBrownie, fitContinuous.hacked, getRatesAtBreak, overlayPlot, plotPrior, pretty, r8ssummarize, resolveNames)
