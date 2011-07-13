@@ -71,9 +71,7 @@ for(rep in 1:reps.per.combination){
 				#plot(phy3)
 				#title(main=fileNameRoot, col.main="red", font.main=2)
 				#dev.off()
-
-        
-               #plot(x=c(min(c(startVector, endVector)), max(c(startVector, endVector))), y=c(0, max(c(startTime, endTime))), type="n", ylab="Time", xlab="Trait value", main="", bty="n")
+			 #plot(x=c(min(c(startVector, endVector)), max(c(startVector, endVector))), y=c(0, max(c(startTime, endTime))), type="n", ylab="Time", xlab="Trait value", main="", bty="n")
                #for (i in 1:length(startVector)) {
                       # lines(x=c(startVector[i], endVector[i]), y=max(c(startTime, endTime)) - c(startTime[i], endTime[i]))
               # }
