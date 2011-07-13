@@ -4,7 +4,7 @@ library(rjson)
 #returnedNames<-resolveNames(names)
 #print(returnedNames)
 
-resolveNames<-function(names,maxPerCall=Inf) {
+resolveNames<-function(names,maxPerCall=Inf,verbose=TRUE) {
   names<-sapply(names,sub,pattern="_",replacement=" ")
   names<-sapply(names,URLencode)
   callBase<-'http://tnrs.iplantc.org/tnrsm-svc/matchNames?retrieve=best&names='
@@ -19,6 +19,9 @@ resolveNames<-function(names,maxPerCall=Inf) {
          returnedValues<-fromJSON(file=callActual)$items
          for (returnIndex in sequence(length(returnedValues))) {
             newNames[startingPosition+returnIndex-1]<-returnedValues[[returnIndex]]$nameScientific 
+         }
+         if(verbose) {
+            print(paste("finished ",nameIndex,"of ",length(names),"names")) 
          }
          startingPosition<-nameIndex+1
          namesInCall<-0
