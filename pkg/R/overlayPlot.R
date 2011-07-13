@@ -58,18 +58,20 @@ overlayPlot<-function(phylolist, alpha=0.1) {
 #intree<-list(rcoal(10),rcoal(10),rcoal(10))
 
 #overlayPlot(intree)
-overlayPlot(edtree)
-
-setwd("/Users/bomeara/Dropbox/Ed")
-constrainttimes=c(77,92.4)
-for (constraintindex in 1:length(constrainttimes)) {
-	for (treeindex in 1:18) {
-		system(paste("echo '#nexus\nbegin trees;\n' >> tree",treeindex,"_constraint_",constrainttimes[constraintindex],".tre",sep=""))
-		system(paste("grep 'tree PAUP' tree",treeindex,"_constraint_",constrainttimes[constraintindex],".log | grep '=' >> tree",treeindex,"_constraint_",constrainttimes[constraintindex],".tre",sep=""))
-		system(paste("echo '\nend;\n' >> tree",treeindex,"_constraint_",constrainttimes[constraintindex],".tre",sep=""))
-		pdf(file=paste("tree",treeindex,"_constraint_",constrainttimes[constraintindex],".pdf",sep=""),paper="letter")
-		inputtrees<-read.nexus(file=paste("tree",treeindex,"_constraint_",constrainttimes[constraintindex],".tre",sep=""))
-		overlayPlot(inputtrees)
-		dev.off()
+doEdTree<-function() {
+	overlayPlot(edtree)
+	
+	setwd("/Users/bomeara/Dropbox/Ed")
+	constrainttimes=c(77,92.4)
+	for (constraintindex in 1:length(constrainttimes)) {
+		for (treeindex in 1:18) {
+			system(paste("echo '#nexus\nbegin trees;\n' >> tree",treeindex,"_constraint_",constrainttimes[constraintindex],".tre",sep=""))
+			system(paste("grep 'tree PAUP' tree",treeindex,"_constraint_",constrainttimes[constraintindex],".log | grep '=' >> tree",treeindex,"_constraint_",constrainttimes[constraintindex],".tre",sep=""))
+			system(paste("echo '\nend;\n' >> tree",treeindex,"_constraint_",constrainttimes[constraintindex],".tre",sep=""))
+			pdf(file=paste("tree",treeindex,"_constraint_",constrainttimes[constraintindex],".pdf",sep=""),paper="letter")
+			inputtrees<-read.nexus(file=paste("tree",treeindex,"_constraint_",constrainttimes[constraintindex],".tre",sep=""))
+			overlayPlot(inputtrees)
+			dev.off()
+		}
 	}
 }
