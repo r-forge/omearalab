@@ -6,8 +6,8 @@ library(geiger)
 
 
 #for three-taxa with real names example (short example)
-tip.label<-c("Bipes_biporus", "Bipes_cannaliculatus", "Bipes_tridactylus", "Bipes_alvarezi", "Bipes_sp")
-tree1<-rcoal(5, tip.label)
+#tip.label<-c("Bipes_biporus", "Bipes_cannaliculatus", "Bipes_tridactylus", "Bipes_alvarezi", "Bipes_sp")
+#tree1<-rcoal(5, tip.label)
 #tip.label2<-c("Bipes_biporus", "Bipes_cannaliculatus", "Bipes_tridactylus", "Bipes_alvarezi")
 #tree2<-rcoal(5, tip.label)
 
@@ -15,7 +15,7 @@ tree1<-rcoal(5, tip.label)
 #tip.label<-c("Bipes_biporus", "Bipes_cannaliculatus", "Bipes_tridactylus", "Bipes_alvarezi", "Bipes_sp")
 #completeTree<-rcoal(5, tip.label)
 
-completeBipesData<-read.table("~/Dropbox/CollabAlamilloHulseyOMeara/DebuggingCode/ExampleData4RBrownie/completeBipes.txt", row.names=1)
+#completeBipesData<-read.table("~/Dropbox/CollabAlamilloHulseyOMeara/DebuggingCode/ExampleData4RBrownie/completeBipes.txt", row.names=1)
 
 #bipes.results<-iterateNonCensored(tree1, completeBipesData)
 
