@@ -143,10 +143,9 @@ while(1<2) { #this will keep looping, updating the summary
 						if(numberFocalCombos(focalVector) >= diversificationModels$min_focalcombos[rsyncD]) { #if there aren't enough combos to make the model appropriate, don't run it
 							nameRoot<-paste("T",rsyncT,"_D",rsyncD,"_",vectorToString(getFocalSummaryLabel(focalVector,S,"x")),sep="",collapse="")
 							system(paste("mkdir -p ../ActualRuns/T",rsyncT,"/T",rsyncT,"_D",rsyncD,"/",nameRoot,sep=""))
-							rsyncString<-paste("rsync -a bomeara@login.newton.utk.edu:/data/abc/RunsApril2011/ActualRuns/T",rsyncT,"/T",rsyncT,"_D",rsyncD,"/",nameRoot,"/ /Users/bomeara/SparkleShare/floralwg_ActualRuns/T",rsyncT,"/T",rsyncT,"_D",rsyncD,"/",nameRoot,"/",sep="")
+							rsyncString<-paste("rsync -a bomeara@login.newton.utk.edu:/data/abc/RunsApril2011/ActualRuns/T",rsyncT,"/T",rsyncT,"_D",rsyncD,"/",nameRoot,"/ /Users/bomeara/Sites/RunsApril2011/ActualRuns/T",rsyncT,"/T",rsyncT,"_D",rsyncD,"/",nameRoot,"/",sep="")
 							print(rsyncString)
 							system(rsyncString)
-							Sys.sleep(10)
 						}
 					}
 				}
