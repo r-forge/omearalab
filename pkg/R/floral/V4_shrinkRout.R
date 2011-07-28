@@ -33,6 +33,7 @@ for (focalIndex in 1:length(focalVectorList)) {
 					lsString=paste(paste("ls -1 ",dirRoot,' | grep -c run.zip',sep="",collapse=""))
 					runzipCount=suppressWarnings(as.numeric(system(lsString,intern=TRUE)))				
 					if(finalMatrixAllCount!=0) {
+						print(paste("       fine",dirRoot))
 						doneRuns<-doneRuns+1
 						if (runzipCount==0) {
 							system(paste("tail -40 ",dirRoot,"/run.Rout > ",dirRoot,"/tail.run.Rout",sep=""))
@@ -41,7 +42,7 @@ for (focalIndex in 1:length(focalVectorList)) {
 						}
 					}
 					else {
-						print(dirRoot)
+						print(paste("FAIL", dirRoot))
 					}
 				}
 			}
