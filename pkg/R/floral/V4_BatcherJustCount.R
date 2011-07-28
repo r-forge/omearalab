@@ -2,7 +2,7 @@ library(diversitree) #obvious
 library(sfsmisc) #for counting in binary
 library(partitions)
 library(gmp) #for dealing with big integers
-source("/data/abc/RunsApril2011/UnifiedApproachScripts/V4_UtilityFns.R")
+source("V4_UtilityFns.R")
 
 
 focalVectorList<-getAllInterestingFocalVectorsStringsEfficient(S)
@@ -25,7 +25,7 @@ for (focalIndex in 1:length(focalVectorList)) {
 					totalRuns<-totalRuns+1
 					#yay! Now we can run!
 					nameRoot<-paste("T",transitionModelIndex,"_D",diversificationModelIndex,"_",vectorToString(getFocalSummaryLabel(focalVector,S,"x")),sep="",collapse="")
-					dirRoot<-paste("/data/abc/RunsApril2011/ActualRuns/T",transitionModelIndex,"/T",transitionModelIndex,"_D",diversificationModelIndex,"/",nameRoot,sep="",collapse="")
+					dirRoot<-paste("../ActualRuns/T",transitionModelIndex,"/T",transitionModelIndex,"_D",diversificationModelIndex,"/",nameRoot,sep="",collapse="")
 					lsString=paste(paste("ls -1 ",dirRoot,' | grep -c final.matrix.all',sep="",collapse=""))
 					#print(lsString)
 					finalMatrixAllCount=suppressWarnings(as.numeric(system(lsString,intern=TRUE)))
