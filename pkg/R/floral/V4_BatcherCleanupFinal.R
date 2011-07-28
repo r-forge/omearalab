@@ -4,7 +4,7 @@ library(partitions)
 library(gmp) #for dealing with big integers
 source("/data/abc/RunsApril2011/UnifiedApproachScripts/V4_UtilityFns.R")
 
-
+cat("starting run", file="V4_BatcherCleanupFinal.txt",append=FALSE)
 focalVectorList<-getAllInterestingFocalVectorsStringsEfficient(S)
 
 totalRuns<-0
@@ -13,7 +13,7 @@ doneRuns<-0
 insufficientNumbers<-0
 runsInFile<-0
 pbsCommands=""
-print(c("Theoretical # runs","Runs without enough combos","Possibly valid runs","Completed valid runs"))
+cat(c("\nTheoretical # runs","Runs without enough combos","Possibly valid runs","Completed valid runs"), file="V4_BatcherCleanupFinal.txt",append=TRUE)
 
 for (focalIndex in 1:length(focalVectorList)) {
 	focalVector<-stringToVector(unlist(focalVectorList[[focalIndex]]))
@@ -65,10 +65,9 @@ for (focalIndex in 1:length(focalVectorList)) {
 							#print(paste(paste("../ActualRuns/P",partitionSchemeText,sep="",collapse=""),"/",nameRoot,'/run.sh',sep=""))
 							pbsCommands=paste(pbsCommands,"\nrm ",' *.csv *.t ',sep="")
 							runsInFile=runsInFile+1
-							print(paste("Queuing run ",nameRoot," at ",date(),sep="",collapse=""))
+							cat(paste("\nQueuing run ",nameRoot," at ",date(),sep="",collapse=""), file="V4_BatcherCleanupFinal.txt",append=TRUE)
 							if (runsInFile>0) { #change this to deal with remnants
 								cat(pbsCommands,file=paste(dirRoot,'/run.sh',sep=""),append=FALSE)
-								print(pbsCommands)
 								#print(paste("cd ",paste("../ActualRuns/P",partitionSchemeText,sep="",collapse=""),"/",nameRoot,sep=""))
 								origWD<-getwd()
 								setwd(paste(paste("/data/abc/RunsApril2011/ActualRuns/T",transitionModelIndex,"/T",transitionModelIndex,"_D",diversificationModelIndex,sep="",collapse=""),"/",nameRoot,sep=""))
@@ -91,6 +90,6 @@ for (focalIndex in 1:length(focalVectorList)) {
 				}
 			}
 		}
-		print(c(totalPossibleRuns,insufficientNumbers,totalRuns,doneRuns))
+		cat(paste("\n",c(totalPossibleRuns,insufficientNumbers,totalRuns,doneRuns),sep=" ",collapse=" "), file="V4_BatcherCleanupFinal.txt",append=TRUE)
 	}
 }
