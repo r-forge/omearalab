@@ -15,12 +15,12 @@ runsInFile<-0
 pbsCommands=""
 cat(c("\nTheoretical # runs","Runs without enough combos","Possibly valid runs","Completed valid runs"), file="V4_BatcherCleanupFinal.txt",append=TRUE)
 
-for (focalIndex in 1:length(focalVectorList)) {
+for (focalIndex in length(focalVectorList):1) {
 	focalVector<-stringToVector(unlist(focalVectorList[[focalIndex]]))
-	for (transitionModelIndex in 1:dim(transitionModels)[1]) {
+	for (transitionModelIndex in dim(transitionModels)[1]:1) {
 		mkdirCmd=paste("mkdir -p ",paste("/data/abc/RunsApril2011/ActualRuns/T",transitionModelIndex,sep="",collapse=""),sep="",collapse="")
 		suppressWarnings(system(mkdirCmd))
-		for (diversificationModelIndex in 1:dim(diversificationModels)[1]) {
+		for (diversificationModelIndex in dim(diversificationModels)[1]:1) {
 			mkdirCmd=paste("mkdir -p ",paste("/data/abc/RunsApril2011/ActualRuns/T",transitionModelIndex,"/T",transitionModelIndex,"_D",diversificationModelIndex,sep="",collapse=""),sep="",collapse="")
 			suppressWarnings(system(mkdirCmd))
 			totalPossibleRuns<-totalPossibleRuns+1
@@ -73,14 +73,14 @@ for (focalIndex in 1:length(focalVectorList)) {
 								setwd(paste(paste("/data/abc/RunsApril2011/ActualRuns/T",transitionModelIndex,"/T",transitionModelIndex,"_D",diversificationModelIndex,sep="",collapse=""),"/",nameRoot,sep=""))
 								system("pwd")
 								system("chmod u+x run.sh")
-								system("qsub run.sh")
+								system("/opt/sge/bin/lx24-amd64/qsub run.sh")
 								setwd(origWD)
 								Sys.sleep(2)
 								runsInFile=0
 								pbsCommands=""
 							}
 							while(as.numeric(system("/home/bomeara/bin/nicecountQWme",intern=TRUE))>300) {
-								Sys.sleep(117)
+								Sys.sleep(17)
 							}
 						}
 					}
@@ -90,6 +90,6 @@ for (focalIndex in 1:length(focalVectorList)) {
 				}
 			}
 		}
-		cat(paste("\n",c(totalPossibleRuns,insufficientNumbers,totalRuns,doneRuns),sep=" ",collapse=" "), file="V4_BatcherCleanupFinal.txt",append=TRUE)
+		cat(paste("\n",paste(c(totalPossibleRuns,insufficientNumbers,totalRuns,doneRuns),sep=" ",collapse=" "),sep=" ",collapse=" "), file="V4_BatcherCleanupFinal.txt",append=TRUE)
 	}
 }
