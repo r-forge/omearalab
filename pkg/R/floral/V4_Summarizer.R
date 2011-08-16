@@ -6,7 +6,7 @@ source("V4_UtilityFns.R")
 library(doMC)
 library(foreach)
 
-registerDoMC(3) #This has a lot of I/O and memory, so make it run on fewer than the available number of processsors
+registerDoMC(20) #This has a lot of I/O and memory, so make it run on fewer than the available number of processsors
 
 
 focalVectorList<-getAllInterestingFocalVectorsStringsEfficient(S)
@@ -25,6 +25,7 @@ summarizeIndiv<-function(actualT,actualD,focalVectorList) {
 		loadedOld<-TRUE
 		print(paste("length of original old.summary.dataframe = ",dim(old.summary.dataframe)[2]))
 	}
+	loadedOld<-FALSE
 	print(paste(runName," loaded old summary = ",loadedOld))
 	totalRuns<-0
 	completedRuns<-0
@@ -133,16 +134,19 @@ loopCount<-0
 while(1<2) { #this will keep looping, updating the summary
 		loopCount<-loopCount+1
 		print(paste("Now starting loop ",loopCount," on ",date()))
-		for (rsyncT in 1:length(tVector)) {
-			system(paste("mkdir -p ../ActualRuns/T",rsyncT,sep=""))
-			for (rsyncD in 1:length(dVector)) {
-				system(paste("mkdir -p ../ActualRuns/T",rsyncT,"/T",rsyncT,"_D",rsyncD,sep=""))
-				rsyncString<-paste("rsync -a bomeara@login.newton.utk.edu:/data/abc/RunsApril2011/ActualRuns/T",rsyncT,"/T",rsyncT,"_D",rsyncD,"/ /Users/bomeara/Sites/RunsApril2011/ActualRuns/T",rsyncT,"/T",rsyncT,"_D",rsyncD,"/",sep="")
-				print(rsyncString)
-				system(rsyncString)
+		doRsync=FALSE
+		if(doRsync) {
+			for (rsyncT in 1:length(tVector)) {
+				system(paste("mkdir -p ../ActualRuns/T",rsyncT,sep=""))
+				for (rsyncD in 1:length(dVector)) {
+					system(paste("mkdir -p ../ActualRuns/T",rsyncT,"/T",rsyncT,"_D",rsyncD,sep=""))
+					rsyncString<-paste("rsync -a bomeara@login.newton.utk.edu:/data/abc/RunsApril2011/ActualRuns/T",rsyncT,"/T",rsyncT,"_D",rsyncD,"/ /Users/bomeara/Sites/RunsApril2011/ActualRuns/T",rsyncT,"/T",rsyncT,"_D",rsyncD,"/",sep="")
+					print(rsyncString)
+					system(rsyncString)
+				}
 			}
+			print(paste("Finished rsync for loop ",loopCount," at ",date()))
 		}
-		print(paste("Finished rsync for loop ",loopCount," at ",date()))
 		foreach(actualT=tVector) %:% foreach(actualD=dVector) %dopar% { summarizeIndiv(actualT,actualD,focalVectorList) }
 	#	print(finalResult)
 }
