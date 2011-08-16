@@ -5,17 +5,15 @@ highlevel.dataframe<-data.frame()
 for (T in 1:5) {
 	for (D in 1:6) {
 		if(system(paste("ls -1 'IntermediateRateSummaryT",T,"D",D,".Rsave' | grep -c save"),intern=TRUE)>0) {
-			try (
-				load(paste("IntermediateRateSummaryT",T,"D",D,".Rsave"))
-				if (T+D==2) { #first one
-					highlevel.dataframe<-summary.dataframe[,1:13]
-				}
-				else {
-					highlevel.dataframe<-rbind(highlevel.dataframe,summary.dataframe[,1:13])
-				}
-				save(highlevel.dataframe,file="/Users/bomeara/Sites/RunsApril2011/Summaries/Highlevel.dataframe.Rsave",compress=TRUE)
-				print(paste("just did  T",T,"D",D,"with length =",dim(highlevel.dataframe)[1]))
-			)
+			load(paste("IntermediateRateSummaryT",T,"D",D,".Rsave"))
+			if (T+D==2) { #first one
+				highlevel.dataframe<-summary.dataframe[,1:13]
+			}
+			else {
+				highlevel.dataframe<-rbind(highlevel.dataframe,summary.dataframe[,1:13])
+			}
+			save(highlevel.dataframe,file="/Users/bomeara/Sites/RunsApril2011/Summaries/Highlevel.dataframe.Rsave",compress=TRUE)
+			print(paste("just did  T",T,"D",D,"with length =",dim(highlevel.dataframe)[1]))
 		}
 	}
 }
