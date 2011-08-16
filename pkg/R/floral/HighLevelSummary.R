@@ -7,10 +7,10 @@ for (T in 1:5) {
 		if(system(paste("ls -1 'IntermediateRateSummaryT",T,"D",D,".Rsave' | grep -c save"),intern=TRUE)>0) {
 			load(paste("IntermediateRateSummaryT",T,"D",D,".Rsave"))
 			if (T+D==2) { #first one
-				highlevel.dataframe<-summary.dataframe[,3:13]
+				highlevel.dataframe<-summary.dataframe[,1:13]
 			}
 			else {
-				highlevel.dataframe<-rbind(highlevel.dataframe,summary.dataframe[,3:13])
+				highlevel.dataframe<-rbind(highlevel.dataframe,summary.dataframe[,1:13])
 			}
 			save(highlevel.dataframe,file="/Users/bomeara/Sites/RunsApril2011/Summaries/Highlevel.dataframe.Rsave",compress=TRUE)
 			print(paste("just did  T",T,"D",D,"with length =",dim(highlevel.dataframe)[1]))
