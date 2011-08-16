@@ -4,7 +4,7 @@ ls()
 highlevel.dataframe<-data.frame()
 for (T in 1:5) {
 	for (D in 1:6) {
-		if(system(paste("ls -1 IntermediateRateSummaryT\ ",T,"\ D\ ",D,"\ .Rsave | grep -c save"),intern=TRUE)>0) {
+		if(system(paste("ls -1 'IntermediateRateSummaryT",T,"D",D,".Rsave' | grep -c save"),intern=TRUE)>0) {
 			load(paste("IntermediateRateSummaryT",T,"D",D,".Rsave"))
 			if (T+D==2) { #first one
 				highlevel.dataframe<-summary.dataframe[,3:13]
