@@ -25,3 +25,4 @@ AICweight<-relativeLikelihood/sum(relativeLikelihood)
 highlevel.dataframe<-cbind(deltaAIC,AICweight,highlevel.dataframe)
 save(highlevel.dataframe,file="/Users/bomeara/Sites/RunsApril2011/Summaries/Highlevel.dataframe.Rsave",compress=TRUE)
 summarizeModelWeights(summary.dataframe=highlevel.dataframe,S=S,transitionModels=transitionModels, diversificationModels=diversificationModels)
+highlevel.dataframe[which(highlevel.dataframe$deltaAIC<10),]
