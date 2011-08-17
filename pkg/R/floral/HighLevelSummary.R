@@ -4,8 +4,8 @@ ls()
 highlevel.dataframe<-data.frame()
 for (T in 1:5) {
 	for (D in 1:6) {
-		if(system(paste("ls -1 'IntermediateRateSummaryT",T,"D",D,".Rsave' | grep -c save"),intern=TRUE)>0) {
-			load(paste("IntermediateRateSummaryT",T,"D",D,".Rsave"))
+		if(system(paste("ls -1 'RateSummaryT",T,"D",D,".Rsave' | grep -c save"),intern=TRUE)>0) {
+			load(paste("RateSummaryT",T,"D",D,".Rsave"))
 			if (T+D==2) { #first one
 				highlevel.dataframe<-summary.dataframe[,1:13]
 			}
@@ -25,4 +25,4 @@ AICweight<-relativeLikelihood/sum(relativeLikelihood)
 highlevel.dataframe<-cbind(deltaAIC,AICweight,highlevel.dataframe)
 save(highlevel.dataframe,file="/Users/bomeara/Sites/RunsApril2011/Summaries/Highlevel.dataframe.Rsave",compress=TRUE)
 summarizeModelWeights(summary.dataframe=highlevel.dataframe,S=S,transitionModels=transitionModels, diversificationModels=diversificationModels)
-highlevel.dataframe[which(highlevel.dataframe$deltaAIC<10),]
+print(highlevel.dataframe[which(highlevel.dataframe$deltaAIC<10),])
