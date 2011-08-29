@@ -1,6 +1,6 @@
 #this will export the correct formats for cytoscape
 source("~/Sites/RunsApril2011/UnifiedApproachScripts/V4_UtilityFns.R")
-load("~/Sites/RunsApril2011/Summaries/Highlevel.dataframe.withrates.fixedAIC.Rsave") #replace with frame of all data
+load("~/Sites/RunsApril2011/Summaries/Highlevel.dataframe.withrates.Rsave") #replace with frame of all data
 sdf<-summary.dataframe #just to save on typing
 rm(summary.dataframe)
 bestValues<-sdf[which.max(sdf$AICweight),]
