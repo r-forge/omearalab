@@ -1,9 +1,8 @@
 #this will export the correct formats for cytoscape
 source("~/Sites/RunsApril2011/UnifiedApproachScripts/V4_UtilityFns.R")
 load("~/Sites/RunsApril2011/Summaries/Highlevel.dataframe.withrates.Rsave") #replace with frame of all data
-sdf<-summary.dataframe #just to save on typing
-rm(summary.dataframe)
-bestValues<-sdf[which.max(sdf$AICweight),]
+
+bestValues<-highlevel.dataframe[which.max(highlevel.dataframe$AICweight),]
 
 #first the edges
 qValuesPositions<-grep("^q",names(bestValues))
@@ -83,4 +82,4 @@ print("done combo decimal")
 print(ndf3)
 write.table(ndf3,file="~/Sites/RunsApril2011/Summaries/Cytoscape_nodes.txt",quote=FALSE,sep="\t",row.names=FALSE,col.names=TRUE)
 
-subdata
+print(subdata)
