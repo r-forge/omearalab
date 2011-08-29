@@ -1,6 +1,6 @@
 #this will export the correct formats for cytoscape
-source("~/Sites/Floral/RunsApril2011/UnifiedApproachScripts/V4_UtilityFns.R")
-load("~/Sites/Floral/RunsApril2011/Summaries/Highlevel.dataframe.withrates.fixedAIC.Rsave") #replace with frame of all data
+source("~/Sites/RunsApril2011/UnifiedApproachScripts/V4_UtilityFns.R")
+load("~/Sites/RunsApril2011/Summaries/Highlevel.dataframe.withrates.fixedAIC.Rsave") #replace with frame of all data
 sdf<-summary.dataframe #just to save on typing
 rm(summary.dataframe)
 bestValues<-sdf[which.max(sdf$AICweight),]
@@ -25,7 +25,7 @@ for(i in 1:length(qValuesPositions)) {
 names(qDataFrame)<-c("from","to","q")
 qDataFrame$q=qDataFrame$q/min(qDataFrame$q)
 print(qDataFrame)
-write.table(qDataFrame,file="~/Sites/Floral/RunsApril2011/Summaries/Cytoscape_edges.txt",quote=FALSE,sep="\t",row.names=FALSE,col.names=TRUE)
+write.table(qDataFrame,file="~/Sites/RunsApril2011/Summaries/Cytoscape_edges.txt",quote=FALSE,sep="\t",row.names=FALSE,col.names=TRUE)
 
 
 #get info on number of combos
@@ -81,6 +81,6 @@ if (comboDecimal==1) {
 })
 print("done combo decimal")
 print(ndf3)
-write.table(ndf3,file="~/Sites/Floral/RunsApril2011/Summaries/Cytoscape_nodes.txt",quote=FALSE,sep="\t",row.names=FALSE,col.names=TRUE)
+write.table(ndf3,file="~/Sites/RunsApril2011/Summaries/Cytoscape_nodes.txt",quote=FALSE,sep="\t",row.names=FALSE,col.names=TRUE)
 
 subdata
