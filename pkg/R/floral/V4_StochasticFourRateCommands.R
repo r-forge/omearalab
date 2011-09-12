@@ -109,20 +109,29 @@ oneSim<-function(maxWallTime=Inf) {
   outvector<-c(as.numeric(Sys.time()-starttime,units="secs"),out$data[dim(out$data)[1],])
   names(outvector)[1]<-"CPUtime"
   names(outvector)[2]<-"Duration"
-  cat(outvector,"\n",file=paste("StochasticFourRate_InfMaxtime_",taskid,".txt",sep=""),append=TRUE)
+  cat(outvector,"\n",file=paste("StochasticFourRate_",taskid,".txt",sep=""),append=TRUE)
  # ssa.plot(out)
   return(outvector)
 }
 
+#IMPORTANT:
+#The way the batching happens, each set of runs will end with a long run. So to estimate
+#the proportion of sims that go extinct, you'll have to take this into account (something like
+#using the wait time until a success to estimate the probability, rather than just taking the
+#ratio of number of runs that ended up with species to the total number of runs). Another way 
+#would be to calculate the raw ratio, but using just the first X simulations in each run, where
+#X is the minimum number of simulations in any run
+
+
 taskid<-Sys.getenv("SGE_TASK_ID")
 overallstarttime<-Sys.time()
 sims<-cbind(oneSim())
-save(sims,file=paste("StochasticFourRate_InfMaxtime_",taskid,".RSave",sep=""),compress=TRUE)
+save(sims,file=paste("StochasticFourRate_",taskid,".RSave",sep=""),compress=TRUE)
 minduration<-3600 #one hour
 while(as.numeric(Sys.time()-overallstarttime,units="secs")<minduration) {
   sims2<- cbind(oneSim())
   if(!is.null(dim(sims2))) {
      sims<-cbind(sims,sims2)
-     save(sims,file=paste("StochasticFourRate_InfMaxtime_",taskid,".RSave",sep=""),compress=TRUE)
+     save(sims,file=paste("StochasticFourRate_",taskid,".RSave",sep=""),compress=TRUE)
   }
 }
