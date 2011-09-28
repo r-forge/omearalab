@@ -173,13 +173,21 @@ bisse.ani<-function(q0=0.0,q1=0.555,b0=5.199,b1=2.933,d0=5.433,d1=2.319,starting
         i <- i + 1
     }
 }
-#par(ann=FALSE)
-#ani.start(nmax=1000,interval=1,title="Diversification and Character Evolution")
-#bisse.ani()
+#
+showBisseMovie<-function() {
+  par(ann=FALSE)
+  quartz()
+  ani.start(nmax=1000,interval=1,title="Diversification and Character Evolution")
+  bisse.ani()
+  ani.stop()
+}
+#
 #ani.stop()
-oopt=ani.options(nmax=500,interval=0.1)
-#quartz()
+#
 #bisse.ani()
-saveMovie(bisse.ani(),convert='convert',outdir="/Users/bomeara/Desktop/",movietype = "gif",width=600, height=600,interval=0.5)
-ani.options(oopt)
+saveBisseMovie<-function() {
+  oopt=ani.options(nmax=500,interval=0.1)
+  saveMovie(bisse.ani(),convert='convert',outdir="/Users/bomeara/Desktop/",movietype = "gif",width=600, height=600,interval=0.5)
+  ani.options(oopt)
+}
 #ani.stop()
