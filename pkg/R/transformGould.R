@@ -73,12 +73,18 @@ noTransform<-function(phy,...) {
 	return(phy)
 }
 
+nonzeroUniformTree<-function(phy,...) {
+	phy$edge.length[which(phy$edge.length>0)]<-1
+	return(phy)
+}
+
 #this takes a tree, some data, and a transformation function that uses a single parameter (kappaTree or something similar). 
 #it returns the optimal values of the parameters and the likelihood
-likelihoodNonGouldTransform<-function(phy,data,transformation.fn,transformation.param,data.type=c("Continuous","Discrete"),data.model="ER",optimx.method="nlm",badVal=1000000000) {
+likelihoodNonGouldTransform<-function(transformation.param,phy,data,transformation.fn,data.type=c("Continuous","Discrete"),data.model="ER",badVal=1000000000) {
 	data.type<-match.arg(data.type)
 	phy<-transformation.fn(phy,transformation.param)
 	neglnL<-badVal
+	print(paste("transformation.param=",transformation.param))
 	if(data.type=="Continuous") {
 		newNegLnL<-NA
 		try(newNegLnL<-(-1)*fitContinuous(phy,data)[[1]]$lnl) #want to minimize neg lnL
@@ -97,3 +103,10 @@ likelihoodNonGouldTransform<-function(phy,data,transformation.fn,transformation.
 	}
 	return(neglnL)
 }
+
+fitNonGouldTransform<-function(phy,data,transformation.fn,data.type=c("Continuous","Discrete"),data.model="ER",badVal=1000000000,optimx.method="Nelder-Mead") {
+	data.type<-match.arg(data.type)
+	results<-optimx(par=c(1),fn=likelihoodNonGouldTransform,method=optimx.method,phy=phy,data=data,transformation.fn=transformation.fn,data.type=data.type,data.model=data.model,badVal=badVal)
+	return(results)
+}
+
