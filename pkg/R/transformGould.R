@@ -7,6 +7,7 @@ library(sfsmisc)
 library(partitions) #for converting from binary back to decimal
 library(gmp) #for dealing with big integers
 library(optimx)
+library(phylobase)
 
 
 lengthGouldVector<-function(phy) {
@@ -104,9 +105,60 @@ likelihoodNonGouldTransform<-function(transformation.param,phy,data,transformati
 	return(neglnL)
 }
 
+likelihoodGouldPlusNonGouldTransform<-function(transformation.param,phyClock,phyGould,data,transformation.fn,data.type=c("Continuous","Discrete"),data.model="ER",badVal=1000000000) {
+	data.type<-match.arg(data.type)
+	gouldWeight<-transformation.param[1]
+	stretchParam<-transformation.param[2]
+	
+	#keep in bounds
+	if (gouldWeight<0) {
+		return(badVal)
+	}
+	if (gouldWeight>1) {
+		return(badVal)
+	}
+	if (stretchParam<0) {
+		return(badVal)
+	}
+	if (stretchParam>1) {
+		return(badVal)
+	}
+	
+	phyClock<-transformation.fn(phyClock,stretchParam)
+	phyClockHeight<-max(depthTips(as(phyClock,"phylo4")))
+	phyGouldHeight<-max(depthTips(as(phyGould,"phylo4")))
+	
+	if(sum(sum(phyClock$edges[,1]==phyGould$edges[,1]),sum(phyClock$edges[,2]==phyGould$edges[,2]))!=2*max(dim(phyClock$edges)[1],dim(phyGould$edges)[1])) {
+		stop("Imperfect match between phyClock and phyGould: they must match exactly, including internal ordering of information")
+	}
+	
+	phy<-phyClock
+	phy$edge.length<-(gouldWeight) * (phyClock$edge.length/phyGouldHeight) + (1 - gouldWeight) * (phyClock$edge.length/phyClockHeight)
+	neglnL<-badVal
+	if(data.type=="Continuous") {
+		newNegLnL<-NA
+		try(newNegLnL<-(-1)*fitContinuous(phy,data)[[1]]$lnl) #want to minimize neg lnL
+		print(newNegLnL)
+		if(is.finite(newNegLnL)) {
+			neglnL<-newLnL
+		}
+	}
+	if(data.type=="Discrete") {
+		newNegLnL<-NA
+		try(newNegLnL<-(-1)*fitDiscrete(phy,data,model=data.model)[[1]]$lnl)
+		print(newNegLnL)
+		if(is.finite(newNegLnL)) {
+			neglnL<-newNegLnL
+		}
+	}
+	return(neglnL)
+}
+
 fitNonGouldTransform<-function(phy,data,transformation.fn,data.type=c("Continuous","Discrete"),data.model="ER",badVal=1000000000,optimx.method="Nelder-Mead") {
 	data.type<-match.arg(data.type)
 	results<-optimx(par=c(1),fn=likelihoodNonGouldTransform,method=optimx.method,phy=phy,data=data,transformation.fn=transformation.fn,data.type=data.type,data.model=data.model,badVal=badVal)
 	return(results)
 }
+
+
 
