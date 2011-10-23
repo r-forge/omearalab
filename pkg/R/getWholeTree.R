@@ -34,3 +34,46 @@ downloadAllTreeBase<-function(start.time=22,end.time=5,time.delay=15) {
  }
  return(all.studies) 
 }
+
+getNTrees<-function(record) {
+  return(length(record$trees))
+}
+
+
+getFirstTreePerRecord<-function(record) {
+  return(record$trees[[1]]) 
+}
+
+getClassOfFirstTree<-function(record) {
+  return(class(getFirstTreePerRecord(record))) 
+}
+
+removeEmptyRecords<-function(all.studies) {
+   nTrees<-sapply(all.studies,getNTrees)
+   all.studiesNew<-all.studies
+   if(min(nTrees)==0) {
+    all.studiesNew<-all.studies[-1*which(0==nTrees)]
+   }
+   all.studiesNew<-all.studiesNew[which("phylo"==sapply(all.studiesNew,getClassOfFirstTree))]
+   return(all.studiesNew)
+}
+
+hasBrlen<-function(tree) {
+  return(!is.null(tree$edge.length))
+}
+
+
+
+  
+firstTreeHasBrlen<-function(record) {
+  return(hasBrlen(getFirstTreePerRecord(record)))
+}
+
+firstTreeUltrametric<-function(record) {
+  if (hasBrlen(getFirstTreePerRecord(record))) {
+    return(is.ultrametric(getFirstTreePerRecord(record)))
+  }
+  else {
+    return(FALSE) 
+  }
+}

@@ -109,6 +109,7 @@ likelihoodGouldPlusNonGouldTransform<-function(transformation.param,phyClock,phy
 	data.type<-match.arg(data.type)
 	gouldWeight<-transformation.param[1]
 	stretchParam<-transformation.param[2]
+ print(transformation.param)
 	
 	#keep in bounds
 	if (gouldWeight<0) {
@@ -123,24 +124,29 @@ likelihoodGouldPlusNonGouldTransform<-function(transformation.param,phyClock,phy
 	if (stretchParam>1) {
 		return(badVal)
 	}
+ print(summary(phyClock))
+ print(summary(phyGould))
 	
 	phyClock<-transformation.fn(phyClock,stretchParam)
+  print(summary(phyClock))
+
 	phyClockHeight<-max(depthTips(as(phyClock,"phylo4")))
 	phyGouldHeight<-max(depthTips(as(phyGould,"phylo4")))
-	
-	if(sum(sum(phyClock$edges[,1]==phyGould$edges[,1]),sum(phyClock$edges[,2]==phyGould$edges[,2]))!=2*max(dim(phyClock$edges)[1],dim(phyGould$edges)[1])) {
-		stop("Imperfect match between phyClock and phyGould: they must match exactly, including internal ordering of information")
-	}
+#	if(sum(sum(phyClock$edges[,1]==phyGould$edges[,1]),sum(phyClock$edges[,2]==phyGould$edges[,2]))!=2*max(dim(phyClock$edges)[1],dim(phyGould$edges)[1])) {
+#    print(cbind(phyGould$edges,phyClock$edges))
+#    stop("Imperfect match between phyClock and phyGould: they must match exactly, including internal ordering of information")
+#	}
 	
 	phy<-phyClock
-	phy$edge.length<-(gouldWeight) * (phyClock$edge.length/phyGouldHeight) + (1 - gouldWeight) * (phyClock$edge.length/phyClockHeight)
-	neglnL<-badVal
+	phy$edge.length<-(gouldWeight) * (phyGould$edge.length/phyGouldHeight) + (1 - gouldWeight) * (phyClock$edge.length/phyClockHeight)
+  plot(phy)
+ neglnL<-badVal
 	if(data.type=="Continuous") {
 		newNegLnL<-NA
 		try(newNegLnL<-(-1)*fitContinuous(phy,data)[[1]]$lnl) #want to minimize neg lnL
 		print(newNegLnL)
 		if(is.finite(newNegLnL)) {
-			neglnL<-newLnL
+			neglnL<-newNegLnL
 		}
 	}
 	if(data.type=="Discrete") {
@@ -160,5 +166,34 @@ fitNonGouldTransform<-function(phy,data,transformation.fn,data.type=c("Continuou
 	return(results)
 }
 
+fitGouldPlusNonGouldTransform<-function(phy,data,gouldVector,transformation.fn,data.type=c("Continuous","Discrete"),data.model="ER",badVal=1000000000,optimx.method="Nelder-Mead") {
+  data.type<-match.arg(data.type)
+  results<-optimx(par=c(0.5,1),fn=likelihoodGouldPlusNonGouldTransform,method=optimx.method,phyClock=phy,phyGould=transformGould(phy,gouldVector),data=data,transformation.fn=transformation.fn,data.type=data.type,data.model=data.model,badVal=badVal)
+	return(results)
+}
 
+#Add measurement error: important with zero length branches
 
+################## test data ###################
+
+phy<-rcoal(8)
+trueGouldVector<-toGouldVector(5,2,lengthGouldVector(phy))
+phyGouldTrue<-nonzeroUniformTree(transformGould(phy,trueGouldVector))
+data<-sim.char(phyGouldTrue,matrix(1),1)[,,1]
+actualGouldVector<-trueGouldVector
+
+#result<-likelihoodGouldPlusNonGouldTransform(c(1,1),phy,nonzeroUniformTree(transformGould(phy,actualGouldVector)),data,kappaTree,"Continuous")
+
+liks<-c()
+distances<-c()
+for (i in as.numeric(minIndexGouldVector(phy)):as.numeric(maxIndexGouldVector(phy))) {
+  plot(transformGould(phy,toGouldVector(i,2,lengthGouldVector(phy))))
+  phyClock<-phy
+  distances<-append(distances,sum(abs(actualGouldVector-toGouldVector(i,2,lengthGouldVector(phy)))))
+  phyGould<-nonzeroUniformTree(transformGould(phy,toGouldVector(i,2,lengthGouldVector(phy))))
+  #phyClock<-kappaTree(phyClock,runif(1))
+  liks<-append(liks,likelihoodGouldPlusNonGouldTransform(c(.95,1),phyClock,phyGould,data,kappaTree,"Continuous"))
+  #Sys.sleep(5)
+}
+
+plot(distances,liks)
