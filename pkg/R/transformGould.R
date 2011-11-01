@@ -206,6 +206,7 @@ likelihoodGouldPlusNonGouldTransformPlusError<-function(transformation.param,phy
   phy$edge.length[which(phy$edge[,2]<=Ntip(phy))]<-phy$edge.length[which(phy$edge[,2]<=Ntip(phy))]+errorParam
   #plot(phy)
  neglnL<-badVal
+  sink("/dev/null")
 	if(data.type=="Continuous") {
 		newNegLnL<-NA
 		try(newNegLnL<-(-1)*fitContinuous(phy,data)[[1]]$lnl) #want to minimize neg lnL
@@ -222,6 +223,7 @@ likelihoodGouldPlusNonGouldTransformPlusError<-function(transformation.param,phy
 			neglnL<-newNegLnL
 		}
 	}
+  sink()
   print(paste("negLnL= = ",neglnL))
 
 	return(neglnL)
