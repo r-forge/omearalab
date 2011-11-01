@@ -8,6 +8,7 @@ library(partitions) #for converting from binary back to decimal
 library(gmp) #for dealing with big integers
 library(optimx)
 library(phylobase)
+library(rgenoud)
 
 
 lengthGouldVector<-function(phy) {
@@ -85,11 +86,11 @@ likelihoodNonGouldTransform<-function(transformation.param,phy,data,transformati
 	data.type<-match.arg(data.type)
 	phy<-transformation.fn(phy,transformation.param)
 	neglnL<-badVal
-	print(paste("transformation.param=",transformation.param))
+#	print(paste("transformation.param=",transformation.param))
 	if(data.type=="Continuous") {
 		newNegLnL<-NA
 		try(newNegLnL<-(-1)*fitContinuous(phy,data)[[1]]$lnl) #want to minimize neg lnL
-		print(newNegLnL)
+		#print(newNegLnL)
 		if(is.finite(newNegLnL)) {
 			neglnL<-newLnL
 		}
@@ -97,7 +98,7 @@ likelihoodNonGouldTransform<-function(transformation.param,phy,data,transformati
 	if(data.type=="Discrete") {
 		newNegLnL<-NA
 		try(newNegLnL<-(-1)*fitDiscrete(phy,data,model=data.model)[[1]]$lnl)
-		print(newNegLnL)
+		#print(newNegLnL)
 		if(is.finite(newNegLnL)) {
 			neglnL<-newNegLnL
 		}
@@ -109,7 +110,7 @@ likelihoodGouldPlusNonGouldTransform<-function(transformation.param,phyClock,phy
 	data.type<-match.arg(data.type)
 	gouldWeight<-transformation.param[1]
 	stretchParam<-transformation.param[2]
- print(transformation.param)
+ #print(transformation.param)
 	
 	#keep in bounds
 	if (gouldWeight<0) {
@@ -124,11 +125,11 @@ likelihoodGouldPlusNonGouldTransform<-function(transformation.param,phyClock,phy
 	if (stretchParam>1) {
 		return(badVal)
 	}
- print(summary(phyClock))
- print(summary(phyGould))
+ #print(summary(phyClock))
+ #print(summary(phyGould))
 	
 	phyClock<-transformation.fn(phyClock,stretchParam)
-  print(summary(phyClock))
+  #print(summary(phyClock))
 
 	phyClockHeight<-max(depthTips(as(phyClock,"phylo4")))
 	phyGouldHeight<-max(depthTips(as(phyGould,"phylo4")))
@@ -144,7 +145,7 @@ likelihoodGouldPlusNonGouldTransform<-function(transformation.param,phyClock,phy
 	if(data.type=="Continuous") {
 		newNegLnL<-NA
 		try(newNegLnL<-(-1)*fitContinuous(phy,data)[[1]]$lnl) #want to minimize neg lnL
-		print(newNegLnL)
+		#print(newNegLnL)
 		if(is.finite(newNegLnL)) {
 			neglnL<-newNegLnL
 		}
@@ -152,7 +153,7 @@ likelihoodGouldPlusNonGouldTransform<-function(transformation.param,phyClock,phy
 	if(data.type=="Discrete") {
 		newNegLnL<-NA
 		try(newNegLnL<-(-1)*fitDiscrete(phy,data,model=data.model)[[1]]$lnl)
-		print(newNegLnL)
+		#print(newNegLnL)
 		if(is.finite(newNegLnL)) {
 			neglnL<-newNegLnL
 		}
@@ -160,13 +161,16 @@ likelihoodGouldPlusNonGouldTransform<-function(transformation.param,phyClock,phy
 	return(neglnL)
 }
 
-likelihoodGouldPlusNonGouldTransformPlusError<-function(transformation.param,phyClock,phyGould,data,transformation.fn,data.type=c("Continuous","Discrete"),data.model="ER",badVal=1000000000) {
+likelihoodGouldPlusNonGouldTransformPlusError<-function(transformation.param,phyClock,phyGould,data,transformation.fn,data.type=c("Continuous","Discrete"),data.model="ER",badVal=1000000000,ln.transformed=FALSE) {
   data.type<-match.arg(data.type)
+  if(ln.transformed) {
+    transformation.param<-exp(transformation.param) 
+  }
 	gouldWeight<-transformation.param[1]
 	stretchParam<-transformation.param[2]
   errorParam<-transformation.param[3]
- print(transformation.param)
-	
+  print(transformation.param)
+	print("Starting bounds checking")
 	#keep in bounds
 	if (gouldWeight<0) {
 		return(badVal)
@@ -180,11 +184,15 @@ likelihoodGouldPlusNonGouldTransformPlusError<-function(transformation.param,phy
 	if (stretchParam>1) {
 		return(badVal)
 	}
- print(summary(phyClock))
- print(summary(phyGould))
+  if (errorParam<0) {
+    return(badVal) 
+  }
+  print("Finished bounds checking")
+ #print(summary(phyClock))
+ #print(summary(phyGould))
 	
 	phyClock<-transformation.fn(phyClock,stretchParam)
-  print(summary(phyClock))
+  #print(summary(phyClock))
 
 	phyClockHeight<-max(depthTips(as(phyClock,"phylo4")))
 	phyGouldHeight<-max(depthTips(as(phyGould,"phylo4")))
@@ -201,7 +209,7 @@ likelihoodGouldPlusNonGouldTransformPlusError<-function(transformation.param,phy
 	if(data.type=="Continuous") {
 		newNegLnL<-NA
 		try(newNegLnL<-(-1)*fitContinuous(phy,data)[[1]]$lnl) #want to minimize neg lnL
-		print(newNegLnL)
+		#print(newNegLnL)
 		if(is.finite(newNegLnL)) {
 			neglnL<-newNegLnL
 		}
@@ -209,11 +217,13 @@ likelihoodGouldPlusNonGouldTransformPlusError<-function(transformation.param,phy
 	if(data.type=="Discrete") {
 		newNegLnL<-NA
 		try(newNegLnL<-(-1)*fitDiscrete(phy,data,model=data.model)[[1]]$lnl)
-		print(newNegLnL)
+		#print(newNegLnL)
 		if(is.finite(newNegLnL)) {
 			neglnL<-newNegLnL
 		}
 	}
+  print(paste("negLnL= = ",neglnL))
+
 	return(neglnL)
 }
 
@@ -230,6 +240,37 @@ fitGouldPlusNonGouldTransform<-function(phy,data,gouldVector,transformation.fn,d
 	return(results)
 }
 
+fitGouldPlusNonGouldPlusErrorTransform<-function(phy,data,gouldVector,transformation.fn,data.type=c("Continuous","Discrete"),data.model="ER",badVal=1000000000,optimx.method="Nelder-Mead") {
+  data.type<-match.arg(data.type)
+  results<-optimx(par=c(0.5,1,0.0000000001),fn=likelihoodGouldPlusNonGouldTransformPlusError,method=optimx.method,phyClock=phy,phyGould=transformGould(phy,gouldVector),data=data,transformation.fn=transformation.fn,data.type=data.type,data.model=data.model,badVal=badVal)
+  return(results)
+}
+
+likGouldPlusNonGouldPlusErrorTransformContinuousParamOptimized<-function(gouldVector,phy,data,transformation.fn,data.type=c("Continuous","Discrete"),data.model="ER",badVal=1000000000,optimx.method="Nelder-Mead",itnmax=NULL) {
+  data.type<-match.arg(data.type)
+  print(gouldVector)
+  if(min(gouldVector)<0) {
+    print("Gould vector min too low")
+    return(badVal) 
+  }
+  if(max(gouldVector)>1) {
+    print("Gould vector max too high")
+    return(badVal) 
+  }
+  results<-optimx(par=log(c(0.5,1,0.0000000001)),fn=likelihoodGouldPlusNonGouldTransformPlusError,method=optimx.method,phyClock=phy,phyGould=transformGould(phy,gouldVector),data=data,transformation.fn=transformation.fn,data.type=data.type,data.model=data.model,badVal=badVal,ln.transformed=TRUE,itnmax=itnmax)
+  print(results$fvalues)
+  return(results$fvalues)
+}
+
+fitLikGouldPlusNonGouldPlusErrorTransformContinuousParamOptimized<-function(phy,data,transformation.fn,data.type=c("Continuous","Discrete"),data.model="ER",badVal=1000000000,optimx.method="Nelder-Mead",pop.size=1000,itnmax=NULL) {
+  data.type<-match.arg(data.type)
+  starting.values<-matrix(data=rbinom(pop.size*lengthGouldVector(phy),1,0.5),nrow=pop.size)
+  Domains<-matrix(c(rep(0,lengthGouldVector(phy)),rep(1,lengthGouldVector(phy))),ncol=2,byrow=FALSE)
+  results<-genoud(fn=likGouldPlusNonGouldPlusErrorTransformContinuousParamOptimized,nvars=lengthGouldVector(phy),boundary.enforcement=2, max=FALSE,data.type.int=TRUE,pop.size=pop.size,starting.values=starting.values, Domains=Domains,           phy=phy,data=data,transformation.fn=transformation.fn,data.type=data.type,data.model=data.model,badVal=badVal,itnmax=itnmax)
+  return(results)
+}
+
+
 #Add measurement error: important with zero length branches
 
 ################## test data ###################
@@ -241,6 +282,9 @@ data<-sim.char(phyGouldTrue,matrix(1),1)[,,1]
 actualGouldVector<-trueGouldVector
 
 #result<-likelihoodGouldPlusNonGouldTransform(c(1,1),phy,nonzeroUniformTree(transformGould(phy,actualGouldVector)),data,kappaTree,"Continuous")
+
+full<-fitLikGouldPlusNonGouldPlusErrorTransformContinuousParamOptimized(phy,data,kappaTree,"Continuous",pop.size=3,itnmax=3)
+
 
 liks<-c()
 liks.1<-c()
