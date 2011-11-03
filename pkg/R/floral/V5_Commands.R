@@ -159,7 +159,10 @@ doUnifiedRun<-function(F=F, T=T,D=D,S=partitionSize) {
 	#names(results.vector)<-c("diversificationType", "transitionType", "lnL", "K", "AIC", rep("div or trans ",length(results.vector)-5))
 	#print(results.vector)
 	#save(results.vector, file=paste(filename,'.optim',sep=""), ascii=TRUE)
-
+	#shrink down final files
+	system("tail -40 run.Rout > tail.run.Rout")
+	system("/usr/bin/zip run.zip run.Rout")
+	system("rm run.Rout")
 }
 
 
