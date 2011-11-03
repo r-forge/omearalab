@@ -63,7 +63,7 @@ extralistD<-c("lambdaAll", "lambdaF lambdaN", "lambdaAll muAll", "lambdaF lambda
 
 #Global definitions
 nchar=6
-6=nchar
+S=nchar
 partitionSize<-nchar
 
 #utility functions
