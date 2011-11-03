@@ -353,6 +353,7 @@ prepData<-function(P=P,F=F,T=T,D=D,S=S,sourcetraits="/data/abc/RunsNov2011/Sourc
 	}
 	#write out datafile for the character with matching tree
 	write.csv(char,file=paste(finalname,".csv",sep=""))
+	print(tree2)
 	write.tree(tree2,file=paste(finalname,"tree",".t",sep=""))
 	return(finalname)
 }
