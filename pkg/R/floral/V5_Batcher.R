@@ -61,13 +61,13 @@ for (focalIndex in 1:length(focalVectorList)) {
 							setwd(paste(paste("/data/abc/RunsNov2011/ActualRuns/T",transitionModelIndex,"/T",transitionModelIndex,"_D",diversificationModelIndex,sep="",collapse=""),"/",nameRoot,sep=""))
 							system("pwd")
 							system("chmod u+x run.sh")
-							system("qsub run.sh")
+							system("/opt/sge/bin/lx24-amd64/qsub run.sh")
 							setwd(origWD)
 							Sys.sleep(10)
 							runsInFile=0
 							pbsCommands=""
 						}
-						while(as.numeric(system("qstat | grep -c bomeara",intern=TRUE))>400) {
+						while(as.numeric(system("/opt/sge/bin/lx24-amd64/qstat | grep -c bomeara",intern=TRUE))>400) {
 							Sys.sleep(117)
 						}
 					}			
