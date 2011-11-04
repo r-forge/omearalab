@@ -31,7 +31,7 @@ for (focalIndex in 1:length(focalVectorList)) {
 					#print(lsString)
 					finalMatrixAllCount=suppressWarnings(as.numeric(system(lsString,intern=TRUE)))
 					if(finalMatrixAllCount==0) {
-						runCommand=paste("source('/data/abc/RunsNov2011/UnifiedApproachScripts/V5_Commands.R')\ndoUnifiedRun(F='",vectorToString(focalVector),"',T=",transitionModelIndex,",D=",diversificationModelIndex,",S=",partitionSize,")",sep="",collapse="")
+						runCommand=paste("source('/data/abc/RunsNov2011/UnifiedApproachScripts/V5_Commands.R')\ntry(doUnifiedRun(F='",vectorToString(focalVector),"',T=",transitionModelIndex,",D=",diversificationModelIndex,",S=",partitionSize,"))",sep="",collapse="")
 						cat(runCommand,file=paste(dirRoot,'/run.R',sep=""),append=FALSE)
 						if (runsInFile==0) {
 							pbsCommands=paste('#!/bin/bash','#$ -cwd','#$ -o /dev/null','#$ -e /dev/null',sep="\n")
@@ -43,6 +43,9 @@ for (focalIndex in 1:length(focalVectorList)) {
 							#	queue="medium*" #24 hr
 							#}
 							queue="medium*"
+							if (runif(1,0,1)<0.5) { #half the time put in long queue
+								queue="long*"
+							}
 							pbsCommands=paste(pbsCommands,'\n#$ -q ',queue,sep="")
 							pbsCommands=paste(pbsCommands,'#$ -M omeara.brian@gmail.com', '#$ -m beas', '#$ -S /bin/bash',sep="\n")
 							pbsCommands=paste(pbsCommands,"\n","#$ -N T",transitionModelIndex,"D",diversificationModelIndex,"F",vectorToString(getFocalSummaryLabel(focalVector,S,"x")),sep="")
@@ -53,8 +56,12 @@ for (focalIndex in 1:length(focalVectorList)) {
 						pbsCommands=paste(pbsCommands,"\nrm ",' *.csv *.t ',sep="")
 						runsInFile=runsInFile+1
 						print(paste("Queuing run ",nameRoot," at ",date(),sep="",collapse=""))
-						if (runsInFile>1) { #change this to deal with remnants
+						if (runsInFile>6) { #change this to deal with remnants
 							cat(pbsCommands,file=paste(dirRoot,'/run.sh',sep=""),append=FALSE)
+							cat(pbsCommands,file=paste('/usr/bin/tail -40 ', dirRoot,'/run.Rout > ',dirRoot,'/tail.run.Rout',sep=""),append=FALSE)
+							cat(pbsCommands,file=paste('/usr/bin/zip ', dirRoot,'/run.zip  ',dirRoot,'/run.Rout',sep=""),append=FALSE)
+							cat(pbsCommands,file=paste('/usr/bin/rm ', dirRoot,'/run.Rout',sep=""),append=FALSE)
+							
 							print(pbsCommands)
 							#print(paste("cd ",paste("../ActualRuns/P",partitionSchemeText,sep="",collapse=""),"/",nameRoot,sep=""))
 							origWD<-getwd()
@@ -67,8 +74,8 @@ for (focalIndex in 1:length(focalVectorList)) {
 							runsInFile=0
 							pbsCommands=""
 						}
-						while(as.numeric(system("/opt/sge/bin/lx24-amd64/qstat | grep -c bomeara",intern=TRUE))>400) {
-							Sys.sleep(117)
+						while(as.numeric(system("/opt/sge/bin/lx24-amd64/qstat | grep -c bomeara",intern=TRUE))>500) {
+							Sys.sleep(37)
 						}
 					}			
 				}

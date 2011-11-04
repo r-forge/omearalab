@@ -102,6 +102,7 @@ make.musse.modifiedWithRootFixedAt1 <- function(tree, states, k, sampling.f=NULL
 
 #F=focal states
 doUnifiedRun<-function(F=F, T=T,D=D,S=partitionSize) {
+	startTime<-proc.time()
 	#first, make the data and tree files
 	filename=prepData(P="1_2_3_4_5_6",F=F,T=T,D=D,S=S)
 	focalVector=F
@@ -133,7 +134,10 @@ doUnifiedRun<-function(F=F, T=T,D=D,S=partitionSize) {
 	if (length(extralist)>0) {
 		p <- starting.point.musse.extra(phy,2^S,argnames=argnames(lik.final)) #this is done as otherwise won't get right starting vector
 	}
-	fit.final <- find.mle(lik.final,p,method="subplex")
+	fit.final <- find.mle(lik.final,p,method="subplex",hessian=TRUE) #the hessian lets us get standard errors
+	fit.se<-rep(NA,length(fit.final$par))
+	try(fit.se<-sqrt(diag(pseudoinverse(-1*fit.final$hessian)))) #just for extra protection
+	names(fit.se)<-paste(names(fit.final),".se",sep="")
 	#save(fit.final, file=paste(filename,'.fit.final',sep=""), compress=TRUE)
 	print(fit.final)
 	final.matrix<-matrix(c(fit.final$lnLik,AIC(fit.final,k=length(fit.final$par)),length(fit.final$par),length(grep("q",names(fit.final$par))),length(grep("lambda",names(fit.final$par))),length(grep("mu",names(fit.final$par))),fit.final$par),ncol=1,dimnames=list(c("lnLik","AIC","k_all","k_q","k_lambda","k_mu",names(fit.final$par))))
@@ -145,7 +149,9 @@ doUnifiedRun<-function(F=F, T=T,D=D,S=partitionSize) {
 	print(paste("FINAL_D ",D,sep=""))
 	print(paste("FINAL_S ",S,sep=""))
 	print(paste("FINAL_filename ",filename,sep=""))
-	final.matrix.all<-matrix(c(fit.final$lnLik,AIC(fit.final,k=length(fit.final$par)),length(fit.final$par),length(grep("q",names(fit.final$par))),length(grep("lambda",names(fit.final$par))),length(grep("mu",names(fit.final$par))),coef(fit.final,full=TRUE,extra=TRUE)),ncol=1,dimnames=list(c("lnLik","AIC","k_all","k_q","k_lambda","k_mu",names(coef(fit.final,full=TRUE,extra=TRUE)))))
+	final.matrix.all<-matrix(c(fit.final$lnLik,AIC(fit.final,k=length(fit.final$par)),length(fit.final$par),length(grep("q",names(fit.final$par))),length(grep("lambda",names(fit.final$par))),length(grep("mu",names(fit.final$par))),coef(fit.final,full=TRUE,extra=TRUE),fit.se),ncol=1,dimnames=list(c("lnLik","AIC","k_all","k_q","k_lambda","k_mu",names(coef(fit.final,full=TRUE,extra=TRUE)),names(fit.se))))
+	elapsedTime<-proc.time()-startTime
+	print(paste("elapsedTime = ",elapsedTime))
 	save(final.matrix.all, file=paste(filename,'.final.matrix.all',sep=""), compress=TRUE)
 	#rownames(final.matrix.all)<-paste("FINALALL_",rownames(final.matrix.all),sep="") #to make it easier to grep
 	#print(formatC(final.matrix.all,format="f",digits=30,drop0trailing=TRUE))
@@ -160,9 +166,9 @@ doUnifiedRun<-function(F=F, T=T,D=D,S=partitionSize) {
 	#print(results.vector)
 	#save(results.vector, file=paste(filename,'.optim',sep=""), ascii=TRUE)
 	#shrink down final files
-	system("tail -40 run.Rout > tail.run.Rout")
-	system("/usr/bin/zip run.zip run.Rout")
-	system("rm run.Rout")
+#	system("tail -40 run.Rout > tail.run.Rout")
+#	system("/usr/bin/zip run.zip run.Rout")
+#	system("rm run.Rout")
 }
 
 
