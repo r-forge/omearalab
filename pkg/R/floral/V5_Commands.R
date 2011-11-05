@@ -2,6 +2,7 @@ library(diversitree)
 library(sfsmisc) 
 library(ape)
 library(partitions) #for converting from binary back to decimal
+library(corpcor)
 source("/data/abc/RunsNov2011/UnifiedApproachScripts/V5_UtilityFns.R")
 
 
