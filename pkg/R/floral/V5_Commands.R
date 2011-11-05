@@ -139,10 +139,11 @@ doUnifiedRun<-function(F=F, T=T,D=D,S=partitionSize) {
 	fit.se<-rep(NA,length(fit.final$par))
 	try(fit.se<-sqrt(diag(pseudoinverse(-1*fit.final$hessian)))) #just for extra protection
 	print(fit.se)
-	print(paste(names(fit.final),".se",sep=""))
-	try(names(fit.se)<-paste(names(fit.final),".se",sep=""))
+	print(paste(names(fit.final$par),".se",sep=""))
+	try(names(fit.se)<-paste(names(fit.final$par),".se",sep=""))
 	#save(fit.final, file=paste(filename,'.fit.final',sep=""), compress=TRUE)
 	print(fit.final)
+	print(fit.se)
 	final.matrix<-matrix(c(fit.final$lnLik,AIC(fit.final,k=length(fit.final$par)),length(fit.final$par),length(grep("q",names(fit.final$par))),length(grep("lambda",names(fit.final$par))),length(grep("mu",names(fit.final$par))),fit.final$par),ncol=1,dimnames=list(c("lnLik","AIC","k_all","k_q","k_lambda","k_mu",names(fit.final$par))))
 	#save(final.matrix, file=paste(filename,'.final.matrix',sep=""), compress=TRUE)
 	rownames(final.matrix)<-paste("FINAL_",rownames(final.matrix),sep="") #to make it easier to grep
