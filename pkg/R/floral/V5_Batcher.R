@@ -58,9 +58,9 @@ for (focalIndex in 1:length(focalVectorList)) {
 						print(paste("Queuing run ",nameRoot," at ",date(),sep="",collapse=""))
 						if (runsInFile>6) { #change this to deal with remnants
 							cat(pbsCommands,file=paste(dirRoot,'/run.sh',sep=""),append=FALSE)
-							cat(pbsCommands,file=paste('/usr/bin/tail -40 ', dirRoot,'/run.Rout > ',dirRoot,'/tail.run.Rout',sep=""),append=FALSE)
-							cat(pbsCommands,file=paste('/usr/bin/zip ', dirRoot,'/run.zip  ',dirRoot,'/run.Rout',sep=""),append=FALSE)
-							cat(pbsCommands,file=paste('/usr/bin/rm ', dirRoot,'/run.Rout',sep=""),append=FALSE)
+							#cat(pbsCommands,file=paste('/usr/bin/tail -40 ', dirRoot,'/run.Rout > ',dirRoot,'/tail.run.Rout',sep=""),append=FALSE)
+							#cat(pbsCommands,file=paste('/usr/bin/zip ', dirRoot,'/run.zip  ',dirRoot,'/run.Rout',sep=""),append=FALSE)
+							#cat(pbsCommands,file=paste('/usr/bin/rm ', dirRoot,'/run.Rout',sep=""),append=FALSE)
 							
 							print(pbsCommands)
 							#print(paste("cd ",paste("../ActualRuns/P",partitionSchemeText,sep="",collapse=""),"/",nameRoot,sep=""))
