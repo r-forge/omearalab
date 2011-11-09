@@ -124,12 +124,12 @@ doUnifiedRun<-function(F=F, T=T,D=D,S=partitionSize) {
 	lik <- make.musse.modifiedWithRootFixedAt1(tree=phy, states=states, k=2^S, sampling.f=sampling.f)
 	#print("trying to assign extralist")
 	assign("extralist",list(),envir = .GlobalEnv) #naughty
-	print(paste("first extralist is ",extralist))
+	#print(paste("first extralist is ",extralist))
 	lik.trans <- modify_transitions(lik, type=T, F=F, S=S,extralist=extralist)
-	print(paste("second extralist is ",extralist))
+	#print(paste("second extralist is ",extralist))
 	argnames(lik.trans)
 	lik.final <- modify_diversification(lik.trans, type=D, F=F, S=S,extralist=extralist)
-	print(paste("third extralist is ",extralist))
+	#print(paste("third extralist is ",extralist))
 	argnames(lik.final)
 	p <- starting.point.musse(phy, 2^S)
 	if (length(extralist)>0) {
@@ -139,14 +139,14 @@ doUnifiedRun<-function(F=F, T=T,D=D,S=partitionSize) {
 	fit.final.se<-fit.final
 	fit.se<-rep(NA,length(fit.final$par))
 	try(fit.se<-sqrt(diag(pseudoinverse(-1*fit.final$hessian)))) #just for extra protection
-	print(fit.se)
+	#print(fit.se)
 	fit.final.se$par<-fit.se
 	names(fit.final.se$par)<-names(fit.final$par)
-	print(paste(names(fit.final$par),".se",sep=""))
+	#print(paste(names(fit.final$par),".se",sep=""))
 	try(names(fit.se)<-paste(names(fit.final$par),".se",sep=""))
 	#save(fit.final, file=paste(filename,'.fit.final',sep=""), compress=TRUE)
-	print(fit.final)
-	print(fit.se)
+	#print(fit.final)
+	#print(fit.se)
 	final.matrix<-matrix(c(fit.final$lnLik,AIC(fit.final,k=length(fit.final$par)),length(fit.final$par),length(grep("q",names(fit.final$par))),length(grep("lambda",names(fit.final$par))),length(grep("mu",names(fit.final$par))),fit.final$par),ncol=1,dimnames=list(c("lnLik","AIC","k_all","k_q","k_lambda","k_mu",names(fit.final$par))))
 	#save(final.matrix, file=paste(filename,'.final.matrix',sep=""), compress=TRUE)
 	rownames(final.matrix)<-paste("FINAL_",rownames(final.matrix),sep="") #to make it easier to grep
@@ -360,18 +360,19 @@ prepData<-function(P=P,F=F,T=T,D=D,S=S,sourcetraits="/data/abc/RunsNov2011/Sourc
 	names(char)<-subdata$Name_in_tree
 	colnamesVector<-colnames(data)
 	print(colnamesVector)
-	finalname=colnamesVector[(charsToInclude[1]+1)]
-	print(finalname)
-	if (length(charsToInclude)>=2) {
-		for (charIndex in 2:length(charsToInclude)) {
-			finalname=paste(finalname, colnamesVector[(charsToInclude[charIndex]+1) ],sep="_")
-		}
-	}
+	#finalname=colnamesVector[(charsToInclude[1]+1)]
+	#print(finalname)
+	#if (length(charsToInclude)>=2) {
+	#	for (charIndex in 2:length(charsToInclude)) {
+	#		finalname=paste(finalname, colnamesVector[(charsToInclude[charIndex]+1) ],sep="_")
+	#	}
+	#}
+	finalname<-paste(P,"F",F,"T",T,"S",S,sep="")
+
 	#write out datafile for the character with matching tree
 	write.csv(char,file=paste(finalname,".csv",sep=""))
 	print(tree2)
 	write.tree(tree2,file=paste(finalname,"tree",".t",sep=""))
-	finalname<-paste(P,"F",F,"T",T,"S",S,sep="")
 	return(finalname)
 }
 
