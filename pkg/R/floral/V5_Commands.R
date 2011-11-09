@@ -159,8 +159,8 @@ doUnifiedRun<-function(F=F, T=T,D=D,S=partitionSize) {
 	elapsedTime<-(proc.time()-startTime)[3]
 	print(paste("elapsedTime = ",elapsedTime))
 	final.matrix.ml<-matrix(c(fit.final$lnLik,AIC(fit.final,k=length(fit.final$par)),length(fit.final$par),length(grep("q",names(fit.final$par))),length(grep("lambda",names(fit.final$par))),length(grep("mu",names(fit.final$par))),elapsedTime,coef(fit.final,full=TRUE,extra=TRUE)),ncol=1,dimnames=list(c("lnLik","AIC","k_all","k_q","k_lambda","k_mu","elapsedTime",names(coef(fit.final,full=TRUE,extra=TRUE)))))
-	final.matrix.se<-matrix(c(fit.final$lnLik,AIC(fit.final,k=length(fit.final$par)),length(fit.final$par),length(grep("q",names(fit.final$par))),length(grep("lambda",names(fit.final$par))),length(grep("mu",names(fit.final$par))),elapsedTime,coef(fit.final.se,full=TRUE,extra=TRUE)),ncol=1,dimnames=list(c("lnLik","AIC","k_all","k_q","k_lambda","k_mu","elapsedTime",names(coef(fit.final.se,full=TRUE,extra=TRUE)))))
-	final.matrix.all<-cbind(final.matrix.ml,final.matrix.se)
+	final.matrix.se<-matrix(c(NA,NA,NA,NA,NA,NA,NA,coef(fit.final.se,full=TRUE,extra=TRUE)),ncol=1,dimnames=list(c("lnLik","AIC","k_all","k_q","k_lambda","k_mu","elapsedTime",names(coef(fit.final.se,full=TRUE,extra=TRUE)))))
+	final.matrix.all<-cbind(mle=final.matrix.ml,se=final.matrix.se)
 #	final.matrix.all<-matrix(c(fit.final$lnLik,AIC(fit.final,k=length(fit.final$par)),length(fit.final$par),length(grep("q",names(fit.final$par))),length(grep("lambda",names(fit.final$par))),length(grep("mu",names(fit.final$par))),coef(fit.final,full=TRUE,extra=TRUE),fit.se),ncol=1,dimnames=list(c("lnLik","AIC","k_all","k_q","k_lambda","k_mu",names(coef(fit.final,full=TRUE,extra=TRUE)),names(fit.se))))
 	save(final.matrix.all, file=paste(filename,'.final.matrix.all',sep=""), compress=TRUE)
 	#rownames(final.matrix.all)<-paste("FINALALL_",rownames(final.matrix.all),sep="") #to make it easier to grep
@@ -367,7 +367,7 @@ prepData<-function(P=P,F=F,T=T,D=D,S=S,sourcetraits="/data/abc/RunsNov2011/Sourc
 	#		finalname=paste(finalname, colnamesVector[(charsToInclude[charIndex]+1) ],sep="_")
 	#	}
 	#}
-	finalname<-paste(P,"F",F,"T",T,"S",S,sep="")
+	finalname<-paste("T",T,"_D",D,"_F",F,sep="")
 
 	#write out datafile for the character with matching tree
 	write.csv(char,file=paste(finalname,".csv",sep=""))
