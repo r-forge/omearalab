@@ -371,7 +371,7 @@ prepData<-function(P=P,F=F,T=T,D=D,S=S,sourcetraits="/data/abc/RunsNov2011/Sourc
 	write.csv(char,file=paste(finalname,".csv",sep=""))
 	print(tree2)
 	write.tree(tree2,file=paste(finalname,"tree",".t",sep=""))
-	finalname<-paste(P,"F",F,"T",T,"S",S)
+	finalname<-paste(P,"F",F,"T",T,"S",S,sep="")
 	return(finalname)
 }
 
