@@ -3,6 +3,7 @@ library(sfsmisc) #for counting in binary
 library(partitions)
 library(gmp) #for dealing with big integers
 source("/data/abc/RunsNov2011/UnifiedApproachScripts/V5_UtilityFns.R")
+find.mle.method="optim"
 
 
 focalVectorList<-getAllInterestingFocalVectorsStringsEfficient(S)
@@ -31,8 +32,8 @@ for (focalIndex in 1:length(focalVectorList)) {
 					#print(lsString)
 					finalMatrixAllCount=suppressWarnings(as.numeric(system(lsString,intern=TRUE)))
 					if(finalMatrixAllCount==0) {
-						runCommand=paste("source('/data/abc/RunsNov2011/UnifiedApproachScripts/V5_Commands.R')\ntry(doUnifiedRun(F='",vectorToString(focalVector),"',T=",transitionModelIndex,",D=",diversificationModelIndex,",S=",partitionSize,"))",sep="",collapse="")
-						cat(runCommand,file=paste(dirRoot,'/run.R',sep=""),append=FALSE)
+						runCommand=paste("source('/data/abc/RunsNov2011/UnifiedApproachScripts/V5_Commands_OptimizerSelect.R')\ntry(doUnifiedRun(F='",vectorToString(focalVector),"',T=",transitionModelIndex,",D=",diversificationModelIndex,",S=",partitionSize,", find.mle.method='",find.mle.method,"'))",sep="",collapse="")
+						cat(runCommand,file=paste(dirRoot,'/run',find.mle.method,'.R',sep=""),append=FALSE)
 						if (runsInFile==0) {
 							pbsCommands=paste('#!/bin/bash','#$ -cwd','#$ -o /dev/null','#$ -e /dev/null',sep="\n")
 							#queue="long*"
@@ -48,7 +49,7 @@ for (focalIndex in 1:length(focalVectorList)) {
 							pbsCommands=paste(pbsCommands,"\n","#$ -N T",transitionModelIndex,"D",diversificationModelIndex,"F",vectorToString(getFocalSummaryLabel(focalVector,S,"x")),sep="")
 						}
 						pbsCommands=paste(pbsCommands,"\n",'cd /data/abc/RunsNov2011/ActualRuns/T',transitionModelIndex,"/T",transitionModelIndex,"_D",diversificationModelIndex,"/",nameRoot,sep="",collapse="")
-						pbsCommands=paste(pbsCommands,"\n","/data/apps/R/2.14.0/bin/R CMD BATCH run.R",sep="")
+						pbsCommands=paste(pbsCommands,"\n","/data/apps/R/2.14.0/bin/R CMD BATCH run",find.mle.method,".R",sep="")
 						#print(paste(paste("../ActualRuns/P",partitionSchemeText,sep="",collapse=""),"/",nameRoot,'/run.sh',sep=""))
 						pbsCommands=paste(pbsCommands,"\nrm ",' *.csv *.t ',sep="")
 						runsInFile=runsInFile+1
