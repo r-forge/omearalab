@@ -57,7 +57,9 @@ summarizeIndiv<-function(actualT,actualD,focalVectorList) {
 							dirRoot<-paste("../ActualRuns/T",transitionModelIndex,"/T",transitionModelIndex,"_D",diversificationModelIndex,"/",nameRoot,sep="",collapse="")
 							suppressWarnings(rm(final.matrix.all)) #just to make sure anything we append is new
 							suppressWarnings(rm(tmp.dataframe)) #ditto
-							suppressWarnings(try(load(paste(dirRoot,"/Steb1Perianth_Steb2PerFusSDS_Steb3SymSDS_Steb4StamNo_Steb5Syncarpy_Steb6SeedNo_Steb8Ovary.final.matrix.all",sep="")),silent=TRUE))
+							system(try(paste("cp ",dirRoot,"/*.final.matrix.all ",dirRoot,"/final.matrix.all.Rsave",sep=""))
+							suppressWarnings(try(load(paste(dirRoot,"/final.matrix.all.Rsave",sep="")),silent=TRUE))
+							system(try(paste("rm ",dirRoot,"/final.matrix.all.Rsave",sep=""))
 							if(length(which(ls()=="final.matrix.all"))==1) {
 								completedRuns<-completedRuns+1
 								qIndices<-grep("^q\\d",row.names(final.matrix.all),perl=TRUE)
