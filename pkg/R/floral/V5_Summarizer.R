@@ -2,11 +2,11 @@ library(diversitree) #obvious
 library(sfsmisc) #for counting in binary
 library(partitions)
 library(gmp) #for dealing with big integers
-source("V4_UtilityFns.R")
+source("V5_UtilityFns.R")
 library(doMC)
 library(foreach)
 
-registerDoMC(20) #This has a lot of I/O and memory, so make it run on fewer than the available number of processsors
+registerDoMC(14) #This has a lot of I/O and memory, so make it run on fewer than the available number of processsors
 
 
 focalVectorList<-getAllInterestingFocalVectorsStringsEfficient(S)
@@ -131,7 +131,8 @@ summarizeIndiv<-function(actualT,actualD,focalVectorList) {
 }
 
 loopCount<-0
-while(1<2) { #this will keep looping, updating the summary
+loopMax<-1
+while(loopCount<loopMax) { #this will keep looping, updating the summary
 		loopCount<-loopCount+1
 		print(paste("Now starting loop ",loopCount," on ",date()))
 		doRsync=FALSE
