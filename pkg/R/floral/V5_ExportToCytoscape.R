@@ -45,7 +45,7 @@ for (colToExamine in 2:length(colnamesVector)) {
 	subdata<-subdata[subdata[,colToExamine]!="?",]
 }
 
-comboCounts<-rep(0,2^7)
+comboCounts<-rep(0,2^S)
 for(i in 1:dim(subdata)[1]) {
   currentVector<-as.numeric(unlist(subdata[i,2:8]))
   comboDecimal<-comboAsDecimal(currentVector,S)
@@ -55,7 +55,7 @@ comboProportions<-comboCounts/(sum(comboCounts))
 
 #nodesDataFrame<-data.frame()
 #now the nodes
-try(for (comboDecimal in 1:S^7) {
+try(for (comboDecimal in 1:2^S) {
   comboName<-comboAsBinaryString(comboDecimal,S)
   birthRate<-as.vector(bestValues[1,which(names(bestValues)==paste("lambda",comboName,sep=""))])
   deathRate<-as.vector(bestValues[1,which(names(bestValues)==paste("mu",comboName,sep=""))])

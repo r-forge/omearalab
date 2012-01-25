@@ -47,7 +47,7 @@ summarizeIndiv<-function(actualT,actualD,focalVectorList) {
 						nameRoot<-paste("T",transitionModelIndex,"_D",diversificationModelIndex,"_",vectorToString(getFocalSummaryLabel(focalVector,S,"x")),sep="",collapse="")
 						print(paste(runName," Looking at ",nameRoot))
 						if (loadedOld==TRUE) { #see if we've already loaded this
-							if(length(which(old.summary.dataframe$T==transitionModelIndex & old.summary.dataframe$D==diversificationModelIndex & old.summary.dataframe$focal==paste(getFocalSummaryLabel(focalVector,S=7,any="x"),sep="",collapse="") ))==1) {
+							if(length(which(old.summary.dataframe$T==transitionModelIndex & old.summary.dataframe$D==diversificationModelIndex & old.summary.dataframe$focal==paste(getFocalSummaryLabel(focalVector,S=S,any="x"),sep="",collapse="") ))==1) {
 								tryLoad<-FALSE #it's already in the old.summary.dataframe
 								completedRuns<-completedRuns+1
 								print(paste(runName,"     already have completed run ",completedRuns,"/",totalRuns,sep=""))
@@ -65,7 +65,7 @@ summarizeIndiv<-function(actualT,actualD,focalVectorList) {
 								qIndices<-grep("^q\\d",row.names(final.matrix.all),perl=TRUE)
 								lambdaIndices<-grep("^lambda\\d",row.names(final.matrix.all),perl=TRUE)
 								muIndices<-grep("^mu\\d",row.names(final.matrix.all),perl=TRUE)
-								tmp.dataframe<-data.frame(paste(getFocalSummaryLabel(focalVector,S=7,any="x"),sep="",collapse=""),transitionModelIndex,transitionModels[transitionModelIndex,4],diversificationModelIndex,diversificationModels[diversificationModelIndex,5],final.matrix.all[which(row.names(final.matrix.all)=="lnLik"),1],final.matrix.all[which(row.names(final.matrix.all)=="AIC"),1],final.matrix.all[which(row.names(final.matrix.all)=="k_all"),1],final.matrix.all[which(row.names(final.matrix.all)=="k_q"),1],final.matrix.all[which(row.names(final.matrix.all)=="k_lambda"),1],final.matrix.all[which(row.names(final.matrix.all)=="k_mu"),1]) 
+								tmp.dataframe<-data.frame(paste(getFocalSummaryLabel(focalVector,S=S,any="x"),sep="",collapse=""),transitionModelIndex,transitionModels[transitionModelIndex,4],diversificationModelIndex,diversificationModels[diversificationModelIndex,5],final.matrix.all[which(row.names(final.matrix.all)=="lnLik"),1],final.matrix.all[which(row.names(final.matrix.all)=="AIC"),1],final.matrix.all[which(row.names(final.matrix.all)=="k_all"),1],final.matrix.all[which(row.names(final.matrix.all)=="k_q"),1],final.matrix.all[which(row.names(final.matrix.all)=="k_lambda"),1],final.matrix.all[which(row.names(final.matrix.all)=="k_mu"),1]) 
 								names(tmp.dataframe)<-c("focal","T","TransitionModel","D","DiversificationModel","lnLik","AIC","k_all","k_q","k_lambda","k_mu")	
 								tmp.dataframe<-cbind(tmp.dataframe,data.frame(matrix(final.matrix.all[qIndices,1],nrow=1,dimnames=list("",names(final.matrix.all[qIndices,1])))),data.frame(matrix(final.matrix.all[lambdaIndices,1],nrow=1,dimnames=list("",names(final.matrix.all[lambdaIndices,1])))),data.frame(matrix(final.matrix.all[muIndices,1],nrow=1,dimnames=list("",names(final.matrix.all[muIndices,1])))))
 								summary.dataframe<-rbind(summary.dataframe,tmp.dataframe)
