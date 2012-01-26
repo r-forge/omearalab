@@ -248,7 +248,7 @@ getAllInterestingFocalVectorsInefficient<-function(S){
 			else {
 				interestingFocalDataFrame<-rbind(interestingFocalDataFrame,data.frame(cbind(as.character.bigz(focalDecimal),vectorToString(getFocalSummaryLabel(focalVector,S,"x")),numberFocalCombos(focalVector),vectorToString(focalVector)),stringsAsFactors=FALSE))
 			}
-			save(interestingFocalDataFrame,file="/Users/bomeara/Dropbox/Floral/RunsApril2011/SourceData/interestingFocalDataFrame.Rsave",compress=TRUE)
+			save(interestingFocalDataFrame,file="/Users/bomeara/Dropbox/Floral/RunsJan2012/SourceData/interestingFocalDataFrame.Rsave",compress=TRUE)
 			print(paste(vectorToString(getFocalSummaryLabel(focalVector,S)), ":",totalInterestingFocal, "/",totalAllFocal,vectorToString(focalVector),sep=" ",collapse=""))
 		}
 		focalDecimal<-focalDecimal+1

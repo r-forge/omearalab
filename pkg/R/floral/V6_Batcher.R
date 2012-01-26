@@ -2,7 +2,7 @@ library(diversitree) #obvious
 library(sfsmisc) #for counting in binary
 library(partitions)
 library(gmp) #for dealing with big integers
-source("/data/abc/RunsNov2011/UnifiedApproachScripts/V5_UtilityFns.R")
+source("/data/abc/RunsJan2012/UnifiedApproachScripts/V5_UtilityFns.R")
 
 
 focalVectorList<-getAllInterestingFocalVectorsStringsEfficient(S)
@@ -14,24 +14,24 @@ pbsCommands=""
 for (focalIndex in 1:length(focalVectorList)) {
 	focalVector<-stringToVector(unlist(focalVectorList[[focalIndex]]))
 	for (transitionModelIndex in 1:dim(transitionModels)[1]) {
-		mkdirCmd=paste("mkdir -p ",paste("/data/abc/RunsNov2011/ActualRuns/T",transitionModelIndex,sep="",collapse=""),sep="",collapse="")
+		mkdirCmd=paste("mkdir -p ",paste("/data/abc/RunsJan2012/ActualRuns/T",transitionModelIndex,sep="",collapse=""),sep="",collapse="")
 		suppressWarnings(system(mkdirCmd))
 		for (diversificationModelIndex in 1:dim(diversificationModels)[1]) {
-			mkdirCmd=paste("mkdir -p ",paste("/data/abc/RunsNov2011/ActualRuns/T",transitionModelIndex,"/T",transitionModelIndex,"_D",diversificationModelIndex,sep="",collapse=""),sep="",collapse="")
+			mkdirCmd=paste("mkdir -p ",paste("/data/abc/RunsJan2012/ActualRuns/T",transitionModelIndex,"/T",transitionModelIndex,"_D",diversificationModelIndex,sep="",collapse=""),sep="",collapse="")
 			suppressWarnings(system(mkdirCmd))
 			if (numberFocalCombos(focalVector) >= transitionModels$min_focalcombos[transitionModelIndex]) { #if there aren't enough combos to make the model appropriate, don't run it
 				if(numberFocalCombos(focalVector) >= diversificationModels$min_focalcombos[diversificationModelIndex]) { #if there aren't enough combos to make the model appropriate, don't run it
 					totalRuns<-totalRuns+1
 					#yay! Now we can run!
 					nameRoot<-paste("T",transitionModelIndex,"_D",diversificationModelIndex,"_",vectorToString(getFocalSummaryLabel(focalVector,S,"x")),sep="",collapse="")
-					dirRoot<-paste("/data/abc/RunsNov2011/ActualRuns/T",transitionModelIndex,"/T",transitionModelIndex,"_D",diversificationModelIndex,"/",nameRoot,sep="",collapse="")
+					dirRoot<-paste("/data/abc/RunsJan2012/ActualRuns/T",transitionModelIndex,"/T",transitionModelIndex,"_D",diversificationModelIndex,"/",nameRoot,sep="",collapse="")
 					mkdirCmd=paste("mkdir -p ",dirRoot,sep="",collapse="")
 					suppressWarnings(system(mkdirCmd))
 					lsString=paste(paste("ls -1 ",dirRoot,' | grep -c final.matrix.all',sep="",collapse=""))
 					#print(lsString)
 					finalMatrixAllCount=suppressWarnings(as.numeric(system(lsString,intern=TRUE)))
 					if(finalMatrixAllCount==0) {
-						runCommand=paste("source('/data/abc/RunsNov2011/UnifiedApproachScripts/V5_Commands.R')\ntry(doUnifiedRun(F='",vectorToString(focalVector),"',T=",transitionModelIndex,",D=",diversificationModelIndex,",S=",partitionSize,"))",sep="",collapse="")
+						runCommand=paste("source('/data/abc/RunsJan2012/UnifiedApproachScripts/V5_Commands.R')\ntry(doUnifiedRun(F='",vectorToString(focalVector),"',T=",transitionModelIndex,",D=",diversificationModelIndex,",S=",partitionSize,"))",sep="",collapse="")
 						cat(runCommand,file=paste(dirRoot,'/run.R',sep=""),append=FALSE)
 						if (runsInFile==0) {
 							pbsCommands=paste('#!/bin/bash','#$ -cwd','#$ -o /dev/null','#$ -e /dev/null',sep="\n")
@@ -42,15 +42,15 @@ for (focalIndex in 1:length(focalVectorList)) {
 							#else if (partitionSize<=3) {
 							#	queue="medium*" #24 hr
 							#}
-							queue="medium*"
-							if (runif(1,0,1)<0.5) { #half the time put in long queue
-								queue="long*"
-							}
+							queue="short*"
+							#if (runif(1,0,1)<0.5) { #half the time put in long queue
+							#	queue="long*"
+							#}
 							pbsCommands=paste(pbsCommands,'\n#$ -q ',queue,sep="")
 							pbsCommands=paste(pbsCommands,'#$ -M omeara.brian@gmail.com', '#$ -m beas', '#$ -S /bin/bash',sep="\n")
 							pbsCommands=paste(pbsCommands,"\n","#$ -N T",transitionModelIndex,"D",diversificationModelIndex,"F",vectorToString(getFocalSummaryLabel(focalVector,S,"x")),sep="")
 						}
-						pbsCommands=paste(pbsCommands,"\n",'cd /data/abc/RunsNov2011/ActualRuns/T',transitionModelIndex,"/T",transitionModelIndex,"_D",diversificationModelIndex,"/",nameRoot,sep="",collapse="")
+						pbsCommands=paste(pbsCommands,"\n",'cd /data/abc/RunsJan2012/ActualRuns/T',transitionModelIndex,"/T",transitionModelIndex,"_D",diversificationModelIndex,"/",nameRoot,sep="",collapse="")
 						pbsCommands=paste(pbsCommands,"\n","/data/apps/R/2.14.0/bin/R CMD BATCH run.R",sep="")
 						#print(paste(paste("../ActualRuns/P",partitionSchemeText,sep="",collapse=""),"/",nameRoot,'/run.sh',sep=""))
 						pbsCommands=paste(pbsCommands,"\nrm ",' *.csv *.t ',sep="")
@@ -65,7 +65,7 @@ for (focalIndex in 1:length(focalVectorList)) {
 							print(pbsCommands)
 							#print(paste("cd ",paste("../ActualRuns/P",partitionSchemeText,sep="",collapse=""),"/",nameRoot,sep=""))
 							origWD<-getwd()
-							setwd(paste(paste("/data/abc/RunsNov2011/ActualRuns/T",transitionModelIndex,"/T",transitionModelIndex,"_D",diversificationModelIndex,sep="",collapse=""),"/",nameRoot,sep=""))
+							setwd(paste(paste("/data/abc/RunsJan2012/ActualRuns/T",transitionModelIndex,"/T",transitionModelIndex,"_D",diversificationModelIndex,sep="",collapse=""),"/",nameRoot,sep=""))
 							system("pwd")
 							system("chmod u+x run.sh")
 							system("/opt/sge/bin/lx24-amd64/qsub run.sh")
@@ -74,7 +74,7 @@ for (focalIndex in 1:length(focalVectorList)) {
 							runsInFile=0
 							pbsCommands=""
 						}
-						while(as.numeric(system("/opt/sge/bin/lx24-amd64/qstat | grep -c bomeara",intern=TRUE))>500) {
+						while(as.numeric(system("/opt/sge/bin/lx24-amd64/qstat | grep -c bomeara",intern=TRUE))>1000) {
 							Sys.sleep(37)
 						}
 					}			
