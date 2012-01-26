@@ -2,7 +2,7 @@ library(diversitree) #obvious
 library(sfsmisc) #for counting in binary
 library(partitions)
 library(gmp) #for dealing with big integers
-source("/data/abc/RunsJan2012/UnifiedApproachScripts/V5_UtilityFns.R")
+source("/data/abc/RunsJan2012/UnifiedApproachScripts/V6_UtilityFns.R")
 
 
 focalVectorList<-getAllInterestingFocalVectorsStringsEfficient(S)
@@ -31,7 +31,7 @@ for (focalIndex in 1:length(focalVectorList)) {
 					#print(lsString)
 					finalMatrixAllCount=suppressWarnings(as.numeric(system(lsString,intern=TRUE)))
 					if(finalMatrixAllCount==0) {
-						runCommand=paste("source('/data/abc/RunsJan2012/UnifiedApproachScripts/V5_Commands.R')\ntry(doUnifiedRun(F='",vectorToString(focalVector),"',T=",transitionModelIndex,",D=",diversificationModelIndex,",S=",partitionSize,"))",sep="",collapse="")
+						runCommand=paste("source('/data/abc/RunsJan2012/UnifiedApproachScripts/V6_Commands.R')\ntry(doUnifiedRun(F='",vectorToString(focalVector),"',T=",transitionModelIndex,",D=",diversificationModelIndex,",S=",partitionSize,"))",sep="",collapse="")
 						cat(runCommand,file=paste(dirRoot,'/run.R',sep=""),append=FALSE)
 						if (runsInFile==0) {
 							pbsCommands=paste('#!/bin/bash','#$ -cwd','#$ -o /dev/null','#$ -e /dev/null',sep="\n")
