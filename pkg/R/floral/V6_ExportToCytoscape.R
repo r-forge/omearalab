@@ -32,7 +32,7 @@ write.table(qDataFrame,file="~/Sites/RunsJan2012/Summaries/Cytoscape_edges.txt",
 
 
 #get info on number of combos
-sourcetraits="../SourceData/Stebbins_prunenoper110811BCO.csv"
+sourcetraits="../SourceData/Stebbins_prunenoper25i2012BCO.csv"
 file<-sourcetraits
 phy<-"../SourceData/floral_1.nex"
 tree<-read.nexus(phy)
