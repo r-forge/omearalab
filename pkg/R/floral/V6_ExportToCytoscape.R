@@ -51,7 +51,7 @@ for (colToExamine in 2:length(colnamesVector)) {
 
 comboCounts<-rep(0,2^S)
 for(i in 1:dim(subdata)[1]) {
-  currentVector<-as.numeric(unlist(subdata[i,2:8]))
+  currentVector<-as.numeric(unlist(subdata[i,2:7]))
   comboDecimal<-comboAsDecimal(currentVector,S)
   comboCounts[comboDecimal]<-comboCounts[comboDecimal]+1
 }
