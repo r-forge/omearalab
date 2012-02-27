@@ -1,6 +1,6 @@
 #this will export the correct formats for cytoscape
 source("~/Sites/RunsJan2012/UnifiedApproachScripts/V6_UtilityFns.R")
-load("~/Sites/RunsJan2012/Summaries/Highlevel.dataframe.withrates.Rsave") #replace with frame of all data
+load("~/Sites/RunsJan2012/Summaries/Highlevel.dataframe.withrates.noBoring.Rsave") #replace with frame of all data
 
 bestValues<-highlevel.dataframe[which.max(highlevel.dataframe$AICweight),]
 meanValues<-bestValues
@@ -28,7 +28,7 @@ for(i in 1:length(qValuesPositions)) {
 names(qDataFrame)<-c("from","to","q")
 qDataFrame$q=qDataFrame$q/min(qDataFrame$q)
 print(qDataFrame)
-write.table(qDataFrame,file="~/Sites/RunsJan2012/Summaries/Cytoscape_edges.txt",quote=FALSE,sep="\t",row.names=FALSE,col.names=TRUE)
+write.table(qDataFrame,file="~/Sites/RunsJan2012/Summaries/Cytoscape_edges_NoBoring.txt",quote=FALSE,sep="\t",row.names=FALSE,col.names=TRUE)
 
 
 #get info on number of combos
@@ -61,6 +61,7 @@ comboProportions<-comboCounts/(sum(comboCounts))
 #now the nodes
 try(for (comboDecimal in 1:2^S) {
   comboName<-comboAsBinaryString(comboDecimal,S)
+  
   birthRate<-as.vector(meanValues[1,which(names(meanValues)==paste("lambda",comboName,sep=""))])
   deathRate<-as.vector(meanValues[1,which(names(meanValues)==paste("mu",comboName,sep=""))])
   diversificationRate<-birthRate-deathRate
@@ -84,6 +85,6 @@ if (comboDecimal==1) {
 })
 print("done combo decimal")
 print(ndf3)
-write.table(ndf3,file="~/Sites/RunsJan2012/Summaries/Cytoscape_nodes.txt",quote=FALSE,sep="\t",row.names=FALSE,col.names=TRUE)
+write.table(ndf3,file="~/Sites/RunsJan2012/Summaries/Cytoscape_nodes_NoBoring.txt",quote=FALSE,sep="\t",row.names=FALSE,col.names=TRUE)
 
 print(subdata)
