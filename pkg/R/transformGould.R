@@ -9,6 +9,7 @@ library(gmp) #for dealing with big integers
 library(optimx)
 library(phylobase)
 library(rgenoud)
+library(snow)
 
 
 lengthGouldVector<-function(phy) {
@@ -265,10 +266,11 @@ likGouldPlusNonGouldPlusErrorTransformContinuousParamOptimized<-function(gouldVe
 }
 
 fitLikGouldPlusNonGouldPlusErrorTransformContinuousParamOptimized<-function(phy,data,transformation.fn,data.type=c("Continuous","Discrete"),data.model="ER",badVal=1000000000,optimx.method="Nelder-Mead",pop.size=1000,itnmax=NULL) {
+  library(optimx)
   data.type<-match.arg(data.type)
   starting.values<-matrix(data=rbinom(pop.size*lengthGouldVector(phy),1,0.5),nrow=pop.size)
   Domains<-matrix(c(rep(0,lengthGouldVector(phy)),rep(1,lengthGouldVector(phy))),ncol=2,byrow=FALSE)
-  results<-genoud(fn=likGouldPlusNonGouldPlusErrorTransformContinuousParamOptimized,nvars=lengthGouldVector(phy),boundary.enforcement=2, max=FALSE,data.type.int=TRUE,pop.size=pop.size,starting.values=starting.values, Domains=Domains,           phy=phy,data=data,transformation.fn=transformation.fn,data.type=data.type,data.model=data.model,badVal=badVal,itnmax=itnmax)
+  results<-genoud(fn=likGouldPlusNonGouldPlusErrorTransformContinuousParamOptimized,nvars=lengthGouldVector(phy),boundary.enforcement=2, max=FALSE,data.type.int=TRUE,pop.size=pop.size,starting.values=starting.values, Domains=Domains,            phy=phy,data=data,transformation.fn=transformation.fn,data.type=data.type,data.model=data.model,badVal=badVal,itnmax=itnmax)
   return(results)
 }
 
@@ -285,7 +287,7 @@ actualGouldVector<-trueGouldVector
 
 #result<-likelihoodGouldPlusNonGouldTransform(c(1,1),phy,nonzeroUniformTree(transformGould(phy,actualGouldVector)),data,kappaTree,"Continuous")
 
-full<-fitLikGouldPlusNonGouldPlusErrorTransformContinuousParamOptimized(phy,data,kappaTree,"Continuous",pop.size=3,itnmax=3)
+full<-fitLikGouldPlusNonGouldPlusErrorTransformContinuousParamOptimized(phy,data,kappaTree,"Continuous",pop.size=100,itnmax=30)
 
 
 liks<-c()
