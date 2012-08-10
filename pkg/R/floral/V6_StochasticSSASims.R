@@ -1,15 +1,60 @@
 library(GillespieSSA)
 
-load("/Users/bomeara/Sites/RunsJan2012/Summaries/Highlevel.dataframe.withrates.Rsave")
+load("/Users/bomeara/Documents/MyDocuments/Active/FloralAssembly/RunsJan2012/Summaries/Highlevel.dataframe.withrates.Rsave")
 names(highlevel.dataframe)[1:10]
 highlevel.dataframe$deltaAIC<-highlevel.dataframe$AIC-min(highlevel.dataframe$AIC)
 highlevel.dataframe$AICweight<-exp( -0.5 * highlevel.dataframe$deltaAIC)
 highlevel.dataframe$AICweight <- highlevel.dataframe$AICweight/sum(highlevel.dataframe$AICweight)
 highlevel.dataframe<-highlevel.dataframe[order(highlevel.dataframe$AICweight, decreasing=TRUE),]
 
-key.focal<-c("0x00xx","0x01xx","0x10xx","0x11xx","1x00xx","1x01xx","1x10xx","1x11xx")
+key.focal.vector<-c("0x00xx","0x01xx","0x10xx","0x11xx","1x00xx","1x01xx","1x10xx","1x11xx")
 
-key.focal.xtoperiod<-gsub("x",".",key.focal)
+getMatchingTransitions<-function(focalRow, key.focal.from, key.focal.to, change.positions=c(2, 5, 6), average=TRUE) {
+  key.focal.from.split<-strsplit(key.focal.from, "")[[1]]
+  key.focal.to.split<-strsplit(key.focal.to, "")[[1]]
+  matching.values<-c()
+  for (i in c(0:1)) {
+    key.focal.from.split[change.positions[1]]<-i
+    key.focal.to.split[change.positions[1]]<-i   
+    for (j in c(0:1)) {
+      key.focal.from.split[change.positions[2]]<-j
+      key.focal.to.split[change.positions[2]]<-j
+      for (k in c(0:1)) {
+        key.focal.from.split[change.positions[3]]<-k
+        key.focal.to.split[change.positions[3]]<-k
+        #print(names(focalRow)[1:25])
+        #print(paste("q", paste(key.focal.from.split, sep="", collapse=""), "_", paste(key.focal.to.split, sep="", collapse=""), sep=""))
+        matching.values<-append(matching.values, 
+              focalRow[ which(names(focalRow)==paste("q", paste(key.focal.from.split, sep="", collapse=""), "_", paste(key.focal.to.split, sep="", collapse=""), sep=""))])
+      }
+    }
+  }
+  if (!average) {
+    return(matching.values)
+  }
+  else {
+    return(mean(unlist(matching.values)))
+  }
+}
+
+q.values<-matrix(nrow=dim(highlevel.dataframe)[1],ncol=24)
+q.names<-c()
+for (focal.index.1 in sequence(length(key.focal.vector))) {
+  for (focal.index.2 in c(focal.index.1:length(key.focal.vector))) {
+    if (focal.index.1 != focal.index.2) {
+      if( vectorMismatch(unlist(strsplit(key.focal.vector[focal.index.1],split="")), unlist(strsplit(key.focal.vector[focal.index.2], split="")))==1) {
+        q.names<-append(q.names,paste("q", key.focal.vector[focal.index.1], "_", key.focal.vector[focal.index.2], sep=""))
+        #print(paste("q", key.focal.vector[focal.index.1], "_", key.focal.vector[focal.index.2], sep=""))
+        for (element in sequence(dim(highlevel.dataframe)[1])) {
+          q.values[element, length(q.names)]<-getMatchingTransitions(highlevel.dataframe[1,], key.focal.vector[focal.index.1], key.focal.vector[focal.index.2])
+        }
+       # print(getMatchingTransitions(highlevel.dataframe[1,], key.focal.vector[focal.index.1], key.focal.vector[focal.index.2]))
+        #print(apply(highlevel.dataframe[1:10,], 1, getMatchingTransitions, key.focal.from = key.focal.vector[focal.index.1], key.focal.to = key.focal.vector[focal.index.2] ))
+        #q.values<-cbind(q.values,data.frame(matrix(apply(highlevel.dataframe[1:10,], 1, getMatchingTransitions, key.focal.from = key.focal.vector[focal.index.1], key.focal.to = key.focal.vector[focal.index.2] ) , ncol=1)))
+      }
+    }
+  }
+}
 
 #do matching like that below to get all the columns for q01001_01000 and so forth. Average the relevant columns for each row, 
 #  then do weighted average of these across the rows based on AIC weights
