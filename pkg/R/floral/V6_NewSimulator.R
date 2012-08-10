@@ -69,7 +69,7 @@ ScaleTransitionProbs<-function(all.matrix, x) {
 plot.OMearaSSA<-function(history) {
   ncombos<-dim(history)[2]-1
   mypalette<-brewer.pal(ncombos,"Dark2")
- plot(range(cumsum(history[,1])),range(history[,2:dim(history)[2] ]),xlab="time",ylab="ntaxa",type="n",bty="n") 
+ plot(range(cumsum(history[,1])),range(history[,2:dim(history)[2] ]),xlab="time",ylab="ntaxa",type="n",bty="n",log="y") 
  for (i in 2:dim(history)[2]) {
   lines( cumsum(history[,1]), history[, i],col=mypalette[i-1])
  }
@@ -83,7 +83,7 @@ history<-0
 attempts<-0
 while(survivors<=0) {
   attempts<-attempts+1
-  history<-OMearaSSA(x0,q.means,lambda.means,mu.means,tf=30,maxWallTime=10,verbose=T)
+  history<-OMearaSSA(x0,q.means,lambda.means,mu.means,tf=130,maxWallTime=1000,verbose=T)
   survivors<-history[dim(history)[1],2]
 }
 
