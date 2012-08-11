@@ -116,9 +116,9 @@ lambda.means <- apply(lambda.values, 2, weighted.mean, w=focal.dataframe$AICweig
 mu.means <- apply(mu.values, 2, weighted.mean, w=focal.dataframe$AICweight)
 
 #go Yule just to try
-yule.scale<-0 #if 0, no different from regular birth death; if 1, pure birth
-lambda.means<-lambda.means-(yule.scale*mu.means)
-mu.means<-mu.means*(1-yule.scale)
+#yule.scale<-0 #if 0, no different from regular birth death; if 1, pure birth
+#lambda.means<-lambda.means-(yule.scale*mu.means)
+#mu.means<-mu.means*(1-yule.scale)
 
 x0 <- c(2, 0, 0, 0, 0, 0, 0, 0) #start with two individuals in state 000000, or at least 0x00xx
 names(x0) <- key.focal.vector
@@ -189,7 +189,7 @@ while (min.val<0) {
   return(out)
 }
 
-out<-trySim(x0, a, nu, parms, tf=130)
+#out<-trySim(x0, a, nu, parms, tf=130)
 
 probExtinction<-function(lambda, mu, t, N0=2) {
   #after magallon and sanderson

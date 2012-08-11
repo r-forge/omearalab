@@ -77,14 +77,16 @@ plot.OMearaSSA<-function(history) {
 }
   
 
-
-survivors<-0
-history<-0
-attempts<-0
-while(survivors<=0) {
-  attempts<-attempts+1
-  history<-OMearaSSA(x0,q.means*10,lambda.means,mu.means,tf=10,maxWallTime=1000,verbose=T)
-  survivors<-history[dim(history)[1],2]
+doParallelSSA<-function(file.name, x0, q.means, lambda.means, mu.means, tf=130, maxWallTime=Inf, verbose=F) {
+  survivors<-0
+  history<-0
+  attempts<-0
+  while(survivors<=0) {
+    attempts<-attempts+1
+    history<-OMearaSSA(x0, q.means, lambda.means, mu.means, tf=tf, maxWallTime=maxWallTime, verbose=verbose)
+    survivors<-history[dim(history)[1],2]
+  }
+  save(history, file=file.name)
 }
 
-plot.OMearaSSA(history)
+#plot.OMearaSSA(history)
