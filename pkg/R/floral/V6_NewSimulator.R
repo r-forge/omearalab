@@ -77,7 +77,8 @@ plot.OMearaSSA<-function(history) {
 }
   
 
-doParallelSSA<-function(file.name, x0, q.means, lambda.means, mu.means, tf=130, maxWallTime=Inf, verbose=F) {
+doParallelSSA<-function(x0, q.means, lambda.means, mu.means, tf=130, maxWallTime=Inf, verbose=F) {
+  file.name<-paste("SSA_",format(Sys.time(), "%b%d_%H_%M_%S"),"_",round(runif(1,1,1000000)),".RSave",sep="")
   survivors<-0
   history<-0
   attempts<-0
