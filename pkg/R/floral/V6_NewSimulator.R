@@ -86,6 +86,7 @@ doParallelSSA<-function(x0, q.means, lambda.means, mu.means, tf=130, maxWallTime
     attempts<-attempts+1
     history<-OMearaSSA(x0, q.means, lambda.means, mu.means, tf=tf, maxWallTime=maxWallTime, verbose=verbose)
     survivors<-history[dim(history)[1],2]
+    print(c(attempts,max(apply(history[,2:9],1,sum))))
   }
   save(history, file=file.name)
 }
