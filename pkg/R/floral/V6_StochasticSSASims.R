@@ -116,7 +116,7 @@ lambda.means <- apply(lambda.values, 2, weighted.mean, w=focal.dataframe$AICweig
 mu.means <- apply(mu.values, 2, weighted.mean, w=focal.dataframe$AICweight)
 
 #go Yule just to try
-#yule.scale<-0 #if 0, no different from regular birth death; if 1, pure birth
+#yule.scale<-1 #if 0, no different from regular birth death; if 1, pure birth
 #lambda.means<-lambda.means-(yule.scale*mu.means)
 #mu.means<-mu.means*(1-yule.scale)
 
@@ -191,11 +191,4 @@ while (min.val<0) {
 
 #out<-trySim(x0, a, nu, parms, tf=130)
 
-probExtinction<-function(lambda, mu, t, N0=2) {
-  #after magallon and sanderson
-  epsilon<-mu/lambda
-  r<-lambda-mu
-  beta<-(exp(r*t) - 1) / (exp(r*t) - epsilon)
-  alpha<-epsilon * beta
-  return(alpha^N0)
-}
+
