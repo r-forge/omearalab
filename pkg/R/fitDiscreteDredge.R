@@ -1,7 +1,7 @@
 library(parallel)
 library(geiger)
 
-fitDiscreteTransformFirst(x, phy, data) {
+fitDiscreteTransformFirst<-function(x, phy, data) {
   return(fitDiscrete(phy=phy, data=data, treeTransform=x))
 }
 
