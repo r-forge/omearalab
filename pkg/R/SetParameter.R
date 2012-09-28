@@ -48,23 +48,26 @@ SetLogParameter <- function(current.time, param.indep, param.anc, sigma.time, si
 	}
 	n.taxa<-1+max(which(split.times>=current.time),1)
 	param.starting <- (param.indep * (1 - weight.anc)) + (param.anc * weight.anc)
+
 	param.mean <- (param.starting + trend.scaling * (current.time ^ trend.exponent)) * (1 - (weight.logistic * n.taxa / k)) 
-	return(list(expected = param.mean, random = rnorm(1, param.mean, sigma.time * current.time + sigma.indep)))
+	
+	return(list(expected = param.mean, random = exp(rnorm(1, log(param.mean), sigma.time * current.time + sigma.indep))))
 } 
 
 SetBirth <- function(current.time, turnover.param.indep, turnover.param.anc, turnover.sigma.time, turnover.sigma.indep, turnover.weight.anc, turnover.weight.logistic, turnover.trend.scaling, turnover.trend.exponent, eps.param.indep, eps.param.anc, eps.sigma.time, eps.sigma.indep, eps.weight.anc, eps.weight.logistic, eps.trend.scaling, eps.trend.exponent, split.times, k) {
-	turnover<-lapply(SetLogParameter(current.time=current.time, param.indep=turnover.param.indep, param.anc=turnover.param.anc, sigma.time=turnover.sigma.time, sigma.indep=turnover.sigma.indep, weight.anc=turnover.weight.anc, weight.logistic=turnover.weight.logistic, trend.scaling=turnover.trend.scaling, trend.exponent=turnover.trend.exponent, split.times=split.times, k=k), exp)
-	extinction.fraction<-lapply(SetLogParameter(current.time=current.time, param.indep=eps.param.indep, param.anc=eps.param.anc, sigma.time=eps.sigma.time, sigma.indep=eps.sigma.indep, weight.anc=eps.weight.anc, weight.logistic=eps.weight.logistic, trend.scaling=eps.trend.scaling, trend.exponent=eps.trend.exponent, split.times=split.times, k=k), exp)
+	turnover<-SetLogParameter(current.time=current.time, param.indep=turnover.param.indep, param.anc=turnover.param.anc, sigma.time=turnover.sigma.time, sigma.indep=turnover.sigma.indep, weight.anc=turnover.weight.anc, weight.logistic=turnover.weight.logistic, trend.scaling=turnover.trend.scaling, trend.exponent=turnover.trend.exponent, split.times=split.times, k=k)
+	extinction.fraction<-SetLogParameter(current.time=current.time, param.indep=eps.param.indep, param.anc=eps.param.anc, sigma.time=eps.sigma.time, sigma.indep=eps.sigma.indep, weight.anc=eps.weight.anc, weight.logistic=eps.weight.logistic, trend.scaling=eps.trend.scaling, trend.exponent=eps.trend.exponent, split.times=split.times, k=k)
 	birth.expected<-turnover$expected / (1 + extinction.fraction$expected)
 	birth.random<-turnover$random / (1 + extinction.fraction$random)
 	return(list(expected=birth.expected, random=birth.random))
 }
 
 SetDeath <- function(current.time, turnover.param.indep, turnover.param.anc, turnover.sigma.time, turnover.sigma.indep, turnover.weight.anc, turnover.weight.logistic, turnover.trend.scaling, turnover.trend.exponent, eps.param.indep, eps.param.anc, eps.sigma.time, eps.sigma.indep, eps.weight.anc, eps.weight.logistic, eps.trend.scaling, eps.trend.exponent, split.times, k) {
-	turnover<-lapply(SetLogParameter(current.time=current.time, param.indep=turnover.param.indep, param.anc=turnover.param.anc, sigma.time=turnover.sigma.time, sigma.indep=turnover.sigma.indep, weight.anc=turnover.weight.anc, weight.logistic=turnover.weight.logistic, trend.scaling=turnover.trend.scaling, trend.exponent=turnover.trend.exponent, split.times=split.times, k=k), exp)
-	extinction.fraction<-lapply(SetLogParameter(current.time=current.time, param.indep=eps.param.indep, param.anc=eps.param.anc, sigma.time=eps.sigma.time, sigma.indep=eps.sigma.indep, weight.anc=eps.weight.anc, weight.logistic=eps.weight.logistic, trend.scaling=eps.trend.scaling, trend.exponent=eps.trend.exponent, split.times=split.times, k=k), exp)
+	turnover<-SetLogParameter(current.time=current.time, param.indep=turnover.param.indep, param.anc=turnover.param.anc, sigma.time=turnover.sigma.time, sigma.indep=turnover.sigma.indep, weight.anc=turnover.weight.anc, weight.logistic=turnover.weight.logistic, trend.scaling=turnover.trend.scaling, trend.exponent=turnover.trend.exponent, split.times=split.times, k=k)
+	extinction.fraction<-SetLogParameter(current.time=current.time, param.indep=eps.param.indep, param.anc=eps.param.anc, sigma.time=eps.sigma.time, sigma.indep=eps.sigma.indep, weight.anc=eps.weight.anc, weight.logistic=eps.weight.logistic, trend.scaling=eps.trend.scaling, trend.exponent=eps.trend.exponent, split.times=split.times, k=k)
 	death.expected<-(extinction.fraction$expected * turnover$expected) / (1 + extinction.fraction$expected)
 	death.random<-(extinction.fraction$random * turnover$random) / (1 + extinction.fraction$random)
+
 	return(list(expected=death.expected, random=death.random))
 }
 
@@ -74,11 +77,34 @@ SetDiversification <- function(current.time, turnover.param.indep, turnover.para
 }
 
 SetDiversificationExpected <- function(current.time, turnover.param.indep, turnover.param.anc, turnover.sigma.time, turnover.sigma.indep, turnover.weight.anc, turnover.weight.logistic, turnover.trend.scaling, turnover.trend.exponent, eps.param.indep, eps.param.anc, eps.sigma.time, eps.sigma.indep, eps.weight.anc, eps.weight.logistic, eps.trend.scaling, eps.trend.exponent, split.times, k) {
-	return(SetDiversification(current.time=current.time, turnover.param.indep=turnover.param.indep, turnover.param.anc=turnover.param.anc, turnover.sigma.time=turnover.sigma.time, turnover.sigma.indep=turnover.sigma.indep, turnover.weight.anc=turnover.weight.anc, turnover.weight.logistic=turnover.weight.logistic, turnover.trend.scaling=turnover.trend.scaling, turnover.trend.exponent=turnover.trend.exponent, eps.param.indep=eps.param.indep, eps.param.anc=eps.param.anc, eps.sigma.time=eps.sigma.time, eps.sigma.indep=eps.sigma.indep, eps.weight.anc=eps.weight.anc, eps.weight.logistic=eps.weight.logistic, eps.trend.scaling=eps.trend.scaling, eps.trend.exponent=eps.trend.exponent, split.times=split.times, k=k)$expected)
+	diversification<-SetDiversification(current.time=current.time, turnover.param.indep=turnover.param.indep, turnover.param.anc=turnover.param.anc, turnover.sigma.time=turnover.sigma.time, turnover.sigma.indep=turnover.sigma.indep, turnover.weight.anc=turnover.weight.anc, turnover.weight.logistic=turnover.weight.logistic, turnover.trend.scaling=turnover.trend.scaling, turnover.trend.exponent=turnover.trend.exponent, eps.param.indep=eps.param.indep, eps.param.anc=eps.param.anc, eps.sigma.time=eps.sigma.time, eps.sigma.indep=eps.sigma.indep, eps.weight.anc=eps.weight.anc, eps.weight.logistic=eps.weight.logistic, eps.trend.scaling=eps.trend.scaling, eps.trend.exponent=eps.trend.exponent, split.times=split.times, k=k)$expected
+	return(diversification)
 }
 
+IntegrateSetDiversificationExpected <- function(lower, upper, turnover.param.indep, turnover.param.anc, turnover.sigma.time, turnover.sigma.indep, turnover.weight.anc, turnover.weight.logistic, turnover.trend.scaling, turnover.trend.exponent, eps.param.indep, eps.param.anc, eps.sigma.time, eps.sigma.indep, eps.weight.anc, eps.weight.logistic, eps.trend.scaling, eps.trend.exponent, split.times, k) {
+	if (turnover.weight.logistic>0 | eps.weight.logistic>0) {
+		boundaries<-split.times[which(split.times>lower)]
+		boundaries<-boundaries[which(boundaries<upper)]
+		lower.bounds<-c(lower, boundaries)
+		upper.bounds<-c(boundaries, upper)
+		integration.result<-0
+		for (i in sequence(length(lower.bounds))) {
+			integration.result<-integration.result + integrate(Vectorize(SetDiversificationExpected, vectorize.args="current.time"), lower=lower.bounds[i], upper=upper.bounds[i], turnover.param.indep=turnover.param.indep, turnover.param.anc=turnover.param.anc, turnover.sigma.time=turnover.sigma.time, turnover.sigma.indep=turnover.sigma.indep, turnover.weight.anc=turnover.weight.anc, turnover.weight.logistic=turnover.weight.logistic, turnover.trend.scaling=turnover.trend.scaling, turnover.trend.exponent=turnover.trend.exponent, eps.param.indep=eps.param.indep, eps.param.anc=eps.param.anc, eps.sigma.time=eps.sigma.time, eps.sigma.indep=eps.sigma.indep, eps.weight.anc=eps.weight.anc, eps.weight.logistic=eps.weight.logistic, eps.trend.scaling=eps.trend.scaling, eps.trend.exponent=eps.trend.exponent, split.times=split.times, k=k, stop.on.error=FALSE)$value
+		}
+		return(integration.result)
+	}
+#if (brownian motion) {
+	
+#}
+	else {
+	  return(integrate(Vectorize(SetDiversificationExpected, vectorize.args="current.time"), lower=lower, upper=upper, turnover.param.indep=turnover.param.indep, turnover.param.anc=turnover.param.anc, turnover.sigma.time=turnover.sigma.time, turnover.sigma.indep=turnover.sigma.indep, turnover.weight.anc=turnover.weight.anc, turnover.weight.logistic=turnover.weight.logistic, turnover.trend.scaling=turnover.trend.scaling, turnover.trend.exponent=turnover.trend.exponent, eps.param.indep=eps.param.indep, eps.param.anc=eps.param.anc, eps.sigma.time=eps.sigma.time, eps.sigma.indep=eps.sigma.indep, eps.weight.anc=eps.weight.anc, eps.weight.logistic=eps.weight.logistic, eps.trend.scaling=eps.trend.scaling, eps.trend.exponent=eps.trend.exponent, split.times=split.times, k=k, stop.on.error=FALSE)$value)
+	}
+}
+
+
 IntegrateDiversificationOverTime <- function(stop.time, start.time, turnover.param.indep, turnover.param.anc, turnover.sigma.time, turnover.sigma.indep, turnover.weight.anc, turnover.weight.logistic, turnover.trend.scaling, turnover.trend.exponent, eps.param.indep, eps.param.anc, eps.sigma.time, eps.sigma.indep, eps.weight.anc, eps.weight.logistic, eps.trend.scaling, eps.trend.exponent, split.times, k) {
-	return(integrate(Vectorize(SetDiversificationExpected, vectorize.args="current.time"), lower=stop.time, upper=start.time, turnover.param.indep=turnover.param.indep, turnover.param.anc=turnover.param.anc, turnover.sigma.time=turnover.sigma.time, turnover.sigma.indep=turnover.sigma.indep, turnover.weight.anc=turnover.weight.anc, turnover.weight.logistic=turnover.weight.logistic, turnover.trend.scaling=turnover.trend.scaling, turnover.trend.exponent=turnover.trend.exponent, eps.param.indep=eps.param.indep, eps.param.anc=eps.param.anc, eps.sigma.time=eps.sigma.time, eps.sigma.indep=eps.sigma.indep, eps.weight.anc=eps.weight.anc, eps.weight.logistic=eps.weight.logistic, eps.trend.scaling=eps.trend.scaling, eps.trend.exponent=eps.trend.exponent, split.times=split.times, k=k, stop.on.error=FALSE)$value)
+#return(integrate(Vectorize(SetDiversificationExpected, vectorize.args="current.time"), lower=stop.time, upper=start.time, turnover.param.indep=turnover.param.indep, turnover.param.anc=turnover.param.anc, turnover.sigma.time=turnover.sigma.time, turnover.sigma.indep=turnover.sigma.indep, turnover.weight.anc=turnover.weight.anc, turnover.weight.logistic=turnover.weight.logistic, turnover.trend.scaling=turnover.trend.scaling, turnover.trend.exponent=turnover.trend.exponent, eps.param.indep=eps.param.indep, eps.param.anc=eps.param.anc, eps.sigma.time=eps.sigma.time, eps.sigma.indep=eps.sigma.indep, eps.weight.anc=eps.weight.anc, eps.weight.logistic=eps.weight.logistic, eps.trend.scaling=eps.trend.scaling, eps.trend.exponent=eps.trend.exponent, split.times=split.times, k=k, stop.on.error=FALSE)$value)
+	return(IntegrateSetDiversificationExpected(lower=stop.time, upper=start.time, turnover.param.indep=turnover.param.indep, turnover.param.anc=turnover.param.anc, turnover.sigma.time=turnover.sigma.time, turnover.sigma.indep=turnover.sigma.indep, turnover.weight.anc=turnover.weight.anc, turnover.weight.logistic=turnover.weight.logistic, turnover.trend.scaling=turnover.trend.scaling, turnover.trend.exponent=turnover.trend.exponent, eps.param.indep=eps.param.indep, eps.param.anc=eps.param.anc, eps.sigma.time=eps.sigma.time, eps.sigma.indep=eps.sigma.indep, eps.weight.anc=eps.weight.anc, eps.weight.logistic=eps.weight.logistic, eps.trend.scaling=eps.trend.scaling, eps.trend.exponent=eps.trend.exponent, split.times=split.times, k=k))
 }
 
 IntegrateDiversificationOverTime.int.0 <- function(start.time, turnover.param.indep, turnover.param.anc, turnover.sigma.time, turnover.sigma.indep, turnover.weight.anc, turnover.weight.logistic, turnover.trend.scaling, turnover.trend.exponent, eps.param.indep, eps.param.anc, eps.sigma.time, eps.sigma.indep, eps.weight.anc, eps.weight.logistic, eps.trend.scaling, eps.trend.exponent, split.times, k) {
@@ -150,7 +176,7 @@ Psi<-function(s, current.time, f, turnover.param.indep, turnover.param.anc, turn
 ######################################################################################################################################
 ######################################################################################################################################
 
-getLikelihood.gen.bd<-function(phylo,tot_time,f, turnover.param.indep, turnover.param.anc, turnover.sigma.time, turnover.sigma.indep, turnover.weight.anc, turnover.weight.logistic, turnover.trend.scaling, turnover.trend.exponent, eps.param.indep, eps.param.anc, eps.sigma.time, eps.sigma.indep, eps.weight.anc, eps.weight.logistic, eps.trend.scaling, eps.trend.exponent, split.times, k){
+getLikelihood.gen.bd<-function(phylo,tot_time,f, turnover.param.indep, turnover.param.anc, turnover.sigma.time, turnover.sigma.indep, turnover.weight.anc, turnover.weight.logistic, turnover.trend.scaling, turnover.trend.exponent, eps.param.indep, eps.param.anc, eps.sigma.time, eps.sigma.indep, eps.weight.anc, eps.weight.logistic, eps.trend.scaling, eps.trend.exponent, split.times, k, verbose=FALSE){
 	
 	indLikelihood<-c()
 	nbfinal<-length(phylo)
@@ -166,6 +192,9 @@ getLikelihood.gen.bd<-function(phylo,tot_time,f, turnover.param.indep, turnover.
 	#daughter j1; and sj2 is the stop time or interval of daughter j2 until the next split. 
 	#root == age.
 	for (j in 1:(nbtips-1)){
+		if (verbose) {
+			cat(".")
+		}
 		node<-(nbtips+j)
 		edges<-phylo$edge[phylo$edge[,1]==node,]
 		tj<-age-ages[edges[1,1],2]
@@ -190,5 +219,13 @@ library(picante)
 library(ape)
 #phy<-rcoal(10)
 phy<-read.tree("~/Dropbox/CollabBeaulieu/GeneralDiversification/test.tre")
+phy<-drop.tip(phy, paste("t", c(1:7), sep=""))
 
-print(getLikelihood.gen.bd(phylo=phy,tot_time=max(branching.times(phy)),f=1, turnover.param.indep=log(.75), turnover.param.anc=log(.75), turnover.sigma.time=.1, turnover.sigma.indep=.1, turnover.weight.anc=0, turnover.weight.logistic=0, turnover.trend.scaling=0, turnover.trend.exponent=1, eps.param.indep=log(0.5), eps.param.anc=log(0.5), eps.sigma.time=.1, eps.sigma.indep=.1, eps.weight.anc=0, eps.weight.logistic=0, eps.trend.scaling=0, eps.trend.exponent=1, split.times=branching.times(phy), k=100))
+us.DD.LH<-(getLikelihood.gen.bd(phylo=phy,tot_time=max(branching.times(phy)),f=1, turnover.param.indep=.5, turnover.param.anc=.5, turnover.sigma.time=.1, turnover.sigma.indep=.1, turnover.weight.anc=0, turnover.weight.logistic=1, turnover.trend.scaling=0, turnover.trend.exponent=1, eps.param.indep=0, eps.param.anc=0, eps.sigma.time=.1, eps.sigma.indep=.1, eps.weight.anc=0, eps.weight.logistic=0, eps.trend.scaling=0, eps.trend.exponent=1, split.times=branching.times(phy), k=10000000000, verbose=TRUE))
+
+us.bd.LH<-(getLikelihood.gen.bd(phylo=phy,tot_time=max(branching.times(phy)),f=1, turnover.param.indep=.5, turnover.param.anc=.5, turnover.sigma.time=.1, turnover.sigma.indep=.1, turnover.weight.anc=0, turnover.weight.logistic=0, turnover.trend.scaling=0, turnover.trend.exponent=1, eps.param.indep=0, eps.param.anc=0, eps.sigma.time=.1, eps.sigma.indep=.1, eps.weight.anc=0, eps.weight.logistic=0, eps.trend.scaling=0, eps.trend.exponent=1, split.times=branching.times(phy), k=10000000000, verbose=TRUE))
+
+
+print(paste("us.bd.LH", us.bd.LH))
+print(paste("us.DD.LH", us.DD.LH))
+print(paste("us.DD.LH - us.bd.LH", us.DD.LH - us.bd.LH))
