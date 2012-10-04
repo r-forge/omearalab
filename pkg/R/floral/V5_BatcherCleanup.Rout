@@ -1,0 +1,788 @@
+
+R version 2.14.0 (2011-10-31)
+Copyright (C) 2011 The R Foundation for Statistical Computing
+ISBN 3-900051-07-0
+Platform: x86_64-unknown-linux-gnu (64-bit)
+
+R is free software and comes with ABSOLUTELY NO WARRANTY.
+You are welcome to redistribute it under certain conditions.
+Type 'license()' or 'licence()' for distribution details.
+
+  Natural language support but running in an English locale
+
+R is a collaborative project with many contributors.
+Type 'contributors()' for more information and
+'citation()' on how to cite R or R packages in publications.
+
+Type 'demo()' for some demos, 'help()' for on-line help, or
+'help.start()' for an HTML browser interface to help.
+Type 'q()' to quit R.
+
+[Previously saved workspace restored]
+
+> library(diversitree) #obvious
+Loading required package: deSolve
+Loading required package: ape
+Loading required package: subplex
+> library(sfsmisc) #for counting in binary
+> library(partitions)
+Loading required package: polynom
+> library(gmp) #for dealing with big integers
+
+Attaching package: ‘gmp’
+
+The following object(s) are masked from ‘package:sfsmisc’:
+
+    factorize
+
+The following object(s) are masked from ‘package:base’:
+
+    %*%, apply, matrix, prod
+
+> source("/data/abc/RunsNov2011/UnifiedApproachScripts/V5_UtilityFns.R")
+> find.mle.method="optim"
+> 
+> 
+> focalVectorList<-getAllInterestingFocalVectorsStringsEfficient(S)
+> 
+> totalRuns<-0
+> runsInFile<-0
+> pbsCommands=""
+> 
+> for (focalIndex in 1:length(focalVectorList)) {
++ 	focalVector<-stringToVector(unlist(focalVectorList[[focalIndex]]))
++ 	for (transitionModelIndex in 1:dim(transitionModels)[1]) {
++ 		mkdirCmd=paste("mkdir -p ",paste("/data/abc/RunsNov2011/ActualRuns/T",transitionModelIndex,sep="",collapse=""),sep="",collapse="")
++ 		suppressWarnings(system(mkdirCmd))
++ 		for (diversificationModelIndex in 1:dim(diversificationModels)[1]) {
++ 			mkdirCmd=paste("mkdir -p ",paste("/data/abc/RunsNov2011/ActualRuns/T",transitionModelIndex,"/T",transitionModelIndex,"_D",diversificationModelIndex,sep="",collapse=""),sep="",collapse="")
++ 			suppressWarnings(system(mkdirCmd))
++ 			if (numberFocalCombos(focalVector) >= transitionModels$min_focalcombos[transitionModelIndex]) { #if there aren't enough combos to make the model appropriate, don't run it
++ 				if(numberFocalCombos(focalVector) >= diversificationModels$min_focalcombos[diversificationModelIndex]) { #if there aren't enough combos to make the model appropriate, don't run it
++ 					totalRuns<-totalRuns+1
++ 					#yay! Now we can run!
++ 					nameRoot<-paste("T",transitionModelIndex,"_D",diversificationModelIndex,"_",vectorToString(getFocalSummaryLabel(focalVector,S,"x")),sep="",collapse="")
++ 					dirRoot<-paste("/data/abc/RunsNov2011/ActualRuns/T",transitionModelIndex,"/T",transitionModelIndex,"_D",diversificationModelIndex,"/",nameRoot,sep="",collapse="")
++ 					mkdirCmd=paste("mkdir -p ",dirRoot,sep="",collapse="")
++ 					suppressWarnings(system(mkdirCmd))
++ 					lsString=paste(paste("ls -1 ",dirRoot,' | grep -c final.matrix.all',sep="",collapse=""))
++ 					#print(lsString)
++ 					finalMatrixAllCount=suppressWarnings(as.numeric(system(lsString,intern=TRUE)))
++ 					if(finalMatrixAllCount==0) {
++ 						runCommand=paste("source('/data/abc/RunsNov2011/UnifiedApproachScripts/V5_Commands_OptimizerSelect.R')\ntry(doUnifiedRun(F='",vectorToString(focalVector),"',T=",transitionModelIndex,",D=",diversificationModelIndex,",S=",partitionSize,", find.mle.method='",find.mle.method,"'))",sep="",collapse="")
++ 						cat(runCommand,file=paste(dirRoot,'/run',find.mle.method,'.R',sep=""),append=FALSE)
++ 						if (runsInFile==0) {
++ 							pbsCommands=paste('#!/bin/bash','#$ -cwd','#$ -o /dev/null','#$ -e /dev/null',sep="\n")
++ 							#queue="long*"
++ 							#if (partitionSize==1) {
++ 							#	queue="short*" #2 hr
++ 							#}
++ 							#else if (partitionSize<=3) {
++ 							#	queue="medium*" #24 hr
++ 							#}
++ 							queue="long*"
++ 							pbsCommands=paste(pbsCommands,'\n#$ -q ',queue,sep="")
++ 							pbsCommands=paste(pbsCommands,'#$ -M omeara.brian@gmail.com', '#$ -m beas', '#$ -S /bin/bash',sep="\n")
++ 							pbsCommands=paste(pbsCommands,"\n","#$ -N T",transitionModelIndex,"D",diversificationModelIndex,"F",vectorToString(getFocalSummaryLabel(focalVector,S,"x")),sep="")
++ 						}
++ 						pbsCommands=paste(pbsCommands,"\n",'cd /data/abc/RunsNov2011/ActualRuns/T',transitionModelIndex,"/T",transitionModelIndex,"_D",diversificationModelIndex,"/",nameRoot,sep="",collapse="")
++ 						pbsCommands=paste(pbsCommands,"\n","/data/apps/R/2.14.0/bin/R CMD BATCH run",find.mle.method,".R",sep="")
++ 						#print(paste(paste("../ActualRuns/P",partitionSchemeText,sep="",collapse=""),"/",nameRoot,'/run.sh',sep=""))
++ 						pbsCommands=paste(pbsCommands,"\nrm ",' *.csv *.t ',sep="")
++ 						runsInFile=runsInFile+1
++ 						print(paste("Queuing cleanup run ",nameRoot," at ",date(),sep="",collapse=""))
++ 						if (runsInFile>0) { 
++ 							cat(pbsCommands,file=paste(dirRoot,'/run.sh',sep=""),append=FALSE)
++ 							#cat(pbsCommands,file=paste('/usr/bin/tail -40 ', dirRoot,'/run.Rout > ',dirRoot,'/tail.run.Rout',sep=""),append=FALSE)
++ 							#cat(pbsCommands,file=paste('/usr/bin/zip ', dirRoot,'/run.zip  ',dirRoot,'/run.Rout',sep=""),append=FALSE)
++ 							#cat(pbsCommands,file=paste('/usr/bin/rm ', dirRoot,'/run.Rout',sep=""),append=FALSE)
++ 							
++ 							print(pbsCommands)
++ 							#print(paste("cd ",paste("../ActualRuns/P",partitionSchemeText,sep="",collapse=""),"/",nameRoot,sep=""))
++ 							origWD<-getwd()
++ 							setwd(paste(paste("/data/abc/RunsNov2011/ActualRuns/T",transitionModelIndex,"/T",transitionModelIndex,"_D",diversificationModelIndex,sep="",collapse=""),"/",nameRoot,sep=""))
++ 							system("pwd")
++ 							system("chmod u+x run.sh")
++ 							system("/opt/sge/bin/lx24-amd64/qsub run.sh")
++ 							setwd(origWD)
++ 							Sys.sleep(10)
++ 							runsInFile=0
++ 							pbsCommands=""
++ 						}
++ 						while(as.numeric(system("/opt/sge/bin/lx24-amd64/qstat | grep -c bomeara",intern=TRUE))>500) {
++ 							Sys.sleep(37)
++ 						}
++ 					}			
++ 				}
++ 			}
++ 		}
++ 	}
++ }
+[1] "Queuing cleanup run T5_D3_000x00 at Thu Nov 17 17:15:25 2011"
+[1] "#!/bin/bash\n#$ -cwd\n#$ -o /dev/null\n#$ -e /dev/null\n#$ -q long*\n#$ -M omeara.brian@gmail.com\n#$ -m beas\n#$ -S /bin/bash\n#$ -N T5D3F000x00\ncd /data/abc/RunsNov2011/ActualRuns/T5/T5_D3/T5_D3_000x00\n/data/apps/R/2.14.0/bin/R CMD BATCH runoptim.R\nrm  *.csv *.t "
+/data/abc/RunsNov2011/ActualRuns/T5/T5_D3/T5_D3_000x00
+Your job 5907114 ("T5D3F000x00") has been submitted
+[1] "Queuing cleanup run T5_D4_000x01 at Thu Nov 17 17:15:37 2011"
+[1] "#!/bin/bash\n#$ -cwd\n#$ -o /dev/null\n#$ -e /dev/null\n#$ -q long*\n#$ -M omeara.brian@gmail.com\n#$ -m beas\n#$ -S /bin/bash\n#$ -N T5D4F000x01\ncd /data/abc/RunsNov2011/ActualRuns/T5/T5_D4/T5_D4_000x01\n/data/apps/R/2.14.0/bin/R CMD BATCH runoptim.R\nrm  *.csv *.t "
+/data/abc/RunsNov2011/ActualRuns/T5/T5_D4/T5_D4_000x01
+Your job 5907115 ("T5D4F000x01") has been submitted
+[1] "Queuing cleanup run T2_D5_001010 at Thu Nov 17 17:16:10 2011"
+[1] "#!/bin/bash\n#$ -cwd\n#$ -o /dev/null\n#$ -e /dev/null\n#$ -q long*\n#$ -M omeara.brian@gmail.com\n#$ -m beas\n#$ -S /bin/bash\n#$ -N T2D5F001010\ncd /data/abc/RunsNov2011/ActualRuns/T2/T2_D5/T2_D5_001010\n/data/apps/R/2.14.0/bin/R CMD BATCH runoptim.R\nrm  *.csv *.t "
+/data/abc/RunsNov2011/ActualRuns/T2/T2_D5/T2_D5_001010
+Your job 5907122 ("T2D5F001010") has been submitted
+[1] "Queuing cleanup run T5_D5_010x01 at Thu Nov 17 17:18:49 2011"
+[1] "#!/bin/bash\n#$ -cwd\n#$ -o /dev/null\n#$ -e /dev/null\n#$ -q long*\n#$ -M omeara.brian@gmail.com\n#$ -m beas\n#$ -S /bin/bash\n#$ -N T5D5F010x01\ncd /data/abc/RunsNov2011/ActualRuns/T5/T5_D5/T5_D5_010x01\n/data/apps/R/2.14.0/bin/R CMD BATCH runoptim.R\nrm  *.csv *.t "
+/data/abc/RunsNov2011/ActualRuns/T5/T5_D5/T5_D5_010x01
+Your job 5907123 ("T5D5F010x01") has been submitted
+[1] "Queuing cleanup run T3_D5_01100x at Thu Nov 17 17:19:17 2011"
+[1] "#!/bin/bash\n#$ -cwd\n#$ -o /dev/null\n#$ -e /dev/null\n#$ -q long*\n#$ -M omeara.brian@gmail.com\n#$ -m beas\n#$ -S /bin/bash\n#$ -N T3D5F01100x\ncd /data/abc/RunsNov2011/ActualRuns/T3/T3_D5/T3_D5_01100x\n/data/apps/R/2.14.0/bin/R CMD BATCH runoptim.R\nrm  *.csv *.t "
+/data/abc/RunsNov2011/ActualRuns/T3/T3_D5/T3_D5_01100x
+Your job 5907124 ("T3D5F01100x") has been submitted
+[1] "Queuing cleanup run T4_D5_011010 at Thu Nov 17 17:19:30 2011"
+[1] "#!/bin/bash\n#$ -cwd\n#$ -o /dev/null\n#$ -e /dev/null\n#$ -q long*\n#$ -M omeara.brian@gmail.com\n#$ -m beas\n#$ -S /bin/bash\n#$ -N T4D5F011010\ncd /data/abc/RunsNov2011/ActualRuns/T4/T4_D5/T4_D5_011010\n/data/apps/R/2.14.0/bin/R CMD BATCH runoptim.R\nrm  *.csv *.t "
+/data/abc/RunsNov2011/ActualRuns/T4/T4_D5/T4_D5_011010
+Your job 5907125 ("T4D5F011010") has been submitted
+[1] "Queuing cleanup run T4_D3_01101x at Thu Nov 17 17:19:44 2011"
+[1] "#!/bin/bash\n#$ -cwd\n#$ -o /dev/null\n#$ -e /dev/null\n#$ -q long*\n#$ -M omeara.brian@gmail.com\n#$ -m beas\n#$ -S /bin/bash\n#$ -N T4D3F01101x\ncd /data/abc/RunsNov2011/ActualRuns/T4/T4_D3/T4_D3_01101x\n/data/apps/R/2.14.0/bin/R CMD BATCH runoptim.R\nrm  *.csv *.t "
+/data/abc/RunsNov2011/ActualRuns/T4/T4_D3/T4_D3_01101x
+Your job 5907126 ("T4D3F01101x") has been submitted
+[1] "Queuing cleanup run T5_D3_01101x at Thu Nov 17 17:19:55 2011"
+[1] "#!/bin/bash\n#$ -cwd\n#$ -o /dev/null\n#$ -e /dev/null\n#$ -q long*\n#$ -M omeara.brian@gmail.com\n#$ -m beas\n#$ -S /bin/bash\n#$ -N T5D3F01101x\ncd /data/abc/RunsNov2011/ActualRuns/T5/T5_D3/T5_D3_01101x\n/data/apps/R/2.14.0/bin/R CMD BATCH runoptim.R\nrm  *.csv *.t "
+/data/abc/RunsNov2011/ActualRuns/T5/T5_D3/T5_D3_01101x
+Your job 5907127 ("T5D3F01101x") has been submitted
+[1] "Queuing cleanup run T3_D5_0110x0 at Thu Nov 17 17:20:07 2011"
+[1] "#!/bin/bash\n#$ -cwd\n#$ -o /dev/null\n#$ -e /dev/null\n#$ -q long*\n#$ -M omeara.brian@gmail.com\n#$ -m beas\n#$ -S /bin/bash\n#$ -N T3D5F0110x0\ncd /data/abc/RunsNov2011/ActualRuns/T3/T3_D5/T3_D5_0110x0\n/data/apps/R/2.14.0/bin/R CMD BATCH runoptim.R\nrm  *.csv *.t "
+/data/abc/RunsNov2011/ActualRuns/T3/T3_D5/T3_D5_0110x0
+Your job 5907128 ("T3D5F0110x0") has been submitted
+[1] "Queuing cleanup run T4_D6_0110x0 at Thu Nov 17 17:20:18 2011"
+[1] "#!/bin/bash\n#$ -cwd\n#$ -o /dev/null\n#$ -e /dev/null\n#$ -q long*\n#$ -M omeara.brian@gmail.com\n#$ -m beas\n#$ -S /bin/bash\n#$ -N T4D6F0110x0\ncd /data/abc/RunsNov2011/ActualRuns/T4/T4_D6/T4_D6_0110x0\n/data/apps/R/2.14.0/bin/R CMD BATCH runoptim.R\nrm  *.csv *.t "
+/data/abc/RunsNov2011/ActualRuns/T4/T4_D6/T4_D6_0110x0
+Your job 5907129 ("T4D6F0110x0") has been submitted
+[1] "Queuing cleanup run T5_D3_0110x0 at Thu Nov 17 17:20:28 2011"
+[1] "#!/bin/bash\n#$ -cwd\n#$ -o /dev/null\n#$ -e /dev/null\n#$ -q long*\n#$ -M omeara.brian@gmail.com\n#$ -m beas\n#$ -S /bin/bash\n#$ -N T5D3F0110x0\ncd /data/abc/RunsNov2011/ActualRuns/T5/T5_D3/T5_D3_0110x0\n/data/apps/R/2.14.0/bin/R CMD BATCH runoptim.R\nrm  *.csv *.t "
+/data/abc/RunsNov2011/ActualRuns/T5/T5_D3/T5_D3_0110x0
+Your job 5907130 ("T5D3F0110x0") has been submitted
+[1] "Queuing cleanup run T4_D3_0110x1 at Thu Nov 17 17:20:40 2011"
+[1] "#!/bin/bash\n#$ -cwd\n#$ -o /dev/null\n#$ -e /dev/null\n#$ -q long*\n#$ -M omeara.brian@gmail.com\n#$ -m beas\n#$ -S /bin/bash\n#$ -N T4D3F0110x1\ncd /data/abc/RunsNov2011/ActualRuns/T4/T4_D3/T4_D3_0110x1\n/data/apps/R/2.14.0/bin/R CMD BATCH runoptim.R\nrm  *.csv *.t "
+/data/abc/RunsNov2011/ActualRuns/T4/T4_D3/T4_D3_0110x1
+Your job 5907131 ("T4D3F0110x1") has been submitted
+[1] "Queuing cleanup run T5_D3_0110x1 at Thu Nov 17 17:20:51 2011"
+[1] "#!/bin/bash\n#$ -cwd\n#$ -o /dev/null\n#$ -e /dev/null\n#$ -q long*\n#$ -M omeara.brian@gmail.com\n#$ -m beas\n#$ -S /bin/bash\n#$ -N T5D3F0110x1\ncd /data/abc/RunsNov2011/ActualRuns/T5/T5_D3/T5_D3_0110x1\n/data/apps/R/2.14.0/bin/R CMD BATCH runoptim.R\nrm  *.csv *.t "
+/data/abc/RunsNov2011/ActualRuns/T5/T5_D3/T5_D3_0110x1
+Your job 5907132 ("T5D3F0110x1") has been submitted
+[1] "Queuing cleanup run T5_D5_0110x1 at Thu Nov 17 17:21:02 2011"
+[1] "#!/bin/bash\n#$ -cwd\n#$ -o /dev/null\n#$ -e /dev/null\n#$ -q long*\n#$ -M omeara.brian@gmail.com\n#$ -m beas\n#$ -S /bin/bash\n#$ -N T5D5F0110x1\ncd /data/abc/RunsNov2011/ActualRuns/T5/T5_D5/T5_D5_0110x1\n/data/apps/R/2.14.0/bin/R CMD BATCH runoptim.R\nrm  *.csv *.t "
+/data/abc/RunsNov2011/ActualRuns/T5/T5_D5/T5_D5_0110x1
+Your job 5907133 ("T5D5F0110x1") has been submitted
+[1] "Queuing cleanup run T3_D6_0110xx at Thu Nov 17 17:21:14 2011"
+[1] "#!/bin/bash\n#$ -cwd\n#$ -o /dev/null\n#$ -e /dev/null\n#$ -q long*\n#$ -M omeara.brian@gmail.com\n#$ -m beas\n#$ -S /bin/bash\n#$ -N T3D6F0110xx\ncd /data/abc/RunsNov2011/ActualRuns/T3/T3_D6/T3_D6_0110xx\n/data/apps/R/2.14.0/bin/R CMD BATCH runoptim.R\nrm  *.csv *.t "
+/data/abc/RunsNov2011/ActualRuns/T3/T3_D6/T3_D6_0110xx
+Your job 5907134 ("T3D6F0110xx") has been submitted
+[1] "Queuing cleanup run T4_D3_0110xx at Thu Nov 17 17:21:24 2011"
+[1] "#!/bin/bash\n#$ -cwd\n#$ -o /dev/null\n#$ -e /dev/null\n#$ -q long*\n#$ -M omeara.brian@gmail.com\n#$ -m beas\n#$ -S /bin/bash\n#$ -N T4D3F0110xx\ncd /data/abc/RunsNov2011/ActualRuns/T4/T4_D3/T4_D3_0110xx\n/data/apps/R/2.14.0/bin/R CMD BATCH runoptim.R\nrm  *.csv *.t "
+/data/abc/RunsNov2011/ActualRuns/T4/T4_D3/T4_D3_0110xx
+Your job 5907135 ("T4D3F0110xx") has been submitted
+[1] "Queuing cleanup run T5_D1_0110xx at Thu Nov 17 17:21:35 2011"
+[1] "#!/bin/bash\n#$ -cwd\n#$ -o /dev/null\n#$ -e /dev/null\n#$ -q long*\n#$ -M omeara.brian@gmail.com\n#$ -m beas\n#$ -S /bin/bash\n#$ -N T5D1F0110xx\ncd /data/abc/RunsNov2011/ActualRuns/T5/T5_D1/T5_D1_0110xx\n/data/apps/R/2.14.0/bin/R CMD BATCH runoptim.R\nrm  *.csv *.t "
+/data/abc/RunsNov2011/ActualRuns/T5/T5_D1/T5_D1_0110xx
+Your job 5907136 ("T5D1F0110xx") has been submitted
+[1] "Queuing cleanup run T5_D5_0110xx at Thu Nov 17 17:21:46 2011"
+[1] "#!/bin/bash\n#$ -cwd\n#$ -o /dev/null\n#$ -e /dev/null\n#$ -q long*\n#$ -M omeara.brian@gmail.com\n#$ -m beas\n#$ -S /bin/bash\n#$ -N T5D5F0110xx\ncd /data/abc/RunsNov2011/ActualRuns/T5/T5_D5/T5_D5_0110xx\n/data/apps/R/2.14.0/bin/R CMD BATCH runoptim.R\nrm  *.csv *.t "
+/data/abc/RunsNov2011/ActualRuns/T5/T5_D5/T5_D5_0110xx
+Your job 5907137 ("T5D5F0110xx") has been submitted
+[1] "Queuing cleanup run T4_D5_01x001 at Thu Nov 17 17:22:41 2011"
+[1] "#!/bin/bash\n#$ -cwd\n#$ -o /dev/null\n#$ -e /dev/null\n#$ -q long*\n#$ -M omeara.brian@gmail.com\n#$ -m beas\n#$ -S /bin/bash\n#$ -N T4D5F01x001\ncd /data/abc/RunsNov2011/ActualRuns/T4/T4_D5/T4_D5_01x001\n/data/apps/R/2.14.0/bin/R CMD BATCH runoptim.R\nrm  *.csv *.t "
+/data/abc/RunsNov2011/ActualRuns/T4/T4_D5/T4_D5_01x001
+Your job 5907138 ("T4D5F01x001") has been submitted
+[1] "Queuing cleanup run T5_D3_01x001 at Thu Nov 17 17:22:51 2011"
+[1] "#!/bin/bash\n#$ -cwd\n#$ -o /dev/null\n#$ -e /dev/null\n#$ -q long*\n#$ -M omeara.brian@gmail.com\n#$ -m beas\n#$ -S /bin/bash\n#$ -N T5D3F01x001\ncd /data/abc/RunsNov2011/ActualRuns/T5/T5_D3/T5_D3_01x001\n/data/apps/R/2.14.0/bin/R CMD BATCH runoptim.R\nrm  *.csv *.t "
+/data/abc/RunsNov2011/ActualRuns/T5/T5_D3/T5_D3_01x001
+Your job 5907139 ("T5D3F01x001") has been submitted
+[1] "Queuing cleanup run T5_D3_0x1001 at Thu Nov 17 17:25:11 2011"
+[1] "#!/bin/bash\n#$ -cwd\n#$ -o /dev/null\n#$ -e /dev/null\n#$ -q long*\n#$ -M omeara.brian@gmail.com\n#$ -m beas\n#$ -S /bin/bash\n#$ -N T5D3F0x1001\ncd /data/abc/RunsNov2011/ActualRuns/T5/T5_D3/T5_D3_0x1001\n/data/apps/R/2.14.0/bin/R CMD BATCH runoptim.R\nrm  *.csv *.t "
+/data/abc/RunsNov2011/ActualRuns/T5/T5_D3/T5_D3_0x1001
+Your job 5907141 ("T5D3F0x1001") has been submitted
+[1] "Queuing cleanup run T5_D5_0x1001 at Thu Nov 17 17:25:21 2011"
+[1] "#!/bin/bash\n#$ -cwd\n#$ -o /dev/null\n#$ -e /dev/null\n#$ -q long*\n#$ -M omeara.brian@gmail.com\n#$ -m beas\n#$ -S /bin/bash\n#$ -N T5D5F0x1001\ncd /data/abc/RunsNov2011/ActualRuns/T5/T5_D5/T5_D5_0x1001\n/data/apps/R/2.14.0/bin/R CMD BATCH runoptim.R\nrm  *.csv *.t "
+/data/abc/RunsNov2011/ActualRuns/T5/T5_D5/T5_D5_0x1001
+Your job 5907142 ("T5D5F0x1001") has been submitted
+[1] "Queuing cleanup run T4_D5_0x1010 at Thu Nov 17 17:25:35 2011"
+[1] "#!/bin/bash\n#$ -cwd\n#$ -o /dev/null\n#$ -e /dev/null\n#$ -q long*\n#$ -M omeara.brian@gmail.com\n#$ -m beas\n#$ -S /bin/bash\n#$ -N T4D5F0x1010\ncd /data/abc/RunsNov2011/ActualRuns/T4/T4_D5/T4_D5_0x1010\n/data/apps/R/2.14.0/bin/R CMD BATCH runoptim.R\nrm  *.csv *.t "
+/data/abc/RunsNov2011/ActualRuns/T4/T4_D5/T4_D5_0x1010
+Your job 5907143 ("T4D5F0x1010") has been submitted
+[1] "Queuing cleanup run T4_D6_0x1010 at Thu Nov 17 17:25:46 2011"
+[1] "#!/bin/bash\n#$ -cwd\n#$ -o /dev/null\n#$ -e /dev/null\n#$ -q long*\n#$ -M omeara.brian@gmail.com\n#$ -m beas\n#$ -S /bin/bash\n#$ -N T4D6F0x1010\ncd /data/abc/RunsNov2011/ActualRuns/T4/T4_D6/T4_D6_0x1010\n/data/apps/R/2.14.0/bin/R CMD BATCH runoptim.R\nrm  *.csv *.t "
+/data/abc/RunsNov2011/ActualRuns/T4/T4_D6/T4_D6_0x1010
+Your job 5907144 ("T4D6F0x1010") has been submitted
+[1] "Queuing cleanup run T5_D5_10000x at Thu Nov 17 17:27:52 2011"
+[1] "#!/bin/bash\n#$ -cwd\n#$ -o /dev/null\n#$ -e /dev/null\n#$ -q long*\n#$ -M omeara.brian@gmail.com\n#$ -m beas\n#$ -S /bin/bash\n#$ -N T5D5F10000x\ncd /data/abc/RunsNov2011/ActualRuns/T5/T5_D5/T5_D5_10000x\n/data/apps/R/2.14.0/bin/R CMD BATCH runoptim.R\nrm  *.csv *.t "
+/data/abc/RunsNov2011/ActualRuns/T5/T5_D5/T5_D5_10000x
+Your job 5907145 ("T5D5F10000x") has been submitted
+[1] "Queuing cleanup run T2_D5_100100 at Thu Nov 17 17:28:17 2011"
+[1] "#!/bin/bash\n#$ -cwd\n#$ -o /dev/null\n#$ -e /dev/null\n#$ -q long*\n#$ -M omeara.brian@gmail.com\n#$ -m beas\n#$ -S /bin/bash\n#$ -N T2D5F100100\ncd /data/abc/RunsNov2011/ActualRuns/T2/T2_D5/T2_D5_100100\n/data/apps/R/2.14.0/bin/R CMD BATCH runoptim.R\nrm  *.csv *.t "
+/data/abc/RunsNov2011/ActualRuns/T2/T2_D5/T2_D5_100100
+Your job 5907146 ("T2D5F100100") has been submitted
+[1] "Queuing cleanup run T4_D6_100100 at Thu Nov 17 17:28:28 2011"
+[1] "#!/bin/bash\n#$ -cwd\n#$ -o /dev/null\n#$ -e /dev/null\n#$ -q long*\n#$ -M omeara.brian@gmail.com\n#$ -m beas\n#$ -S /bin/bash\n#$ -N T4D6F100100\ncd /data/abc/RunsNov2011/ActualRuns/T4/T4_D6/T4_D6_100100\n/data/apps/R/2.14.0/bin/R CMD BATCH runoptim.R\nrm  *.csv *.t "
+/data/abc/RunsNov2011/ActualRuns/T4/T4_D6/T4_D6_100100
+Your job 5907147 ("T4D6F100100") has been submitted
+[1] "Queuing cleanup run T5_D6_10010x at Thu Nov 17 17:28:44 2011"
+[1] "#!/bin/bash\n#$ -cwd\n#$ -o /dev/null\n#$ -e /dev/null\n#$ -q long*\n#$ -M omeara.brian@gmail.com\n#$ -m beas\n#$ -S /bin/bash\n#$ -N T5D6F10010x\ncd /data/abc/RunsNov2011/ActualRuns/T5/T5_D6/T5_D6_10010x\n/data/apps/R/2.14.0/bin/R CMD BATCH runoptim.R\nrm  *.csv *.t "
+/data/abc/RunsNov2011/ActualRuns/T5/T5_D6/T5_D6_10010x
+Your job 5907148 ("T5D6F10010x") has been submitted
+[1] "Queuing cleanup run T2_D5_100x00 at Thu Nov 17 17:29:07 2011"
+[1] "#!/bin/bash\n#$ -cwd\n#$ -o /dev/null\n#$ -e /dev/null\n#$ -q long*\n#$ -M omeara.brian@gmail.com\n#$ -m beas\n#$ -S /bin/bash\n#$ -N T2D5F100x00\ncd /data/abc/RunsNov2011/ActualRuns/T2/T2_D5/T2_D5_100x00\n/data/apps/R/2.14.0/bin/R CMD BATCH runoptim.R\nrm  *.csv *.t "
+/data/abc/RunsNov2011/ActualRuns/T2/T2_D5/T2_D5_100x00
+Your job 5907149 ("T2D5F100x00") has been submitted
+[1] "Queuing cleanup run T4_D6_100x00 at Thu Nov 17 17:29:18 2011"
+[1] "#!/bin/bash\n#$ -cwd\n#$ -o /dev/null\n#$ -e /dev/null\n#$ -q long*\n#$ -M omeara.brian@gmail.com\n#$ -m beas\n#$ -S /bin/bash\n#$ -N T4D6F100x00\ncd /data/abc/RunsNov2011/ActualRuns/T4/T4_D6/T4_D6_100x00\n/data/apps/R/2.14.0/bin/R CMD BATCH runoptim.R\nrm  *.csv *.t "
+/data/abc/RunsNov2011/ActualRuns/T4/T4_D6/T4_D6_100x00
+Your job 5907150 ("T4D6F100x00") has been submitted
+[1] "Queuing cleanup run T4_D6_101001 at Thu Nov 17 17:29:50 2011"
+[1] "#!/bin/bash\n#$ -cwd\n#$ -o /dev/null\n#$ -e /dev/null\n#$ -q long*\n#$ -M omeara.brian@gmail.com\n#$ -m beas\n#$ -S /bin/bash\n#$ -N T4D6F101001\ncd /data/abc/RunsNov2011/ActualRuns/T4/T4_D6/T4_D6_101001\n/data/apps/R/2.14.0/bin/R CMD BATCH runoptim.R\nrm  *.csv *.t "
+/data/abc/RunsNov2011/ActualRuns/T4/T4_D6/T4_D6_101001
+Your job 5907151 ("T4D6F101001") has been submitted
+[1] "Queuing cleanup run T3_D5_10100x at Thu Nov 17 17:30:02 2011"
+[1] "#!/bin/bash\n#$ -cwd\n#$ -o /dev/null\n#$ -e /dev/null\n#$ -q long*\n#$ -M omeara.brian@gmail.com\n#$ -m beas\n#$ -S /bin/bash\n#$ -N T3D5F10100x\ncd /data/abc/RunsNov2011/ActualRuns/T3/T3_D5/T3_D5_10100x\n/data/apps/R/2.14.0/bin/R CMD BATCH runoptim.R\nrm  *.csv *.t "
+/data/abc/RunsNov2011/ActualRuns/T3/T3_D5/T3_D5_10100x
+Your job 5907152 ("T3D5F10100x") has been submitted
+[1] "Queuing cleanup run T4_D5_101010 at Thu Nov 17 17:30:15 2011"
+[1] "#!/bin/bash\n#$ -cwd\n#$ -o /dev/null\n#$ -e /dev/null\n#$ -q long*\n#$ -M omeara.brian@gmail.com\n#$ -m beas\n#$ -S /bin/bash\n#$ -N T4D5F101010\ncd /data/abc/RunsNov2011/ActualRuns/T4/T4_D5/T4_D5_101010\n/data/apps/R/2.14.0/bin/R CMD BATCH runoptim.R\nrm  *.csv *.t "
+/data/abc/RunsNov2011/ActualRuns/T4/T4_D5/T4_D5_101010
+Your job 5907153 ("T4D5F101010") has been submitted
+[1] "Queuing cleanup run T4_D6_101010 at Thu Nov 17 17:30:26 2011"
+[1] "#!/bin/bash\n#$ -cwd\n#$ -o /dev/null\n#$ -e /dev/null\n#$ -q long*\n#$ -M omeara.brian@gmail.com\n#$ -m beas\n#$ -S /bin/bash\n#$ -N T4D6F101010\ncd /data/abc/RunsNov2011/ActualRuns/T4/T4_D6/T4_D6_101010\n/data/apps/R/2.14.0/bin/R CMD BATCH runoptim.R\nrm  *.csv *.t "
+/data/abc/RunsNov2011/ActualRuns/T4/T4_D6/T4_D6_101010
+Your job 5907154 ("T4D6F101010") has been submitted
+[1] "Queuing cleanup run T5_D3_10101x at Thu Nov 17 17:30:40 2011"
+[1] "#!/bin/bash\n#$ -cwd\n#$ -o /dev/null\n#$ -e /dev/null\n#$ -q long*\n#$ -M omeara.brian@gmail.com\n#$ -m beas\n#$ -S /bin/bash\n#$ -N T5D3F10101x\ncd /data/abc/RunsNov2011/ActualRuns/T5/T5_D3/T5_D3_10101x\n/data/apps/R/2.14.0/bin/R CMD BATCH runoptim.R\nrm  *.csv *.t "
+/data/abc/RunsNov2011/ActualRuns/T5/T5_D3/T5_D3_10101x
+Your job 5907155 ("T5D3F10101x") has been submitted
+[1] "Queuing cleanup run T5_D6_10101x at Thu Nov 17 17:30:51 2011"
+[1] "#!/bin/bash\n#$ -cwd\n#$ -o /dev/null\n#$ -e /dev/null\n#$ -q long*\n#$ -M omeara.brian@gmail.com\n#$ -m beas\n#$ -S /bin/bash\n#$ -N T5D6F10101x\ncd /data/abc/RunsNov2011/ActualRuns/T5/T5_D6/T5_D6_10101x\n/data/apps/R/2.14.0/bin/R CMD BATCH runoptim.R\nrm  *.csv *.t "
+/data/abc/RunsNov2011/ActualRuns/T5/T5_D6/T5_D6_10101x
+Your job 5907156 ("T5D6F10101x") has been submitted
+[1] "Queuing cleanup run T4_D6_1010x0 at Thu Nov 17 17:31:03 2011"
+[1] "#!/bin/bash\n#$ -cwd\n#$ -o /dev/null\n#$ -e /dev/null\n#$ -q long*\n#$ -M omeara.brian@gmail.com\n#$ -m beas\n#$ -S /bin/bash\n#$ -N T4D6F1010x0\ncd /data/abc/RunsNov2011/ActualRuns/T4/T4_D6/T4_D6_1010x0\n/data/apps/R/2.14.0/bin/R CMD BATCH runoptim.R\nrm  *.csv *.t "
+/data/abc/RunsNov2011/ActualRuns/T4/T4_D6/T4_D6_1010x0
+Your job 5907157 ("T4D6F1010x0") has been submitted
+[1] "Queuing cleanup run T2_D5_1010xx at Thu Nov 17 17:31:16 2011"
+[1] "#!/bin/bash\n#$ -cwd\n#$ -o /dev/null\n#$ -e /dev/null\n#$ -q long*\n#$ -M omeara.brian@gmail.com\n#$ -m beas\n#$ -S /bin/bash\n#$ -N T2D5F1010xx\ncd /data/abc/RunsNov2011/ActualRuns/T2/T2_D5/T2_D5_1010xx\n/data/apps/R/2.14.0/bin/R CMD BATCH runoptim.R\nrm  *.csv *.t "
+/data/abc/RunsNov2011/ActualRuns/T2/T2_D5/T2_D5_1010xx
+Your job 5907158 ("T2D5F1010xx") has been submitted
+[1] "Queuing cleanup run T4_D6_1010xx at Thu Nov 17 17:31:28 2011"
+[1] "#!/bin/bash\n#$ -cwd\n#$ -o /dev/null\n#$ -e /dev/null\n#$ -q long*\n#$ -M omeara.brian@gmail.com\n#$ -m beas\n#$ -S /bin/bash\n#$ -N T4D6F1010xx\ncd /data/abc/RunsNov2011/ActualRuns/T4/T4_D6/T4_D6_1010xx\n/data/apps/R/2.14.0/bin/R CMD BATCH runoptim.R\nrm  *.csv *.t "
+/data/abc/RunsNov2011/ActualRuns/T4/T4_D6/T4_D6_1010xx
+Your job 5907159 ("T4D6F1010xx") has been submitted
+[1] "Queuing cleanup run T5_D1_1010xx at Thu Nov 17 17:31:38 2011"
+[1] "#!/bin/bash\n#$ -cwd\n#$ -o /dev/null\n#$ -e /dev/null\n#$ -q long*\n#$ -M omeara.brian@gmail.com\n#$ -m beas\n#$ -S /bin/bash\n#$ -N T5D1F1010xx\ncd /data/abc/RunsNov2011/ActualRuns/T5/T5_D1/T5_D1_1010xx\n/data/apps/R/2.14.0/bin/R CMD BATCH runoptim.R\nrm  *.csv *.t "
+/data/abc/RunsNov2011/ActualRuns/T5/T5_D1/T5_D1_1010xx
+Your job 5907160 ("T5D1F1010xx") has been submitted
+[1] "Queuing cleanup run T4_D5_101110 at Thu Nov 17 17:31:57 2011"
+[1] "#!/bin/bash\n#$ -cwd\n#$ -o /dev/null\n#$ -e /dev/null\n#$ -q long*\n#$ -M omeara.brian@gmail.com\n#$ -m beas\n#$ -S /bin/bash\n#$ -N T4D5F101110\ncd /data/abc/RunsNov2011/ActualRuns/T4/T4_D5/T4_D5_101110\n/data/apps/R/2.14.0/bin/R CMD BATCH runoptim.R\nrm  *.csv *.t "
+/data/abc/RunsNov2011/ActualRuns/T4/T4_D5/T4_D5_101110
+Your job 5907161 ("T4D5F101110") has been submitted
+[1] "Queuing cleanup run T4_D6_101110 at Thu Nov 17 17:32:07 2011"
+[1] "#!/bin/bash\n#$ -cwd\n#$ -o /dev/null\n#$ -e /dev/null\n#$ -q long*\n#$ -M omeara.brian@gmail.com\n#$ -m beas\n#$ -S /bin/bash\n#$ -N T4D6F101110\ncd /data/abc/RunsNov2011/ActualRuns/T4/T4_D6/T4_D6_101110\n/data/apps/R/2.14.0/bin/R CMD BATCH runoptim.R\nrm  *.csv *.t "
+/data/abc/RunsNov2011/ActualRuns/T4/T4_D6/T4_D6_101110
+Your job 5907162 ("T4D6F101110") has been submitted
+[1] "Queuing cleanup run T4_D4_10111x at Thu Nov 17 17:32:21 2011"
+[1] "#!/bin/bash\n#$ -cwd\n#$ -o /dev/null\n#$ -e /dev/null\n#$ -q long*\n#$ -M omeara.brian@gmail.com\n#$ -m beas\n#$ -S /bin/bash\n#$ -N T4D4F10111x\ncd /data/abc/RunsNov2011/ActualRuns/T4/T4_D4/T4_D4_10111x\n/data/apps/R/2.14.0/bin/R CMD BATCH runoptim.R\nrm  *.csv *.t "
+/data/abc/RunsNov2011/ActualRuns/T4/T4_D4/T4_D4_10111x
+Your job 5907163 ("T4D4F10111x") has been submitted
+[1] "Queuing cleanup run T5_D3_10111x at Thu Nov 17 17:32:31 2011"
+[1] "#!/bin/bash\n#$ -cwd\n#$ -o /dev/null\n#$ -e /dev/null\n#$ -q long*\n#$ -M omeara.brian@gmail.com\n#$ -m beas\n#$ -S /bin/bash\n#$ -N T5D3F10111x\ncd /data/abc/RunsNov2011/ActualRuns/T5/T5_D3/T5_D3_10111x\n/data/apps/R/2.14.0/bin/R CMD BATCH runoptim.R\nrm  *.csv *.t "
+/data/abc/RunsNov2011/ActualRuns/T5/T5_D3/T5_D3_10111x
+Your job 5907164 ("T5D3F10111x") has been submitted
+[1] "Queuing cleanup run T5_D5_10111x at Thu Nov 17 17:32:42 2011"
+[1] "#!/bin/bash\n#$ -cwd\n#$ -o /dev/null\n#$ -e /dev/null\n#$ -q long*\n#$ -M omeara.brian@gmail.com\n#$ -m beas\n#$ -S /bin/bash\n#$ -N T5D5F10111x\ncd /data/abc/RunsNov2011/ActualRuns/T5/T5_D5/T5_D5_10111x\n/data/apps/R/2.14.0/bin/R CMD BATCH runoptim.R\nrm  *.csv *.t "
+/data/abc/RunsNov2011/ActualRuns/T5/T5_D5/T5_D5_10111x
+Your job 5907165 ("T5D5F10111x") has been submitted
+[1] "Queuing cleanup run T2_D5_1011x0 at Thu Nov 17 17:32:54 2011"
+[1] "#!/bin/bash\n#$ -cwd\n#$ -o /dev/null\n#$ -e /dev/null\n#$ -q long*\n#$ -M omeara.brian@gmail.com\n#$ -m beas\n#$ -S /bin/bash\n#$ -N T2D5F1011x0\ncd /data/abc/RunsNov2011/ActualRuns/T2/T2_D5/T2_D5_1011x0\n/data/apps/R/2.14.0/bin/R CMD BATCH runoptim.R\nrm  *.csv *.t "
+/data/abc/RunsNov2011/ActualRuns/T2/T2_D5/T2_D5_1011x0
+Your job 5907166 ("T2D5F1011x0") has been submitted
+[1] "Queuing cleanup run T4_D3_1011x0 at Thu Nov 17 17:33:05 2011"
+[1] "#!/bin/bash\n#$ -cwd\n#$ -o /dev/null\n#$ -e /dev/null\n#$ -q long*\n#$ -M omeara.brian@gmail.com\n#$ -m beas\n#$ -S /bin/bash\n#$ -N T4D3F1011x0\ncd /data/abc/RunsNov2011/ActualRuns/T4/T4_D3/T4_D3_1011x0\n/data/apps/R/2.14.0/bin/R CMD BATCH runoptim.R\nrm  *.csv *.t "
+/data/abc/RunsNov2011/ActualRuns/T4/T4_D3/T4_D3_1011x0
+Your job 5907167 ("T4D3F1011x0") has been submitted
+[1] "Queuing cleanup run T4_D5_1011x0 at Thu Nov 17 17:33:15 2011"
+[1] "#!/bin/bash\n#$ -cwd\n#$ -o /dev/null\n#$ -e /dev/null\n#$ -q long*\n#$ -M omeara.brian@gmail.com\n#$ -m beas\n#$ -S /bin/bash\n#$ -N T4D5F1011x0\ncd /data/abc/RunsNov2011/ActualRuns/T4/T4_D5/T4_D5_1011x0\n/data/apps/R/2.14.0/bin/R CMD BATCH runoptim.R\nrm  *.csv *.t "
+/data/abc/RunsNov2011/ActualRuns/T4/T4_D5/T4_D5_1011x0
+Your job 5907168 ("T4D5F1011x0") has been submitted
+[1] "Queuing cleanup run T5_D3_1011x0 at Thu Nov 17 17:33:26 2011"
+[1] "#!/bin/bash\n#$ -cwd\n#$ -o /dev/null\n#$ -e /dev/null\n#$ -q long*\n#$ -M omeara.brian@gmail.com\n#$ -m beas\n#$ -S /bin/bash\n#$ -N T5D3F1011x0\ncd /data/abc/RunsNov2011/ActualRuns/T5/T5_D3/T5_D3_1011x0\n/data/apps/R/2.14.0/bin/R CMD BATCH runoptim.R\nrm  *.csv *.t "
+/data/abc/RunsNov2011/ActualRuns/T5/T5_D3/T5_D3_1011x0
+Your job 5907169 ("T5D3F1011x0") has been submitted
+[1] "Queuing cleanup run T5_D5_1011x0 at Thu Nov 17 17:33:36 2011"
+[1] "#!/bin/bash\n#$ -cwd\n#$ -o /dev/null\n#$ -e /dev/null\n#$ -q long*\n#$ -M omeara.brian@gmail.com\n#$ -m beas\n#$ -S /bin/bash\n#$ -N T5D5F1011x0\ncd /data/abc/RunsNov2011/ActualRuns/T5/T5_D5/T5_D5_1011x0\n/data/apps/R/2.14.0/bin/R CMD BATCH runoptim.R\nrm  *.csv *.t "
+/data/abc/RunsNov2011/ActualRuns/T5/T5_D5/T5_D5_1011x0
+Your job 5907170 ("T5D5F1011x0") has been submitted
+[1] "Queuing cleanup run T5_D3_1011x1 at Thu Nov 17 17:33:49 2011"
+[1] "#!/bin/bash\n#$ -cwd\n#$ -o /dev/null\n#$ -e /dev/null\n#$ -q long*\n#$ -M omeara.brian@gmail.com\n#$ -m beas\n#$ -S /bin/bash\n#$ -N T5D3F1011x1\ncd /data/abc/RunsNov2011/ActualRuns/T5/T5_D3/T5_D3_1011x1\n/data/apps/R/2.14.0/bin/R CMD BATCH runoptim.R\nrm  *.csv *.t "
+/data/abc/RunsNov2011/ActualRuns/T5/T5_D3/T5_D3_1011x1
+Your job 5907171 ("T5D3F1011x1") has been submitted
+[1] "Queuing cleanup run T5_D3_1011xx at Thu Nov 17 17:34:02 2011"
+[1] "#!/bin/bash\n#$ -cwd\n#$ -o /dev/null\n#$ -e /dev/null\n#$ -q long*\n#$ -M omeara.brian@gmail.com\n#$ -m beas\n#$ -S /bin/bash\n#$ -N T5D3F1011xx\ncd /data/abc/RunsNov2011/ActualRuns/T5/T5_D3/T5_D3_1011xx\n/data/apps/R/2.14.0/bin/R CMD BATCH runoptim.R\nrm  *.csv *.t "
+/data/abc/RunsNov2011/ActualRuns/T5/T5_D3/T5_D3_1011xx
+Your job 5907172 ("T5D3F1011xx") has been submitted
+[1] "Queuing cleanup run T5_D5_1011xx at Thu Nov 17 17:34:13 2011"
+[1] "#!/bin/bash\n#$ -cwd\n#$ -o /dev/null\n#$ -e /dev/null\n#$ -q long*\n#$ -M omeara.brian@gmail.com\n#$ -m beas\n#$ -S /bin/bash\n#$ -N T5D5F1011xx\ncd /data/abc/RunsNov2011/ActualRuns/T5/T5_D5/T5_D5_1011xx\n/data/apps/R/2.14.0/bin/R CMD BATCH runoptim.R\nrm  *.csv *.t "
+/data/abc/RunsNov2011/ActualRuns/T5/T5_D5/T5_D5_1011xx
+Your job 5907173 ("T5D5F1011xx") has been submitted
+[1] "Queuing cleanup run T5_D5_101x00 at Thu Nov 17 17:34:25 2011"
+[1] "#!/bin/bash\n#$ -cwd\n#$ -o /dev/null\n#$ -e /dev/null\n#$ -q long*\n#$ -M omeara.brian@gmail.com\n#$ -m beas\n#$ -S /bin/bash\n#$ -N T5D5F101x00\ncd /data/abc/RunsNov2011/ActualRuns/T5/T5_D5/T5_D5_101x00\n/data/apps/R/2.14.0/bin/R CMD BATCH runoptim.R\nrm  *.csv *.t "
+/data/abc/RunsNov2011/ActualRuns/T5/T5_D5/T5_D5_101x00
+Your job 5907174 ("T5D5F101x00") has been submitted
+[1] "Queuing cleanup run T2_D5_101x10 at Thu Nov 17 17:34:41 2011"
+[1] "#!/bin/bash\n#$ -cwd\n#$ -o /dev/null\n#$ -e /dev/null\n#$ -q long*\n#$ -M omeara.brian@gmail.com\n#$ -m beas\n#$ -S /bin/bash\n#$ -N T2D5F101x10\ncd /data/abc/RunsNov2011/ActualRuns/T2/T2_D5/T2_D5_101x10\n/data/apps/R/2.14.0/bin/R CMD BATCH runoptim.R\nrm  *.csv *.t "
+/data/abc/RunsNov2011/ActualRuns/T2/T2_D5/T2_D5_101x10
+Your job 5907175 ("T2D5F101x10") has been submitted
+[1] "Queuing cleanup run T2_D6_101x10 at Thu Nov 17 17:34:51 2011"
+[1] "#!/bin/bash\n#$ -cwd\n#$ -o /dev/null\n#$ -e /dev/null\n#$ -q long*\n#$ -M omeara.brian@gmail.com\n#$ -m beas\n#$ -S /bin/bash\n#$ -N T2D6F101x10\ncd /data/abc/RunsNov2011/ActualRuns/T2/T2_D6/T2_D6_101x10\n/data/apps/R/2.14.0/bin/R CMD BATCH runoptim.R\nrm  *.csv *.t "
+/data/abc/RunsNov2011/ActualRuns/T2/T2_D6/T2_D6_101x10
+Your job 5907177 ("T2D6F101x10") has been submitted
+[1] "Queuing cleanup run T4_D5_101x10 at Thu Nov 17 17:35:04 2011"
+[1] "#!/bin/bash\n#$ -cwd\n#$ -o /dev/null\n#$ -e /dev/null\n#$ -q long*\n#$ -M omeara.brian@gmail.com\n#$ -m beas\n#$ -S /bin/bash\n#$ -N T4D5F101x10\ncd /data/abc/RunsNov2011/ActualRuns/T4/T4_D5/T4_D5_101x10\n/data/apps/R/2.14.0/bin/R CMD BATCH runoptim.R\nrm  *.csv *.t "
+/data/abc/RunsNov2011/ActualRuns/T4/T4_D5/T4_D5_101x10
+Your job 5907178 ("T4D5F101x10") has been submitted
+[1] "Queuing cleanup run T5_D3_101x10 at Thu Nov 17 17:35:15 2011"
+[1] "#!/bin/bash\n#$ -cwd\n#$ -o /dev/null\n#$ -e /dev/null\n#$ -q long*\n#$ -M omeara.brian@gmail.com\n#$ -m beas\n#$ -S /bin/bash\n#$ -N T5D3F101x10\ncd /data/abc/RunsNov2011/ActualRuns/T5/T5_D3/T5_D3_101x10\n/data/apps/R/2.14.0/bin/R CMD BATCH runoptim.R\nrm  *.csv *.t "
+/data/abc/RunsNov2011/ActualRuns/T5/T5_D3/T5_D3_101x10
+Your job 5907179 ("T5D3F101x10") has been submitted
+[1] "Queuing cleanup run T5_D5_101x10 at Thu Nov 17 17:35:25 2011"
+[1] "#!/bin/bash\n#$ -cwd\n#$ -o /dev/null\n#$ -e /dev/null\n#$ -q long*\n#$ -M omeara.brian@gmail.com\n#$ -m beas\n#$ -S /bin/bash\n#$ -N T5D5F101x10\ncd /data/abc/RunsNov2011/ActualRuns/T5/T5_D5/T5_D5_101x10\n/data/apps/R/2.14.0/bin/R CMD BATCH runoptim.R\nrm  *.csv *.t "
+/data/abc/RunsNov2011/ActualRuns/T5/T5_D5/T5_D5_101x10
+Your job 5907180 ("T5D5F101x10") has been submitted
+[1] "Queuing cleanup run T4_D3_101x1x at Thu Nov 17 17:35:39 2011"
+[1] "#!/bin/bash\n#$ -cwd\n#$ -o /dev/null\n#$ -e /dev/null\n#$ -q long*\n#$ -M omeara.brian@gmail.com\n#$ -m beas\n#$ -S /bin/bash\n#$ -N T4D3F101x1x\ncd /data/abc/RunsNov2011/ActualRuns/T4/T4_D3/T4_D3_101x1x\n/data/apps/R/2.14.0/bin/R CMD BATCH runoptim.R\nrm  *.csv *.t "
+/data/abc/RunsNov2011/ActualRuns/T4/T4_D3/T4_D3_101x1x
+Your job 5907181 ("T4D3F101x1x") has been submitted
+[1] "Queuing cleanup run T5_D3_101x1x at Thu Nov 17 17:35:50 2011"
+[1] "#!/bin/bash\n#$ -cwd\n#$ -o /dev/null\n#$ -e /dev/null\n#$ -q long*\n#$ -M omeara.brian@gmail.com\n#$ -m beas\n#$ -S /bin/bash\n#$ -N T5D3F101x1x\ncd /data/abc/RunsNov2011/ActualRuns/T5/T5_D3/T5_D3_101x1x\n/data/apps/R/2.14.0/bin/R CMD BATCH runoptim.R\nrm  *.csv *.t "
+/data/abc/RunsNov2011/ActualRuns/T5/T5_D3/T5_D3_101x1x
+Your job 5907182 ("T5D3F101x1x") has been submitted
+[1] "Queuing cleanup run T5_D6_101x1x at Thu Nov 17 17:36:01 2011"
+[1] "#!/bin/bash\n#$ -cwd\n#$ -o /dev/null\n#$ -e /dev/null\n#$ -q long*\n#$ -M omeara.brian@gmail.com\n#$ -m beas\n#$ -S /bin/bash\n#$ -N T5D6F101x1x\ncd /data/abc/RunsNov2011/ActualRuns/T5/T5_D6/T5_D6_101x1x\n/data/apps/R/2.14.0/bin/R CMD BATCH runoptim.R\nrm  *.csv *.t "
+/data/abc/RunsNov2011/ActualRuns/T5/T5_D6/T5_D6_101x1x
+Your job 5907183 ("T5D6F101x1x") has been submitted
+[1] "Queuing cleanup run T2_D5_101xx0 at Thu Nov 17 17:36:12 2011"
+[1] "#!/bin/bash\n#$ -cwd\n#$ -o /dev/null\n#$ -e /dev/null\n#$ -q long*\n#$ -M omeara.brian@gmail.com\n#$ -m beas\n#$ -S /bin/bash\n#$ -N T2D5F101xx0\ncd /data/abc/RunsNov2011/ActualRuns/T2/T2_D5/T2_D5_101xx0\n/data/apps/R/2.14.0/bin/R CMD BATCH runoptim.R\nrm  *.csv *.t "
+/data/abc/RunsNov2011/ActualRuns/T2/T2_D5/T2_D5_101xx0
+Your job 5907184 ("T2D5F101xx0") has been submitted
+[1] "Queuing cleanup run T2_D6_101xx0 at Thu Nov 17 17:36:22 2011"
+[1] "#!/bin/bash\n#$ -cwd\n#$ -o /dev/null\n#$ -e /dev/null\n#$ -q long*\n#$ -M omeara.brian@gmail.com\n#$ -m beas\n#$ -S /bin/bash\n#$ -N T2D6F101xx0\ncd /data/abc/RunsNov2011/ActualRuns/T2/T2_D6/T2_D6_101xx0\n/data/apps/R/2.14.0/bin/R CMD BATCH runoptim.R\nrm  *.csv *.t "
+/data/abc/RunsNov2011/ActualRuns/T2/T2_D6/T2_D6_101xx0
+Your job 5907185 ("T2D6F101xx0") has been submitted
+[1] "Queuing cleanup run T4_D5_101xx0 at Thu Nov 17 17:36:34 2011"
+[1] "#!/bin/bash\n#$ -cwd\n#$ -o /dev/null\n#$ -e /dev/null\n#$ -q long*\n#$ -M omeara.brian@gmail.com\n#$ -m beas\n#$ -S /bin/bash\n#$ -N T4D5F101xx0\ncd /data/abc/RunsNov2011/ActualRuns/T4/T4_D5/T4_D5_101xx0\n/data/apps/R/2.14.0/bin/R CMD BATCH runoptim.R\nrm  *.csv *.t "
+/data/abc/RunsNov2011/ActualRuns/T4/T4_D5/T4_D5_101xx0
+Your job 5907186 ("T4D5F101xx0") has been submitted
+[1] "Queuing cleanup run T5_D3_101xx0 at Thu Nov 17 17:36:45 2011"
+[1] "#!/bin/bash\n#$ -cwd\n#$ -o /dev/null\n#$ -e /dev/null\n#$ -q long*\n#$ -M omeara.brian@gmail.com\n#$ -m beas\n#$ -S /bin/bash\n#$ -N T5D3F101xx0\ncd /data/abc/RunsNov2011/ActualRuns/T5/T5_D3/T5_D3_101xx0\n/data/apps/R/2.14.0/bin/R CMD BATCH runoptim.R\nrm  *.csv *.t "
+/data/abc/RunsNov2011/ActualRuns/T5/T5_D3/T5_D3_101xx0
+Your job 5907187 ("T5D3F101xx0") has been submitted
+[1] "Queuing cleanup run T5_D5_101xx0 at Thu Nov 17 17:36:55 2011"
+[1] "#!/bin/bash\n#$ -cwd\n#$ -o /dev/null\n#$ -e /dev/null\n#$ -q long*\n#$ -M omeara.brian@gmail.com\n#$ -m beas\n#$ -S /bin/bash\n#$ -N T5D5F101xx0\ncd /data/abc/RunsNov2011/ActualRuns/T5/T5_D5/T5_D5_101xx0\n/data/apps/R/2.14.0/bin/R CMD BATCH runoptim.R\nrm  *.csv *.t "
+/data/abc/RunsNov2011/ActualRuns/T5/T5_D5/T5_D5_101xx0
+Your job 5907188 ("T5D5F101xx0") has been submitted
+[1] "Queuing cleanup run T3_D6_101xx1 at Thu Nov 17 17:37:07 2011"
+[1] "#!/bin/bash\n#$ -cwd\n#$ -o /dev/null\n#$ -e /dev/null\n#$ -q long*\n#$ -M omeara.brian@gmail.com\n#$ -m beas\n#$ -S /bin/bash\n#$ -N T3D6F101xx1\ncd /data/abc/RunsNov2011/ActualRuns/T3/T3_D6/T3_D6_101xx1\n/data/apps/R/2.14.0/bin/R CMD BATCH runoptim.R\nrm  *.csv *.t "
+/data/abc/RunsNov2011/ActualRuns/T3/T3_D6/T3_D6_101xx1
+Your job 5907189 ("T3D6F101xx1") has been submitted
+[1] "Queuing cleanup run T5_D5_101xx1 at Thu Nov 17 17:37:18 2011"
+[1] "#!/bin/bash\n#$ -cwd\n#$ -o /dev/null\n#$ -e /dev/null\n#$ -q long*\n#$ -M omeara.brian@gmail.com\n#$ -m beas\n#$ -S /bin/bash\n#$ -N T5D5F101xx1\ncd /data/abc/RunsNov2011/ActualRuns/T5/T5_D5/T5_D5_101xx1\n/data/apps/R/2.14.0/bin/R CMD BATCH runoptim.R\nrm  *.csv *.t "
+/data/abc/RunsNov2011/ActualRuns/T5/T5_D5/T5_D5_101xx1
+Your job 5907190 ("T5D5F101xx1") has been submitted
+[1] "Queuing cleanup run T4_D3_101xxx at Thu Nov 17 17:37:30 2011"
+[1] "#!/bin/bash\n#$ -cwd\n#$ -o /dev/null\n#$ -e /dev/null\n#$ -q long*\n#$ -M omeara.brian@gmail.com\n#$ -m beas\n#$ -S /bin/bash\n#$ -N T4D3F101xxx\ncd /data/abc/RunsNov2011/ActualRuns/T4/T4_D3/T4_D3_101xxx\n/data/apps/R/2.14.0/bin/R CMD BATCH runoptim.R\nrm  *.csv *.t "
+/data/abc/RunsNov2011/ActualRuns/T4/T4_D3/T4_D3_101xxx
+Your job 5907191 ("T4D3F101xxx") has been submitted
+[1] "Queuing cleanup run T4_D5_101xxx at Thu Nov 17 17:37:41 2011"
+[1] "#!/bin/bash\n#$ -cwd\n#$ -o /dev/null\n#$ -e /dev/null\n#$ -q long*\n#$ -M omeara.brian@gmail.com\n#$ -m beas\n#$ -S /bin/bash\n#$ -N T4D5F101xxx\ncd /data/abc/RunsNov2011/ActualRuns/T4/T4_D5/T4_D5_101xxx\n/data/apps/R/2.14.0/bin/R CMD BATCH runoptim.R\nrm  *.csv *.t "
+/data/abc/RunsNov2011/ActualRuns/T4/T4_D5/T4_D5_101xxx
+Your job 5907192 ("T4D5F101xxx") has been submitted
+[1] "Queuing cleanup run T5_D3_10x000 at Thu Nov 17 17:37:53 2011"
+[1] "#!/bin/bash\n#$ -cwd\n#$ -o /dev/null\n#$ -e /dev/null\n#$ -q long*\n#$ -M omeara.brian@gmail.com\n#$ -m beas\n#$ -S /bin/bash\n#$ -N T5D3F10x000\ncd /data/abc/RunsNov2011/ActualRuns/T5/T5_D3/T5_D3_10x000\n/data/apps/R/2.14.0/bin/R CMD BATCH runoptim.R\nrm  *.csv *.t "
+/data/abc/RunsNov2011/ActualRuns/T5/T5_D3/T5_D3_10x000
+Your job 5907193 ("T5D3F10x000") has been submitted
+[1] "Queuing cleanup run T2_D5_10x100 at Thu Nov 17 17:38:22 2011"
+[1] "#!/bin/bash\n#$ -cwd\n#$ -o /dev/null\n#$ -e /dev/null\n#$ -q long*\n#$ -M omeara.brian@gmail.com\n#$ -m beas\n#$ -S /bin/bash\n#$ -N T2D5F10x100\ncd /data/abc/RunsNov2011/ActualRuns/T2/T2_D5/T2_D5_10x100\n/data/apps/R/2.14.0/bin/R CMD BATCH runoptim.R\nrm  *.csv *.t "
+/data/abc/RunsNov2011/ActualRuns/T2/T2_D5/T2_D5_10x100
+Your job 5907194 ("T2D5F10x100") has been submitted
+[1] "Queuing cleanup run T2_D5_110001 at Thu Nov 17 17:39:12 2011"
+[1] "#!/bin/bash\n#$ -cwd\n#$ -o /dev/null\n#$ -e /dev/null\n#$ -q long*\n#$ -M omeara.brian@gmail.com\n#$ -m beas\n#$ -S /bin/bash\n#$ -N T2D5F110001\ncd /data/abc/RunsNov2011/ActualRuns/T2/T2_D5/T2_D5_110001\n/data/apps/R/2.14.0/bin/R CMD BATCH runoptim.R\nrm  *.csv *.t "
+/data/abc/RunsNov2011/ActualRuns/T2/T2_D5/T2_D5_110001
+Your job 5907196 ("T2D5F110001") has been submitted
+[1] "Queuing cleanup run T4_D5_11000x at Thu Nov 17 17:39:25 2011"
+[1] "#!/bin/bash\n#$ -cwd\n#$ -o /dev/null\n#$ -e /dev/null\n#$ -q long*\n#$ -M omeara.brian@gmail.com\n#$ -m beas\n#$ -S /bin/bash\n#$ -N T4D5F11000x\ncd /data/abc/RunsNov2011/ActualRuns/T4/T4_D5/T4_D5_11000x\n/data/apps/R/2.14.0/bin/R CMD BATCH runoptim.R\nrm  *.csv *.t "
+/data/abc/RunsNov2011/ActualRuns/T4/T4_D5/T4_D5_11000x
+Your job 5907200 ("T4D5F11000x") has been submitted
+[1] "Queuing cleanup run T5_D4_11010x at Thu Nov 17 17:39:53 2011"
+[1] "#!/bin/bash\n#$ -cwd\n#$ -o /dev/null\n#$ -e /dev/null\n#$ -q long*\n#$ -M omeara.brian@gmail.com\n#$ -m beas\n#$ -S /bin/bash\n#$ -N T5D4F11010x\ncd /data/abc/RunsNov2011/ActualRuns/T5/T5_D4/T5_D4_11010x\n/data/apps/R/2.14.0/bin/R CMD BATCH runoptim.R\nrm  *.csv *.t "
+/data/abc/RunsNov2011/ActualRuns/T5/T5_D4/T5_D4_11010x
+Your job 5907204 ("T5D4F11010x") has been submitted
+[1] "Queuing cleanup run T2_D5_110110 at Thu Nov 17 17:40:04 2011"
+[1] "#!/bin/bash\n#$ -cwd\n#$ -o /dev/null\n#$ -e /dev/null\n#$ -q long*\n#$ -M omeara.brian@gmail.com\n#$ -m beas\n#$ -S /bin/bash\n#$ -N T2D5F110110\ncd /data/abc/RunsNov2011/ActualRuns/T2/T2_D5/T2_D5_110110\n/data/apps/R/2.14.0/bin/R CMD BATCH runoptim.R\nrm  *.csv *.t "
+/data/abc/RunsNov2011/ActualRuns/T2/T2_D5/T2_D5_110110
+Your job 5907206 ("T2D5F110110") has been submitted
+[1] "Queuing cleanup run T2_D5_1101x0 at Thu Nov 17 17:40:20 2011"
+[1] "#!/bin/bash\n#$ -cwd\n#$ -o /dev/null\n#$ -e /dev/null\n#$ -q long*\n#$ -M omeara.brian@gmail.com\n#$ -m beas\n#$ -S /bin/bash\n#$ -N T2D5F1101x0\ncd /data/abc/RunsNov2011/ActualRuns/T2/T2_D5/T2_D5_1101x0\n/data/apps/R/2.14.0/bin/R CMD BATCH runoptim.R\nrm  *.csv *.t "
+/data/abc/RunsNov2011/ActualRuns/T2/T2_D5/T2_D5_1101x0
+Your job 5907209 ("T2D5F1101x0") has been submitted
+[1] "Queuing cleanup run T5_D1_1101x0 at Thu Nov 17 17:40:31 2011"
+[1] "#!/bin/bash\n#$ -cwd\n#$ -o /dev/null\n#$ -e /dev/null\n#$ -q long*\n#$ -M omeara.brian@gmail.com\n#$ -m beas\n#$ -S /bin/bash\n#$ -N T5D1F1101x0\ncd /data/abc/RunsNov2011/ActualRuns/T5/T5_D1/T5_D1_1101x0\n/data/apps/R/2.14.0/bin/R CMD BATCH runoptim.R\nrm  *.csv *.t "
+/data/abc/RunsNov2011/ActualRuns/T5/T5_D1/T5_D1_1101x0
+Your job 5907211 ("T5D1F1101x0") has been submitted
+[1] "Queuing cleanup run T3_D5_110x00 at Thu Nov 17 17:40:47 2011"
+[1] "#!/bin/bash\n#$ -cwd\n#$ -o /dev/null\n#$ -e /dev/null\n#$ -q long*\n#$ -M omeara.brian@gmail.com\n#$ -m beas\n#$ -S /bin/bash\n#$ -N T3D5F110x00\ncd /data/abc/RunsNov2011/ActualRuns/T3/T3_D5/T3_D5_110x00\n/data/apps/R/2.14.0/bin/R CMD BATCH runoptim.R\nrm  *.csv *.t "
+/data/abc/RunsNov2011/ActualRuns/T3/T3_D5/T3_D5_110x00
+Your job 5907213 ("T3D5F110x00") has been submitted
+[1] "Queuing cleanup run T5_D5_110x00 at Thu Nov 17 17:40:58 2011"
+[1] "#!/bin/bash\n#$ -cwd\n#$ -o /dev/null\n#$ -e /dev/null\n#$ -q long*\n#$ -M omeara.brian@gmail.com\n#$ -m beas\n#$ -S /bin/bash\n#$ -N T5D5F110x00\ncd /data/abc/RunsNov2011/ActualRuns/T5/T5_D5/T5_D5_110x00\n/data/apps/R/2.14.0/bin/R CMD BATCH runoptim.R\nrm  *.csv *.t "
+/data/abc/RunsNov2011/ActualRuns/T5/T5_D5/T5_D5_110x00
+Your job 5907215 ("T5D5F110x00") has been submitted
+[1] "Queuing cleanup run T4_D5_111000 at Thu Nov 17 17:41:25 2011"
+[1] "#!/bin/bash\n#$ -cwd\n#$ -o /dev/null\n#$ -e /dev/null\n#$ -q long*\n#$ -M omeara.brian@gmail.com\n#$ -m beas\n#$ -S /bin/bash\n#$ -N T4D5F111000\ncd /data/abc/RunsNov2011/ActualRuns/T4/T4_D5/T4_D5_111000\n/data/apps/R/2.14.0/bin/R CMD BATCH runoptim.R\nrm  *.csv *.t "
+/data/abc/RunsNov2011/ActualRuns/T4/T4_D5/T4_D5_111000
+Your job 5907219 ("T4D5F111000") has been submitted
+[1] "Queuing cleanup run T4_D3_11100x at Thu Nov 17 17:41:39 2011"
+[1] "#!/bin/bash\n#$ -cwd\n#$ -o /dev/null\n#$ -e /dev/null\n#$ -q long*\n#$ -M omeara.brian@gmail.com\n#$ -m beas\n#$ -S /bin/bash\n#$ -N T4D3F11100x\ncd /data/abc/RunsNov2011/ActualRuns/T4/T4_D3/T4_D3_11100x\n/data/apps/R/2.14.0/bin/R CMD BATCH runoptim.R\nrm  *.csv *.t "
+/data/abc/RunsNov2011/ActualRuns/T4/T4_D3/T4_D3_11100x
+Your job 5907222 ("T4D3F11100x") has been submitted
+[1] "Queuing cleanup run T4_D6_111011 at Thu Nov 17 17:41:54 2011"
+[1] "#!/bin/bash\n#$ -cwd\n#$ -o /dev/null\n#$ -e /dev/null\n#$ -q long*\n#$ -M omeara.brian@gmail.com\n#$ -m beas\n#$ -S /bin/bash\n#$ -N T4D6F111011\ncd /data/abc/RunsNov2011/ActualRuns/T4/T4_D6/T4_D6_111011\n/data/apps/R/2.14.0/bin/R CMD BATCH runoptim.R\nrm  *.csv *.t "
+/data/abc/RunsNov2011/ActualRuns/T4/T4_D6/T4_D6_111011
+Your job 5907224 ("T4D6F111011") has been submitted
+[1] "Queuing cleanup run T2_D5_11110x at Thu Nov 17 17:42:16 2011"
+[1] "#!/bin/bash\n#$ -cwd\n#$ -o /dev/null\n#$ -e /dev/null\n#$ -q long*\n#$ -M omeara.brian@gmail.com\n#$ -m beas\n#$ -S /bin/bash\n#$ -N T2D5F11110x\ncd /data/abc/RunsNov2011/ActualRuns/T2/T2_D5/T2_D5_11110x\n/data/apps/R/2.14.0/bin/R CMD BATCH runoptim.R\nrm  *.csv *.t "
+/data/abc/RunsNov2011/ActualRuns/T2/T2_D5/T2_D5_11110x
+Your job 5907227 ("T2D5F11110x") has been submitted
+[1] "Queuing cleanup run T5_D1_111x00 at Thu Nov 17 17:42:41 2011"
+[1] "#!/bin/bash\n#$ -cwd\n#$ -o /dev/null\n#$ -e /dev/null\n#$ -q long*\n#$ -M omeara.brian@gmail.com\n#$ -m beas\n#$ -S /bin/bash\n#$ -N T5D1F111x00\ncd /data/abc/RunsNov2011/ActualRuns/T5/T5_D1/T5_D1_111x00\n/data/apps/R/2.14.0/bin/R CMD BATCH runoptim.R\nrm  *.csv *.t "
+/data/abc/RunsNov2011/ActualRuns/T5/T5_D1/T5_D1_111x00
+Your job 5907231 ("T5D1F111x00") has been submitted
+[1] "Queuing cleanup run T5_D5_111x00 at Thu Nov 17 17:42:52 2011"
+[1] "#!/bin/bash\n#$ -cwd\n#$ -o /dev/null\n#$ -e /dev/null\n#$ -q long*\n#$ -M omeara.brian@gmail.com\n#$ -m beas\n#$ -S /bin/bash\n#$ -N T5D5F111x00\ncd /data/abc/RunsNov2011/ActualRuns/T5/T5_D5/T5_D5_111x00\n/data/apps/R/2.14.0/bin/R CMD BATCH runoptim.R\nrm  *.csv *.t "
+/data/abc/RunsNov2011/ActualRuns/T5/T5_D5/T5_D5_111x00
+Your job 5907233 ("T5D5F111x00") has been submitted
+[1] "Queuing cleanup run T2_D5_111x0x at Thu Nov 17 17:43:05 2011"
+[1] "#!/bin/bash\n#$ -cwd\n#$ -o /dev/null\n#$ -e /dev/null\n#$ -q long*\n#$ -M omeara.brian@gmail.com\n#$ -m beas\n#$ -S /bin/bash\n#$ -N T2D5F111x0x\ncd /data/abc/RunsNov2011/ActualRuns/T2/T2_D5/T2_D5_111x0x\n/data/apps/R/2.14.0/bin/R CMD BATCH runoptim.R\nrm  *.csv *.t "
+/data/abc/RunsNov2011/ActualRuns/T2/T2_D5/T2_D5_111x0x
+Your job 5907236 ("T2D5F111x0x") has been submitted
+[1] "Queuing cleanup run T5_D6_111x0x at Thu Nov 17 17:43:17 2011"
+[1] "#!/bin/bash\n#$ -cwd\n#$ -o /dev/null\n#$ -e /dev/null\n#$ -q long*\n#$ -M omeara.brian@gmail.com\n#$ -m beas\n#$ -S /bin/bash\n#$ -N T5D6F111x0x\ncd /data/abc/RunsNov2011/ActualRuns/T5/T5_D6/T5_D6_111x0x\n/data/apps/R/2.14.0/bin/R CMD BATCH runoptim.R\nrm  *.csv *.t "
+/data/abc/RunsNov2011/ActualRuns/T5/T5_D6/T5_D6_111x0x
+Your job 5907238 ("T5D6F111x0x") has been submitted
+[1] "Queuing cleanup run T5_D5_11x001 at Thu Nov 17 17:43:42 2011"
+[1] "#!/bin/bash\n#$ -cwd\n#$ -o /dev/null\n#$ -e /dev/null\n#$ -q long*\n#$ -M omeara.brian@gmail.com\n#$ -m beas\n#$ -S /bin/bash\n#$ -N T5D5F11x001\ncd /data/abc/RunsNov2011/ActualRuns/T5/T5_D5/T5_D5_11x001\n/data/apps/R/2.14.0/bin/R CMD BATCH runoptim.R\nrm  *.csv *.t "
+/data/abc/RunsNov2011/ActualRuns/T5/T5_D5/T5_D5_11x001
+Your job 5907241 ("T5D5F11x001") has been submitted
+[1] "Queuing cleanup run T5_D1_11x00x at Thu Nov 17 17:43:54 2011"
+[1] "#!/bin/bash\n#$ -cwd\n#$ -o /dev/null\n#$ -e /dev/null\n#$ -q long*\n#$ -M omeara.brian@gmail.com\n#$ -m beas\n#$ -S /bin/bash\n#$ -N T5D1F11x00x\ncd /data/abc/RunsNov2011/ActualRuns/T5/T5_D1/T5_D1_11x00x\n/data/apps/R/2.14.0/bin/R CMD BATCH runoptim.R\nrm  *.csv *.t "
+/data/abc/RunsNov2011/ActualRuns/T5/T5_D1/T5_D1_11x00x
+Your job 5907244 ("T5D1F11x00x") has been submitted
+[1] "Queuing cleanup run T2_D5_11x100 at Thu Nov 17 17:44:17 2011"
+[1] "#!/bin/bash\n#$ -cwd\n#$ -o /dev/null\n#$ -e /dev/null\n#$ -q long*\n#$ -M omeara.brian@gmail.com\n#$ -m beas\n#$ -S /bin/bash\n#$ -N T2D5F11x100\ncd /data/abc/RunsNov2011/ActualRuns/T2/T2_D5/T2_D5_11x100\n/data/apps/R/2.14.0/bin/R CMD BATCH runoptim.R\nrm  *.csv *.t "
+/data/abc/RunsNov2011/ActualRuns/T2/T2_D5/T2_D5_11x100
+Your job 5907247 ("T2D5F11x100") has been submitted
+[1] "Queuing cleanup run T4_D6_11x100 at Thu Nov 17 17:44:28 2011"
+[1] "#!/bin/bash\n#$ -cwd\n#$ -o /dev/null\n#$ -e /dev/null\n#$ -q long*\n#$ -M omeara.brian@gmail.com\n#$ -m beas\n#$ -S /bin/bash\n#$ -N T4D6F11x100\ncd /data/abc/RunsNov2011/ActualRuns/T4/T4_D6/T4_D6_11x100\n/data/apps/R/2.14.0/bin/R CMD BATCH runoptim.R\nrm  *.csv *.t "
+/data/abc/RunsNov2011/ActualRuns/T4/T4_D6/T4_D6_11x100
+Your job 5907249 ("T4D6F11x100") has been submitted
+[1] "Queuing cleanup run T5_D5_11x100 at Thu Nov 17 17:44:39 2011"
+[1] "#!/bin/bash\n#$ -cwd\n#$ -o /dev/null\n#$ -e /dev/null\n#$ -q long*\n#$ -M omeara.brian@gmail.com\n#$ -m beas\n#$ -S /bin/bash\n#$ -N T5D5F11x100\ncd /data/abc/RunsNov2011/ActualRuns/T5/T5_D5/T5_D5_11x100\n/data/apps/R/2.14.0/bin/R CMD BATCH runoptim.R\nrm  *.csv *.t "
+/data/abc/RunsNov2011/ActualRuns/T5/T5_D5/T5_D5_11x100
+Your job 5907251 ("T5D5F11x100") has been submitted
+[1] "Queuing cleanup run T2_D5_11xx00 at Thu Nov 17 17:45:09 2011"
+[1] "#!/bin/bash\n#$ -cwd\n#$ -o /dev/null\n#$ -e /dev/null\n#$ -q long*\n#$ -M omeara.brian@gmail.com\n#$ -m beas\n#$ -S /bin/bash\n#$ -N T2D5F11xx00\ncd /data/abc/RunsNov2011/ActualRuns/T2/T2_D5/T2_D5_11xx00\n/data/apps/R/2.14.0/bin/R CMD BATCH runoptim.R\nrm  *.csv *.t "
+/data/abc/RunsNov2011/ActualRuns/T2/T2_D5/T2_D5_11xx00
+Your job 5907255 ("T2D5F11xx00") has been submitted
+[1] "Queuing cleanup run T5_D3_1x0000 at Thu Nov 17 17:45:41 2011"
+[1] "#!/bin/bash\n#$ -cwd\n#$ -o /dev/null\n#$ -e /dev/null\n#$ -q long*\n#$ -M omeara.brian@gmail.com\n#$ -m beas\n#$ -S /bin/bash\n#$ -N T5D3F1x0000\ncd /data/abc/RunsNov2011/ActualRuns/T5/T5_D3/T5_D3_1x0000\n/data/apps/R/2.14.0/bin/R CMD BATCH runoptim.R\nrm  *.csv *.t "
+/data/abc/RunsNov2011/ActualRuns/T5/T5_D3/T5_D3_1x0000
+Your job 5907256 ("T5D3F1x0000") has been submitted
+[1] "Queuing cleanup run T5_D5_1x0000 at Thu Nov 17 17:45:51 2011"
+[1] "#!/bin/bash\n#$ -cwd\n#$ -o /dev/null\n#$ -e /dev/null\n#$ -q long*\n#$ -M omeara.brian@gmail.com\n#$ -m beas\n#$ -S /bin/bash\n#$ -N T5D5F1x0000\ncd /data/abc/RunsNov2011/ActualRuns/T5/T5_D5/T5_D5_1x0000\n/data/apps/R/2.14.0/bin/R CMD BATCH runoptim.R\nrm  *.csv *.t "
+/data/abc/RunsNov2011/ActualRuns/T5/T5_D5/T5_D5_1x0000
+Your job 5907257 ("T5D5F1x0000") has been submitted
+[1] "Queuing cleanup run T2_D5_1x0100 at Thu Nov 17 17:46:19 2011"
+[1] "#!/bin/bash\n#$ -cwd\n#$ -o /dev/null\n#$ -e /dev/null\n#$ -q long*\n#$ -M omeara.brian@gmail.com\n#$ -m beas\n#$ -S /bin/bash\n#$ -N T2D5F1x0100\ncd /data/abc/RunsNov2011/ActualRuns/T2/T2_D5/T2_D5_1x0100\n/data/apps/R/2.14.0/bin/R CMD BATCH runoptim.R\nrm  *.csv *.t "
+/data/abc/RunsNov2011/ActualRuns/T2/T2_D5/T2_D5_1x0100
+Your job 5907258 ("T2D5F1x0100") has been submitted
+[1] "Queuing cleanup run T5_D5_1x0100 at Thu Nov 17 17:46:30 2011"
+[1] "#!/bin/bash\n#$ -cwd\n#$ -o /dev/null\n#$ -e /dev/null\n#$ -q long*\n#$ -M omeara.brian@gmail.com\n#$ -m beas\n#$ -S /bin/bash\n#$ -N T5D5F1x0100\ncd /data/abc/RunsNov2011/ActualRuns/T5/T5_D5/T5_D5_1x0100\n/data/apps/R/2.14.0/bin/R CMD BATCH runoptim.R\nrm  *.csv *.t "
+/data/abc/RunsNov2011/ActualRuns/T5/T5_D5/T5_D5_1x0100
+Your job 5907259 ("T5D5F1x0100") has been submitted
+[1] "Queuing cleanup run T5_D4_1x011x at Thu Nov 17 17:46:51 2011"
+[1] "#!/bin/bash\n#$ -cwd\n#$ -o /dev/null\n#$ -e /dev/null\n#$ -q long*\n#$ -M omeara.brian@gmail.com\n#$ -m beas\n#$ -S /bin/bash\n#$ -N T5D4F1x011x\ncd /data/abc/RunsNov2011/ActualRuns/T5/T5_D4/T5_D4_1x011x\n/data/apps/R/2.14.0/bin/R CMD BATCH runoptim.R\nrm  *.csv *.t "
+/data/abc/RunsNov2011/ActualRuns/T5/T5_D4/T5_D4_1x011x
+Your job 5907260 ("T5D4F1x011x") has been submitted
+[1] "Queuing cleanup run T2_D5_1x0x00 at Thu Nov 17 17:47:09 2011"
+[1] "#!/bin/bash\n#$ -cwd\n#$ -o /dev/null\n#$ -e /dev/null\n#$ -q long*\n#$ -M omeara.brian@gmail.com\n#$ -m beas\n#$ -S /bin/bash\n#$ -N T2D5F1x0x00\ncd /data/abc/RunsNov2011/ActualRuns/T2/T2_D5/T2_D5_1x0x00\n/data/apps/R/2.14.0/bin/R CMD BATCH runoptim.R\nrm  *.csv *.t "
+/data/abc/RunsNov2011/ActualRuns/T2/T2_D5/T2_D5_1x0x00
+Your job 5907261 ("T2D5F1x0x00") has been submitted
+[1] "Queuing cleanup run T5_D6_1x0x00 at Thu Nov 17 17:47:21 2011"
+[1] "#!/bin/bash\n#$ -cwd\n#$ -o /dev/null\n#$ -e /dev/null\n#$ -q long*\n#$ -M omeara.brian@gmail.com\n#$ -m beas\n#$ -S /bin/bash\n#$ -N T5D6F1x0x00\ncd /data/abc/RunsNov2011/ActualRuns/T5/T5_D6/T5_D6_1x0x00\n/data/apps/R/2.14.0/bin/R CMD BATCH runoptim.R\nrm  *.csv *.t "
+/data/abc/RunsNov2011/ActualRuns/T5/T5_D6/T5_D6_1x0x00
+Your job 5907262 ("T5D6F1x0x00") has been submitted
+[1] "Queuing cleanup run T5_D1_1x1000 at Thu Nov 17 17:47:50 2011"
+[1] "#!/bin/bash\n#$ -cwd\n#$ -o /dev/null\n#$ -e /dev/null\n#$ -q long*\n#$ -M omeara.brian@gmail.com\n#$ -m beas\n#$ -S /bin/bash\n#$ -N T5D1F1x1000\ncd /data/abc/RunsNov2011/ActualRuns/T5/T5_D1/T5_D1_1x1000\n/data/apps/R/2.14.0/bin/R CMD BATCH runoptim.R\nrm  *.csv *.t "
+/data/abc/RunsNov2011/ActualRuns/T5/T5_D1/T5_D1_1x1000
+Your job 5907263 ("T5D1F1x1000") has been submitted
+[1] "Queuing cleanup run T5_D5_1x1000 at Thu Nov 17 17:48:00 2011"
+[1] "#!/bin/bash\n#$ -cwd\n#$ -o /dev/null\n#$ -e /dev/null\n#$ -q long*\n#$ -M omeara.brian@gmail.com\n#$ -m beas\n#$ -S /bin/bash\n#$ -N T5D5F1x1000\ncd /data/abc/RunsNov2011/ActualRuns/T5/T5_D5/T5_D5_1x1000\n/data/apps/R/2.14.0/bin/R CMD BATCH runoptim.R\nrm  *.csv *.t "
+/data/abc/RunsNov2011/ActualRuns/T5/T5_D5/T5_D5_1x1000
+Your job 5907264 ("T5D5F1x1000") has been submitted
+[1] "Queuing cleanup run T5_D5_1x1001 at Thu Nov 17 17:48:13 2011"
+[1] "#!/bin/bash\n#$ -cwd\n#$ -o /dev/null\n#$ -e /dev/null\n#$ -q long*\n#$ -M omeara.brian@gmail.com\n#$ -m beas\n#$ -S /bin/bash\n#$ -N T5D5F1x1001\ncd /data/abc/RunsNov2011/ActualRuns/T5/T5_D5/T5_D5_1x1001\n/data/apps/R/2.14.0/bin/R CMD BATCH runoptim.R\nrm  *.csv *.t "
+/data/abc/RunsNov2011/ActualRuns/T5/T5_D5/T5_D5_1x1001
+Your job 5907266 ("T5D5F1x1001") has been submitted
+[1] "Queuing cleanup run T5_D1_1x1010 at Thu Nov 17 17:48:29 2011"
+[1] "#!/bin/bash\n#$ -cwd\n#$ -o /dev/null\n#$ -e /dev/null\n#$ -q long*\n#$ -M omeara.brian@gmail.com\n#$ -m beas\n#$ -S /bin/bash\n#$ -N T5D1F1x1010\ncd /data/abc/RunsNov2011/ActualRuns/T5/T5_D1/T5_D1_1x1010\n/data/apps/R/2.14.0/bin/R CMD BATCH runoptim.R\nrm  *.csv *.t "
+/data/abc/RunsNov2011/ActualRuns/T5/T5_D1/T5_D1_1x1010
+Your job 5907267 ("T5D1F1x1010") has been submitted
+[1] "Queuing cleanup run T2_D5_1x101x at Thu Nov 17 17:48:43 2011"
+[1] "#!/bin/bash\n#$ -cwd\n#$ -o /dev/null\n#$ -e /dev/null\n#$ -q long*\n#$ -M omeara.brian@gmail.com\n#$ -m beas\n#$ -S /bin/bash\n#$ -N T2D5F1x101x\ncd /data/abc/RunsNov2011/ActualRuns/T2/T2_D5/T2_D5_1x101x\n/data/apps/R/2.14.0/bin/R CMD BATCH runoptim.R\nrm  *.csv *.t "
+/data/abc/RunsNov2011/ActualRuns/T2/T2_D5/T2_D5_1x101x
+Your job 5907268 ("T2D5F1x101x") has been submitted
+[1] "Queuing cleanup run T5_D5_1x101x at Thu Nov 17 17:48:54 2011"
+[1] "#!/bin/bash\n#$ -cwd\n#$ -o /dev/null\n#$ -e /dev/null\n#$ -q long*\n#$ -M omeara.brian@gmail.com\n#$ -m beas\n#$ -S /bin/bash\n#$ -N T5D5F1x101x\ncd /data/abc/RunsNov2011/ActualRuns/T5/T5_D5/T5_D5_1x101x\n/data/apps/R/2.14.0/bin/R CMD BATCH runoptim.R\nrm  *.csv *.t "
+/data/abc/RunsNov2011/ActualRuns/T5/T5_D5/T5_D5_1x101x
+Your job 5907269 ("T5D5F1x101x") has been submitted
+[1] "Queuing cleanup run T5_D3_1x10x0 at Thu Nov 17 17:49:06 2011"
+[1] "#!/bin/bash\n#$ -cwd\n#$ -o /dev/null\n#$ -e /dev/null\n#$ -q long*\n#$ -M omeara.brian@gmail.com\n#$ -m beas\n#$ -S /bin/bash\n#$ -N T5D3F1x10x0\ncd /data/abc/RunsNov2011/ActualRuns/T5/T5_D3/T5_D3_1x10x0\n/data/apps/R/2.14.0/bin/R CMD BATCH runoptim.R\nrm  *.csv *.t "
+/data/abc/RunsNov2011/ActualRuns/T5/T5_D3/T5_D3_1x10x0
+Your job 5907270 ("T5D3F1x10x0") has been submitted
+[1] "Queuing cleanup run T2_D5_1x10xx at Thu Nov 17 17:49:20 2011"
+[1] "#!/bin/bash\n#$ -cwd\n#$ -o /dev/null\n#$ -e /dev/null\n#$ -q long*\n#$ -M omeara.brian@gmail.com\n#$ -m beas\n#$ -S /bin/bash\n#$ -N T2D5F1x10xx\ncd /data/abc/RunsNov2011/ActualRuns/T2/T2_D5/T2_D5_1x10xx\n/data/apps/R/2.14.0/bin/R CMD BATCH runoptim.R\nrm  *.csv *.t "
+/data/abc/RunsNov2011/ActualRuns/T2/T2_D5/T2_D5_1x10xx
+Your job 5907271 ("T2D5F1x10xx") has been submitted
+[1] "Queuing cleanup run T2_D5_1x1100 at Thu Nov 17 17:49:32 2011"
+[1] "#!/bin/bash\n#$ -cwd\n#$ -o /dev/null\n#$ -e /dev/null\n#$ -q long*\n#$ -M omeara.brian@gmail.com\n#$ -m beas\n#$ -S /bin/bash\n#$ -N T2D5F1x1100\ncd /data/abc/RunsNov2011/ActualRuns/T2/T2_D5/T2_D5_1x1100\n/data/apps/R/2.14.0/bin/R CMD BATCH runoptim.R\nrm  *.csv *.t "
+/data/abc/RunsNov2011/ActualRuns/T2/T2_D5/T2_D5_1x1100
+Your job 5907272 ("T2D5F1x1100") has been submitted
+[1] "Queuing cleanup run T5_D2_1x1100 at Thu Nov 17 17:49:43 2011"
+[1] "#!/bin/bash\n#$ -cwd\n#$ -o /dev/null\n#$ -e /dev/null\n#$ -q long*\n#$ -M omeara.brian@gmail.com\n#$ -m beas\n#$ -S /bin/bash\n#$ -N T5D2F1x1100\ncd /data/abc/RunsNov2011/ActualRuns/T5/T5_D2/T5_D2_1x1100\n/data/apps/R/2.14.0/bin/R CMD BATCH runoptim.R\nrm  *.csv *.t "
+/data/abc/RunsNov2011/ActualRuns/T5/T5_D2/T5_D2_1x1100
+Your job 5907273 ("T5D2F1x1100") has been submitted
+[1] "Queuing cleanup run T5_D3_1x1100 at Thu Nov 17 17:49:54 2011"
+[1] "#!/bin/bash\n#$ -cwd\n#$ -o /dev/null\n#$ -e /dev/null\n#$ -q long*\n#$ -M omeara.brian@gmail.com\n#$ -m beas\n#$ -S /bin/bash\n#$ -N T5D3F1x1100\ncd /data/abc/RunsNov2011/ActualRuns/T5/T5_D3/T5_D3_1x1100\n/data/apps/R/2.14.0/bin/R CMD BATCH runoptim.R\nrm  *.csv *.t "
+/data/abc/RunsNov2011/ActualRuns/T5/T5_D3/T5_D3_1x1100
+Your job 5907274 ("T5D3F1x1100") has been submitted
+[1] "Queuing cleanup run T5_D5_1x1100 at Thu Nov 17 17:50:04 2011"
+[1] "#!/bin/bash\n#$ -cwd\n#$ -o /dev/null\n#$ -e /dev/null\n#$ -q long*\n#$ -M omeara.brian@gmail.com\n#$ -m beas\n#$ -S /bin/bash\n#$ -N T5D5F1x1100\ncd /data/abc/RunsNov2011/ActualRuns/T5/T5_D5/T5_D5_1x1100\n/data/apps/R/2.14.0/bin/R CMD BATCH runoptim.R\nrm  *.csv *.t "
+/data/abc/RunsNov2011/ActualRuns/T5/T5_D5/T5_D5_1x1100
+Your job 5907276 ("T5D5F1x1100") has been submitted
+[1] "Queuing cleanup run T2_D5_1x1101 at Thu Nov 17 17:50:16 2011"
+[1] "#!/bin/bash\n#$ -cwd\n#$ -o /dev/null\n#$ -e /dev/null\n#$ -q long*\n#$ -M omeara.brian@gmail.com\n#$ -m beas\n#$ -S /bin/bash\n#$ -N T2D5F1x1101\ncd /data/abc/RunsNov2011/ActualRuns/T2/T2_D5/T2_D5_1x1101\n/data/apps/R/2.14.0/bin/R CMD BATCH runoptim.R\nrm  *.csv *.t "
+/data/abc/RunsNov2011/ActualRuns/T2/T2_D5/T2_D5_1x1101
+Your job 5907278 ("T2D5F1x1101") has been submitted
+[1] "Queuing cleanup run T5_D1_1x1101 at Thu Nov 17 17:50:28 2011"
+[1] "#!/bin/bash\n#$ -cwd\n#$ -o /dev/null\n#$ -e /dev/null\n#$ -q long*\n#$ -M omeara.brian@gmail.com\n#$ -m beas\n#$ -S /bin/bash\n#$ -N T5D1F1x1101\ncd /data/abc/RunsNov2011/ActualRuns/T5/T5_D1/T5_D1_1x1101\n/data/apps/R/2.14.0/bin/R CMD BATCH runoptim.R\nrm  *.csv *.t "
+/data/abc/RunsNov2011/ActualRuns/T5/T5_D1/T5_D1_1x1101
+Your job 5907280 ("T5D1F1x1101") has been submitted
+[1] "Queuing cleanup run T5_D5_1x1101 at Thu Nov 17 17:50:39 2011"
+[1] "#!/bin/bash\n#$ -cwd\n#$ -o /dev/null\n#$ -e /dev/null\n#$ -q long*\n#$ -M omeara.brian@gmail.com\n#$ -m beas\n#$ -S /bin/bash\n#$ -N T5D5F1x1101\ncd /data/abc/RunsNov2011/ActualRuns/T5/T5_D5/T5_D5_1x1101\n/data/apps/R/2.14.0/bin/R CMD BATCH runoptim.R\nrm  *.csv *.t "
+/data/abc/RunsNov2011/ActualRuns/T5/T5_D5/T5_D5_1x1101
+Your job 5907282 ("T5D5F1x1101") has been submitted
+[1] "Queuing cleanup run T2_D5_1x110x at Thu Nov 17 17:50:50 2011"
+[1] "#!/bin/bash\n#$ -cwd\n#$ -o /dev/null\n#$ -e /dev/null\n#$ -q long*\n#$ -M omeara.brian@gmail.com\n#$ -m beas\n#$ -S /bin/bash\n#$ -N T2D5F1x110x\ncd /data/abc/RunsNov2011/ActualRuns/T2/T2_D5/T2_D5_1x110x\n/data/apps/R/2.14.0/bin/R CMD BATCH runoptim.R\nrm  *.csv *.t "
+/data/abc/RunsNov2011/ActualRuns/T2/T2_D5/T2_D5_1x110x
+Your job 5907283 ("T2D5F1x110x") has been submitted
+[1] "Queuing cleanup run T5_D5_1x1111 at Thu Nov 17 17:51:06 2011"
+[1] "#!/bin/bash\n#$ -cwd\n#$ -o /dev/null\n#$ -e /dev/null\n#$ -q long*\n#$ -M omeara.brian@gmail.com\n#$ -m beas\n#$ -S /bin/bash\n#$ -N T5D5F1x1111\ncd /data/abc/RunsNov2011/ActualRuns/T5/T5_D5/T5_D5_1x1111\n/data/apps/R/2.14.0/bin/R CMD BATCH runoptim.R\nrm  *.csv *.t "
+/data/abc/RunsNov2011/ActualRuns/T5/T5_D5/T5_D5_1x1111
+Your job 5907284 ("T5D5F1x1111") has been submitted
+[1] "Queuing cleanup run T5_D3_1x1x00 at Thu Nov 17 17:51:28 2011"
+[1] "#!/bin/bash\n#$ -cwd\n#$ -o /dev/null\n#$ -e /dev/null\n#$ -q long*\n#$ -M omeara.brian@gmail.com\n#$ -m beas\n#$ -S /bin/bash\n#$ -N T5D3F1x1x00\ncd /data/abc/RunsNov2011/ActualRuns/T5/T5_D3/T5_D3_1x1x00\n/data/apps/R/2.14.0/bin/R CMD BATCH runoptim.R\nrm  *.csv *.t "
+/data/abc/RunsNov2011/ActualRuns/T5/T5_D3/T5_D3_1x1x00
+Your job 5907286 ("T5D3F1x1x00") has been submitted
+[1] "Queuing cleanup run T2_D5_1x1x0x at Thu Nov 17 17:51:41 2011"
+[1] "#!/bin/bash\n#$ -cwd\n#$ -o /dev/null\n#$ -e /dev/null\n#$ -q long*\n#$ -M omeara.brian@gmail.com\n#$ -m beas\n#$ -S /bin/bash\n#$ -N T2D5F1x1x0x\ncd /data/abc/RunsNov2011/ActualRuns/T2/T2_D5/T2_D5_1x1x0x\n/data/apps/R/2.14.0/bin/R CMD BATCH runoptim.R\nrm  *.csv *.t "
+/data/abc/RunsNov2011/ActualRuns/T2/T2_D5/T2_D5_1x1x0x
+Your job 5907287 ("T2D5F1x1x0x") has been submitted
+[1] "Queuing cleanup run T5_D1_1x1x0x at Thu Nov 17 17:51:52 2011"
+[1] "#!/bin/bash\n#$ -cwd\n#$ -o /dev/null\n#$ -e /dev/null\n#$ -q long*\n#$ -M omeara.brian@gmail.com\n#$ -m beas\n#$ -S /bin/bash\n#$ -N T5D1F1x1x0x\ncd /data/abc/RunsNov2011/ActualRuns/T5/T5_D1/T5_D1_1x1x0x\n/data/apps/R/2.14.0/bin/R CMD BATCH runoptim.R\nrm  *.csv *.t "
+/data/abc/RunsNov2011/ActualRuns/T5/T5_D1/T5_D1_1x1x0x
+Your job 5907288 ("T5D1F1x1x0x") has been submitted
+[1] "Queuing cleanup run T2_D5_1xx000 at Thu Nov 17 17:52:15 2011"
+[1] "#!/bin/bash\n#$ -cwd\n#$ -o /dev/null\n#$ -e /dev/null\n#$ -q long*\n#$ -M omeara.brian@gmail.com\n#$ -m beas\n#$ -S /bin/bash\n#$ -N T2D5F1xx000\ncd /data/abc/RunsNov2011/ActualRuns/T2/T2_D5/T2_D5_1xx000\n/data/apps/R/2.14.0/bin/R CMD BATCH runoptim.R\nrm  *.csv *.t "
+/data/abc/RunsNov2011/ActualRuns/T2/T2_D5/T2_D5_1xx000
+Your job 5907289 ("T2D5F1xx000") has been submitted
+[1] "Queuing cleanup run T2_D5_1xx100 at Thu Nov 17 17:52:44 2011"
+[1] "#!/bin/bash\n#$ -cwd\n#$ -o /dev/null\n#$ -e /dev/null\n#$ -q long*\n#$ -M omeara.brian@gmail.com\n#$ -m beas\n#$ -S /bin/bash\n#$ -N T2D5F1xx100\ncd /data/abc/RunsNov2011/ActualRuns/T2/T2_D5/T2_D5_1xx100\n/data/apps/R/2.14.0/bin/R CMD BATCH runoptim.R\nrm  *.csv *.t "
+/data/abc/RunsNov2011/ActualRuns/T2/T2_D5/T2_D5_1xx100
+Your job 5907290 ("T2D5F1xx100") has been submitted
+[1] "Queuing cleanup run T3_D6_1xx100 at Thu Nov 17 17:52:55 2011"
+[1] "#!/bin/bash\n#$ -cwd\n#$ -o /dev/null\n#$ -e /dev/null\n#$ -q long*\n#$ -M omeara.brian@gmail.com\n#$ -m beas\n#$ -S /bin/bash\n#$ -N T3D6F1xx100\ncd /data/abc/RunsNov2011/ActualRuns/T3/T3_D6/T3_D6_1xx100\n/data/apps/R/2.14.0/bin/R CMD BATCH runoptim.R\nrm  *.csv *.t "
+/data/abc/RunsNov2011/ActualRuns/T3/T3_D6/T3_D6_1xx100
+Your job 5907291 ("T3D6F1xx100") has been submitted
+[1] "Queuing cleanup run T4_D5_1xx100 at Thu Nov 17 17:53:06 2011"
+[1] "#!/bin/bash\n#$ -cwd\n#$ -o /dev/null\n#$ -e /dev/null\n#$ -q long*\n#$ -M omeara.brian@gmail.com\n#$ -m beas\n#$ -S /bin/bash\n#$ -N T4D5F1xx100\ncd /data/abc/RunsNov2011/ActualRuns/T4/T4_D5/T4_D5_1xx100\n/data/apps/R/2.14.0/bin/R CMD BATCH runoptim.R\nrm  *.csv *.t "
+/data/abc/RunsNov2011/ActualRuns/T4/T4_D5/T4_D5_1xx100
+Your job 5907292 ("T4D5F1xx100") has been submitted
+[1] "Queuing cleanup run T2_D5_1xxx00 at Thu Nov 17 17:53:35 2011"
+[1] "#!/bin/bash\n#$ -cwd\n#$ -o /dev/null\n#$ -e /dev/null\n#$ -q long*\n#$ -M omeara.brian@gmail.com\n#$ -m beas\n#$ -S /bin/bash\n#$ -N T2D5F1xxx00\ncd /data/abc/RunsNov2011/ActualRuns/T2/T2_D5/T2_D5_1xxx00\n/data/apps/R/2.14.0/bin/R CMD BATCH runoptim.R\nrm  *.csv *.t "
+/data/abc/RunsNov2011/ActualRuns/T2/T2_D5/T2_D5_1xxx00
+Your job 5907293 ("T2D5F1xxx00") has been submitted
+[1] "Queuing cleanup run T3_D6_1xxx00 at Thu Nov 17 17:53:45 2011"
+[1] "#!/bin/bash\n#$ -cwd\n#$ -o /dev/null\n#$ -e /dev/null\n#$ -q long*\n#$ -M omeara.brian@gmail.com\n#$ -m beas\n#$ -S /bin/bash\n#$ -N T3D6F1xxx00\ncd /data/abc/RunsNov2011/ActualRuns/T3/T3_D6/T3_D6_1xxx00\n/data/apps/R/2.14.0/bin/R CMD BATCH runoptim.R\nrm  *.csv *.t "
+/data/abc/RunsNov2011/ActualRuns/T3/T3_D6/T3_D6_1xxx00
+Your job 5907294 ("T3D6F1xxx00") has been submitted
+[1] "Queuing cleanup run T4_D3_1xxx00 at Thu Nov 17 17:53:56 2011"
+[1] "#!/bin/bash\n#$ -cwd\n#$ -o /dev/null\n#$ -e /dev/null\n#$ -q long*\n#$ -M omeara.brian@gmail.com\n#$ -m beas\n#$ -S /bin/bash\n#$ -N T4D3F1xxx00\ncd /data/abc/RunsNov2011/ActualRuns/T4/T4_D3/T4_D3_1xxx00\n/data/apps/R/2.14.0/bin/R CMD BATCH runoptim.R\nrm  *.csv *.t "
+/data/abc/RunsNov2011/ActualRuns/T4/T4_D3/T4_D3_1xxx00
+Your job 5907295 ("T4D3F1xxx00") has been submitted
+[1] "Queuing cleanup run T4_D6_1xxx00 at Thu Nov 17 17:54:08 2011"
+[1] "#!/bin/bash\n#$ -cwd\n#$ -o /dev/null\n#$ -e /dev/null\n#$ -q long*\n#$ -M omeara.brian@gmail.com\n#$ -m beas\n#$ -S /bin/bash\n#$ -N T4D6F1xxx00\ncd /data/abc/RunsNov2011/ActualRuns/T4/T4_D6/T4_D6_1xxx00\n/data/apps/R/2.14.0/bin/R CMD BATCH runoptim.R\nrm  *.csv *.t "
+/data/abc/RunsNov2011/ActualRuns/T4/T4_D6/T4_D6_1xxx00
+Your job 5907296 ("T4D6F1xxx00") has been submitted
+[1] "Queuing cleanup run T5_D6_1xxx00 at Thu Nov 17 17:54:18 2011"
+[1] "#!/bin/bash\n#$ -cwd\n#$ -o /dev/null\n#$ -e /dev/null\n#$ -q long*\n#$ -M omeara.brian@gmail.com\n#$ -m beas\n#$ -S /bin/bash\n#$ -N T5D6F1xxx00\ncd /data/abc/RunsNov2011/ActualRuns/T5/T5_D6/T5_D6_1xxx00\n/data/apps/R/2.14.0/bin/R CMD BATCH runoptim.R\nrm  *.csv *.t "
+/data/abc/RunsNov2011/ActualRuns/T5/T5_D6/T5_D6_1xxx00
+Your job 5907297 ("T5D6F1xxx00") has been submitted
+[1] "Queuing cleanup run T2_D5_x01010 at Thu Nov 17 17:55:45 2011"
+[1] "#!/bin/bash\n#$ -cwd\n#$ -o /dev/null\n#$ -e /dev/null\n#$ -q long*\n#$ -M omeara.brian@gmail.com\n#$ -m beas\n#$ -S /bin/bash\n#$ -N T2D5Fx01010\ncd /data/abc/RunsNov2011/ActualRuns/T2/T2_D5/T2_D5_x01010\n/data/apps/R/2.14.0/bin/R CMD BATCH runoptim.R\nrm  *.csv *.t "
+/data/abc/RunsNov2011/ActualRuns/T2/T2_D5/T2_D5_x01010
+Your job 5907298 ("T2D5Fx01010") has been submitted
+[1] "Queuing cleanup run T4_D5_x01010 at Thu Nov 17 17:55:56 2011"
+[1] "#!/bin/bash\n#$ -cwd\n#$ -o /dev/null\n#$ -e /dev/null\n#$ -q long*\n#$ -M omeara.brian@gmail.com\n#$ -m beas\n#$ -S /bin/bash\n#$ -N T4D5Fx01010\ncd /data/abc/RunsNov2011/ActualRuns/T4/T4_D5/T4_D5_x01010\n/data/apps/R/2.14.0/bin/R CMD BATCH runoptim.R\nrm  *.csv *.t "
+/data/abc/RunsNov2011/ActualRuns/T4/T4_D5/T4_D5_x01010
+Your job 5907299 ("T4D5Fx01010") has been submitted
+[1] "Queuing cleanup run T5_D3_x01010 at Thu Nov 17 17:56:07 2011"
+[1] "#!/bin/bash\n#$ -cwd\n#$ -o /dev/null\n#$ -e /dev/null\n#$ -q long*\n#$ -M omeara.brian@gmail.com\n#$ -m beas\n#$ -S /bin/bash\n#$ -N T5D3Fx01010\ncd /data/abc/RunsNov2011/ActualRuns/T5/T5_D3/T5_D3_x01010\n/data/apps/R/2.14.0/bin/R CMD BATCH runoptim.R\nrm  *.csv *.t "
+/data/abc/RunsNov2011/ActualRuns/T5/T5_D3/T5_D3_x01010
+Your job 5907300 ("T5D3Fx01010") has been submitted
+[1] "Queuing cleanup run T5_D5_x01010 at Thu Nov 17 17:56:18 2011"
+[1] "#!/bin/bash\n#$ -cwd\n#$ -o /dev/null\n#$ -e /dev/null\n#$ -q long*\n#$ -M omeara.brian@gmail.com\n#$ -m beas\n#$ -S /bin/bash\n#$ -N T5D5Fx01010\ncd /data/abc/RunsNov2011/ActualRuns/T5/T5_D5/T5_D5_x01010\n/data/apps/R/2.14.0/bin/R CMD BATCH runoptim.R\nrm  *.csv *.t "
+/data/abc/RunsNov2011/ActualRuns/T5/T5_D5/T5_D5_x01010
+Your job 5907301 ("T5D5Fx01010") has been submitted
+[1] "Queuing cleanup run T2_D5_x10001 at Thu Nov 17 17:58:17 2011"
+[1] "#!/bin/bash\n#$ -cwd\n#$ -o /dev/null\n#$ -e /dev/null\n#$ -q long*\n#$ -M omeara.brian@gmail.com\n#$ -m beas\n#$ -S /bin/bash\n#$ -N T2D5Fx10001\ncd /data/abc/RunsNov2011/ActualRuns/T2/T2_D5/T2_D5_x10001\n/data/apps/R/2.14.0/bin/R CMD BATCH runoptim.R\nrm  *.csv *.t "
+/data/abc/RunsNov2011/ActualRuns/T2/T2_D5/T2_D5_x10001
+Your job 5907303 ("T2D5Fx10001") has been submitted
+[1] "Queuing cleanup run T2_D5_x11000 at Thu Nov 17 17:59:21 2011"
+[1] "#!/bin/bash\n#$ -cwd\n#$ -o /dev/null\n#$ -e /dev/null\n#$ -q long*\n#$ -M omeara.brian@gmail.com\n#$ -m beas\n#$ -S /bin/bash\n#$ -N T2D5Fx11000\ncd /data/abc/RunsNov2011/ActualRuns/T2/T2_D5/T2_D5_x11000\n/data/apps/R/2.14.0/bin/R CMD BATCH runoptim.R\nrm  *.csv *.t "
+/data/abc/RunsNov2011/ActualRuns/T2/T2_D5/T2_D5_x11000
+Your job 5907304 ("T2D5Fx11000") has been submitted
+[1] "Queuing cleanup run T5_D5_x11000 at Thu Nov 17 17:59:32 2011"
+[1] "#!/bin/bash\n#$ -cwd\n#$ -o /dev/null\n#$ -e /dev/null\n#$ -q long*\n#$ -M omeara.brian@gmail.com\n#$ -m beas\n#$ -S /bin/bash\n#$ -N T5D5Fx11000\ncd /data/abc/RunsNov2011/ActualRuns/T5/T5_D5/T5_D5_x11000\n/data/apps/R/2.14.0/bin/R CMD BATCH runoptim.R\nrm  *.csv *.t "
+/data/abc/RunsNov2011/ActualRuns/T5/T5_D5/T5_D5_x11000
+Your job 5907305 ("T5D5Fx11000") has been submitted
+[1] "Queuing cleanup run T4_D6_x11001 at Thu Nov 17 17:59:44 2011"
+[1] "#!/bin/bash\n#$ -cwd\n#$ -o /dev/null\n#$ -e /dev/null\n#$ -q long*\n#$ -M omeara.brian@gmail.com\n#$ -m beas\n#$ -S /bin/bash\n#$ -N T4D6Fx11001\ncd /data/abc/RunsNov2011/ActualRuns/T4/T4_D6/T4_D6_x11001\n/data/apps/R/2.14.0/bin/R CMD BATCH runoptim.R\nrm  *.csv *.t "
+/data/abc/RunsNov2011/ActualRuns/T4/T4_D6/T4_D6_x11001
+Your job 5907306 ("T4D6Fx11001") has been submitted
+[1] "Queuing cleanup run T5_D5_x11001 at Thu Nov 17 17:59:55 2011"
+[1] "#!/bin/bash\n#$ -cwd\n#$ -o /dev/null\n#$ -e /dev/null\n#$ -q long*\n#$ -M omeara.brian@gmail.com\n#$ -m beas\n#$ -S /bin/bash\n#$ -N T5D5Fx11001\ncd /data/abc/RunsNov2011/ActualRuns/T5/T5_D5/T5_D5_x11001\n/data/apps/R/2.14.0/bin/R CMD BATCH runoptim.R\nrm  *.csv *.t "
+/data/abc/RunsNov2011/ActualRuns/T5/T5_D5/T5_D5_x11001
+Your job 5907307 ("T5D5Fx11001") has been submitted
+[1] "Queuing cleanup run T5_D2_x1100x at Thu Nov 17 18:00:08 2011"
+[1] "#!/bin/bash\n#$ -cwd\n#$ -o /dev/null\n#$ -e /dev/null\n#$ -q long*\n#$ -M omeara.brian@gmail.com\n#$ -m beas\n#$ -S /bin/bash\n#$ -N T5D2Fx1100x\ncd /data/abc/RunsNov2011/ActualRuns/T5/T5_D2/T5_D2_x1100x\n/data/apps/R/2.14.0/bin/R CMD BATCH runoptim.R\nrm  *.csv *.t "
+/data/abc/RunsNov2011/ActualRuns/T5/T5_D2/T5_D2_x1100x
+Your job 5907308 ("T5D2Fx1100x") has been submitted
+[1] "Queuing cleanup run T2_D5_x11010 at Thu Nov 17 18:00:20 2011"
+[1] "#!/bin/bash\n#$ -cwd\n#$ -o /dev/null\n#$ -e /dev/null\n#$ -q long*\n#$ -M omeara.brian@gmail.com\n#$ -m beas\n#$ -S /bin/bash\n#$ -N T2D5Fx11010\ncd /data/abc/RunsNov2011/ActualRuns/T2/T2_D5/T2_D5_x11010\n/data/apps/R/2.14.0/bin/R CMD BATCH runoptim.R\nrm  *.csv *.t "
+/data/abc/RunsNov2011/ActualRuns/T2/T2_D5/T2_D5_x11010
+Your job 5907309 ("T2D5Fx11010") has been submitted
+[1] "Queuing cleanup run T4_D3_x11010 at Thu Nov 17 18:00:31 2011"
+[1] "#!/bin/bash\n#$ -cwd\n#$ -o /dev/null\n#$ -e /dev/null\n#$ -q long*\n#$ -M omeara.brian@gmail.com\n#$ -m beas\n#$ -S /bin/bash\n#$ -N T4D3Fx11010\ncd /data/abc/RunsNov2011/ActualRuns/T4/T4_D3/T4_D3_x11010\n/data/apps/R/2.14.0/bin/R CMD BATCH runoptim.R\nrm  *.csv *.t "
+/data/abc/RunsNov2011/ActualRuns/T4/T4_D3/T4_D3_x11010
+Your job 5907310 ("T4D3Fx11010") has been submitted
+[1] "Queuing cleanup run T4_D6_x11010 at Thu Nov 17 18:00:42 2011"
+[1] "#!/bin/bash\n#$ -cwd\n#$ -o /dev/null\n#$ -e /dev/null\n#$ -q long*\n#$ -M omeara.brian@gmail.com\n#$ -m beas\n#$ -S /bin/bash\n#$ -N T4D6Fx11010\ncd /data/abc/RunsNov2011/ActualRuns/T4/T4_D6/T4_D6_x11010\n/data/apps/R/2.14.0/bin/R CMD BATCH runoptim.R\nrm  *.csv *.t "
+/data/abc/RunsNov2011/ActualRuns/T4/T4_D6/T4_D6_x11010
+Your job 5907311 ("T4D6Fx11010") has been submitted
+[1] "Queuing cleanup run T5_D3_x11010 at Thu Nov 17 18:00:52 2011"
+[1] "#!/bin/bash\n#$ -cwd\n#$ -o /dev/null\n#$ -e /dev/null\n#$ -q long*\n#$ -M omeara.brian@gmail.com\n#$ -m beas\n#$ -S /bin/bash\n#$ -N T5D3Fx11010\ncd /data/abc/RunsNov2011/ActualRuns/T5/T5_D3/T5_D3_x11010\n/data/apps/R/2.14.0/bin/R CMD BATCH runoptim.R\nrm  *.csv *.t "
+/data/abc/RunsNov2011/ActualRuns/T5/T5_D3/T5_D3_x11010
+Your job 5907312 ("T5D3Fx11010") has been submitted
+[1] "Queuing cleanup run T5_D5_x11010 at Thu Nov 17 18:01:03 2011"
+[1] "#!/bin/bash\n#$ -cwd\n#$ -o /dev/null\n#$ -e /dev/null\n#$ -q long*\n#$ -M omeara.brian@gmail.com\n#$ -m beas\n#$ -S /bin/bash\n#$ -N T5D5Fx11010\ncd /data/abc/RunsNov2011/ActualRuns/T5/T5_D5/T5_D5_x11010\n/data/apps/R/2.14.0/bin/R CMD BATCH runoptim.R\nrm  *.csv *.t "
+/data/abc/RunsNov2011/ActualRuns/T5/T5_D5/T5_D5_x11010
+Your job 5907313 ("T5D5Fx11010") has been submitted
+[1] "Queuing cleanup run T5_D5_x11011 at Thu Nov 17 18:01:15 2011"
+[1] "#!/bin/bash\n#$ -cwd\n#$ -o /dev/null\n#$ -e /dev/null\n#$ -q long*\n#$ -M omeara.brian@gmail.com\n#$ -m beas\n#$ -S /bin/bash\n#$ -N T5D5Fx11011\ncd /data/abc/RunsNov2011/ActualRuns/T5/T5_D5/T5_D5_x11011\n/data/apps/R/2.14.0/bin/R CMD BATCH runoptim.R\nrm  *.csv *.t "
+/data/abc/RunsNov2011/ActualRuns/T5/T5_D5/T5_D5_x11011
+Your job 5907314 ("T5D5Fx11011") has been submitted
+[1] "Queuing cleanup run T3_D5_x1101x at Thu Nov 17 18:01:27 2011"
+[1] "#!/bin/bash\n#$ -cwd\n#$ -o /dev/null\n#$ -e /dev/null\n#$ -q long*\n#$ -M omeara.brian@gmail.com\n#$ -m beas\n#$ -S /bin/bash\n#$ -N T3D5Fx1101x\ncd /data/abc/RunsNov2011/ActualRuns/T3/T3_D5/T3_D5_x1101x\n/data/apps/R/2.14.0/bin/R CMD BATCH runoptim.R\nrm  *.csv *.t "
+/data/abc/RunsNov2011/ActualRuns/T3/T3_D5/T3_D5_x1101x
+Your job 5907315 ("T3D5Fx1101x") has been submitted
+[1] "Queuing cleanup run T3_D6_x1101x at Thu Nov 17 18:01:37 2011"
+[1] "#!/bin/bash\n#$ -cwd\n#$ -o /dev/null\n#$ -e /dev/null\n#$ -q long*\n#$ -M omeara.brian@gmail.com\n#$ -m beas\n#$ -S /bin/bash\n#$ -N T3D6Fx1101x\ncd /data/abc/RunsNov2011/ActualRuns/T3/T3_D6/T3_D6_x1101x\n/data/apps/R/2.14.0/bin/R CMD BATCH runoptim.R\nrm  *.csv *.t "
+/data/abc/RunsNov2011/ActualRuns/T3/T3_D6/T3_D6_x1101x
+Your job 5907316 ("T3D6Fx1101x") has been submitted
+[1] "Queuing cleanup run T4_D3_x1101x at Thu Nov 17 18:01:48 2011"
+[1] "#!/bin/bash\n#$ -cwd\n#$ -o /dev/null\n#$ -e /dev/null\n#$ -q long*\n#$ -M omeara.brian@gmail.com\n#$ -m beas\n#$ -S /bin/bash\n#$ -N T4D3Fx1101x\ncd /data/abc/RunsNov2011/ActualRuns/T4/T4_D3/T4_D3_x1101x\n/data/apps/R/2.14.0/bin/R CMD BATCH runoptim.R\nrm  *.csv *.t "
+/data/abc/RunsNov2011/ActualRuns/T4/T4_D3/T4_D3_x1101x
+Your job 5907317 ("T4D3Fx1101x") has been submitted
+[1] "Queuing cleanup run T5_D3_x110x0 at Thu Nov 17 18:02:01 2011"
+[1] "#!/bin/bash\n#$ -cwd\n#$ -o /dev/null\n#$ -e /dev/null\n#$ -q long*\n#$ -M omeara.brian@gmail.com\n#$ -m beas\n#$ -S /bin/bash\n#$ -N T5D3Fx110x0\ncd /data/abc/RunsNov2011/ActualRuns/T5/T5_D3/T5_D3_x110x0\n/data/apps/R/2.14.0/bin/R CMD BATCH runoptim.R\nrm  *.csv *.t "
+/data/abc/RunsNov2011/ActualRuns/T5/T5_D3/T5_D3_x110x0
+Your job 5907318 ("T5D3Fx110x0") has been submitted
+[1] "Queuing cleanup run T5_D5_x110x0 at Thu Nov 17 18:02:11 2011"
+[1] "#!/bin/bash\n#$ -cwd\n#$ -o /dev/null\n#$ -e /dev/null\n#$ -q long*\n#$ -M omeara.brian@gmail.com\n#$ -m beas\n#$ -S /bin/bash\n#$ -N T5D5Fx110x0\ncd /data/abc/RunsNov2011/ActualRuns/T5/T5_D5/T5_D5_x110x0\n/data/apps/R/2.14.0/bin/R CMD BATCH runoptim.R\nrm  *.csv *.t "
+/data/abc/RunsNov2011/ActualRuns/T5/T5_D5/T5_D5_x110x0
+Your job 5907319 ("T5D5Fx110x0") has been submitted
+[1] "Queuing cleanup run T4_D5_x110x1 at Thu Nov 17 18:02:23 2011"
+[1] "#!/bin/bash\n#$ -cwd\n#$ -o /dev/null\n#$ -e /dev/null\n#$ -q long*\n#$ -M omeara.brian@gmail.com\n#$ -m beas\n#$ -S /bin/bash\n#$ -N T4D5Fx110x1\ncd /data/abc/RunsNov2011/ActualRuns/T4/T4_D5/T4_D5_x110x1\n/data/apps/R/2.14.0/bin/R CMD BATCH runoptim.R\nrm  *.csv *.t "
+/data/abc/RunsNov2011/ActualRuns/T4/T4_D5/T4_D5_x110x1
+Your job 5907320 ("T4D5Fx110x1") has been submitted
+[1] "Queuing cleanup run T5_D3_x110x1 at Thu Nov 17 18:02:34 2011"
+[1] "#!/bin/bash\n#$ -cwd\n#$ -o /dev/null\n#$ -e /dev/null\n#$ -q long*\n#$ -M omeara.brian@gmail.com\n#$ -m beas\n#$ -S /bin/bash\n#$ -N T5D3Fx110x1\ncd /data/abc/RunsNov2011/ActualRuns/T5/T5_D3/T5_D3_x110x1\n/data/apps/R/2.14.0/bin/R CMD BATCH runoptim.R\nrm  *.csv *.t "
+/data/abc/RunsNov2011/ActualRuns/T5/T5_D3/T5_D3_x110x1
+Your job 5907321 ("T5D3Fx110x1") has been submitted
+[1] "Queuing cleanup run T5_D4_x110x1 at Thu Nov 17 18:02:44 2011"
+[1] "#!/bin/bash\n#$ -cwd\n#$ -o /dev/null\n#$ -e /dev/null\n#$ -q long*\n#$ -M omeara.brian@gmail.com\n#$ -m beas\n#$ -S /bin/bash\n#$ -N T5D4Fx110x1\ncd /data/abc/RunsNov2011/ActualRuns/T5/T5_D4/T5_D4_x110x1\n/data/apps/R/2.14.0/bin/R CMD BATCH runoptim.R\nrm  *.csv *.t "
+/data/abc/RunsNov2011/ActualRuns/T5/T5_D4/T5_D4_x110x1
+Your job 5907322 ("T5D4Fx110x1") has been submitted
+[1] "Queuing cleanup run T5_D5_x110x1 at Thu Nov 17 18:02:55 2011"
+[1] "#!/bin/bash\n#$ -cwd\n#$ -o /dev/null\n#$ -e /dev/null\n#$ -q long*\n#$ -M omeara.brian@gmail.com\n#$ -m beas\n#$ -S /bin/bash\n#$ -N T5D5Fx110x1\ncd /data/abc/RunsNov2011/ActualRuns/T5/T5_D5/T5_D5_x110x1\n/data/apps/R/2.14.0/bin/R CMD BATCH runoptim.R\nrm  *.csv *.t "
+/data/abc/RunsNov2011/ActualRuns/T5/T5_D5/T5_D5_x110x1
+Your job 5907323 ("T5D5Fx110x1") has been submitted
+[1] "Queuing cleanup run T5_D6_x110x1 at Thu Nov 17 18:03:05 2011"
+[1] "#!/bin/bash\n#$ -cwd\n#$ -o /dev/null\n#$ -e /dev/null\n#$ -q long*\n#$ -M omeara.brian@gmail.com\n#$ -m beas\n#$ -S /bin/bash\n#$ -N T5D6Fx110x1\ncd /data/abc/RunsNov2011/ActualRuns/T5/T5_D6/T5_D6_x110x1\n/data/apps/R/2.14.0/bin/R CMD BATCH runoptim.R\nrm  *.csv *.t "
+/data/abc/RunsNov2011/ActualRuns/T5/T5_D6/T5_D6_x110x1
+Your job 5907324 ("T5D6Fx110x1") has been submitted
+[1] "Queuing cleanup run T4_D3_x110xx at Thu Nov 17 18:03:17 2011"
+[1] "#!/bin/bash\n#$ -cwd\n#$ -o /dev/null\n#$ -e /dev/null\n#$ -q long*\n#$ -M omeara.brian@gmail.com\n#$ -m beas\n#$ -S /bin/bash\n#$ -N T4D3Fx110xx\ncd /data/abc/RunsNov2011/ActualRuns/T4/T4_D3/T4_D3_x110xx\n/data/apps/R/2.14.0/bin/R CMD BATCH runoptim.R\nrm  *.csv *.t "
+/data/abc/RunsNov2011/ActualRuns/T4/T4_D3/T4_D3_x110xx
+Your job 5907325 ("T4D3Fx110xx") has been submitted
+[1] "Queuing cleanup run T4_D5_x110xx at Thu Nov 17 18:03:27 2011"
+[1] "#!/bin/bash\n#$ -cwd\n#$ -o /dev/null\n#$ -e /dev/null\n#$ -q long*\n#$ -M omeara.brian@gmail.com\n#$ -m beas\n#$ -S /bin/bash\n#$ -N T4D5Fx110xx\ncd /data/abc/RunsNov2011/ActualRuns/T4/T4_D5/T4_D5_x110xx\n/data/apps/R/2.14.0/bin/R CMD BATCH runoptim.R\nrm  *.csv *.t "
+/data/abc/RunsNov2011/ActualRuns/T4/T4_D5/T4_D5_x110xx
+Your job 5907326 ("T4D5Fx110xx") has been submitted
+[1] "Queuing cleanup run T5_D1_x110xx at Thu Nov 17 18:03:38 2011"
+[1] "#!/bin/bash\n#$ -cwd\n#$ -o /dev/null\n#$ -e /dev/null\n#$ -q long*\n#$ -M omeara.brian@gmail.com\n#$ -m beas\n#$ -S /bin/bash\n#$ -N T5D1Fx110xx\ncd /data/abc/RunsNov2011/ActualRuns/T5/T5_D1/T5_D1_x110xx\n/data/apps/R/2.14.0/bin/R CMD BATCH runoptim.R\nrm  *.csv *.t "
+/data/abc/RunsNov2011/ActualRuns/T5/T5_D1/T5_D1_x110xx
+Your job 5907327 ("T5D1Fx110xx") has been submitted
+[1] "Queuing cleanup run T5_D5_x110xx at Thu Nov 17 18:03:49 2011"
+[1] "#!/bin/bash\n#$ -cwd\n#$ -o /dev/null\n#$ -e /dev/null\n#$ -q long*\n#$ -M omeara.brian@gmail.com\n#$ -m beas\n#$ -S /bin/bash\n#$ -N T5D5Fx110xx\ncd /data/abc/RunsNov2011/ActualRuns/T5/T5_D5/T5_D5_x110xx\n/data/apps/R/2.14.0/bin/R CMD BATCH runoptim.R\nrm  *.csv *.t "
+/data/abc/RunsNov2011/ActualRuns/T5/T5_D5/T5_D5_x110xx
+Your job 5907328 ("T5D5Fx110xx") has been submitted
+[1] "Queuing cleanup run T2_D5_x1x001 at Thu Nov 17 18:04:37 2011"
+[1] "#!/bin/bash\n#$ -cwd\n#$ -o /dev/null\n#$ -e /dev/null\n#$ -q long*\n#$ -M omeara.brian@gmail.com\n#$ -m beas\n#$ -S /bin/bash\n#$ -N T2D5Fx1x001\ncd /data/abc/RunsNov2011/ActualRuns/T2/T2_D5/T2_D5_x1x001\n/data/apps/R/2.14.0/bin/R CMD BATCH runoptim.R\nrm  *.csv *.t "
+/data/abc/RunsNov2011/ActualRuns/T2/T2_D5/T2_D5_x1x001
+Your job 5907329 ("T2D5Fx1x001") has been submitted
+[1] "Queuing cleanup run T2_D5_xx1001 at Thu Nov 17 18:06:30 2011"
+[1] "#!/bin/bash\n#$ -cwd\n#$ -o /dev/null\n#$ -e /dev/null\n#$ -q long*\n#$ -M omeara.brian@gmail.com\n#$ -m beas\n#$ -S /bin/bash\n#$ -N T2D5Fxx1001\ncd /data/abc/RunsNov2011/ActualRuns/T2/T2_D5/T2_D5_xx1001\n/data/apps/R/2.14.0/bin/R CMD BATCH runoptim.R\nrm  *.csv *.t "
+/data/abc/RunsNov2011/ActualRuns/T2/T2_D5/T2_D5_xx1001
+Your job 5907330 ("T2D5Fxx1001") has been submitted
+[1] "Queuing cleanup run T4_D6_xx1001 at Thu Nov 17 18:06:42 2011"
+[1] "#!/bin/bash\n#$ -cwd\n#$ -o /dev/null\n#$ -e /dev/null\n#$ -q long*\n#$ -M omeara.brian@gmail.com\n#$ -m beas\n#$ -S /bin/bash\n#$ -N T4D6Fxx1001\ncd /data/abc/RunsNov2011/ActualRuns/T4/T4_D6/T4_D6_xx1001\n/data/apps/R/2.14.0/bin/R CMD BATCH runoptim.R\nrm  *.csv *.t "
+/data/abc/RunsNov2011/ActualRuns/T4/T4_D6/T4_D6_xx1001
+Your job 5907331 ("T4D6Fxx1001") has been submitted
+[1] "Queuing cleanup run T5_D6_xx1001 at Thu Nov 17 18:06:52 2011"
+[1] "#!/bin/bash\n#$ -cwd\n#$ -o /dev/null\n#$ -e /dev/null\n#$ -q long*\n#$ -M omeara.brian@gmail.com\n#$ -m beas\n#$ -S /bin/bash\n#$ -N T5D6Fxx1001\ncd /data/abc/RunsNov2011/ActualRuns/T5/T5_D6/T5_D6_xx1001\n/data/apps/R/2.14.0/bin/R CMD BATCH runoptim.R\nrm  *.csv *.t "
+/data/abc/RunsNov2011/ActualRuns/T5/T5_D6/T5_D6_xx1001
+Your job 5907332 ("T5D6Fxx1001") has been submitted
+[1] "Queuing cleanup run T4_D6_xx1010 at Thu Nov 17 18:07:06 2011"
+[1] "#!/bin/bash\n#$ -cwd\n#$ -o /dev/null\n#$ -e /dev/null\n#$ -q long*\n#$ -M omeara.brian@gmail.com\n#$ -m beas\n#$ -S /bin/bash\n#$ -N T4D6Fxx1010\ncd /data/abc/RunsNov2011/ActualRuns/T4/T4_D6/T4_D6_xx1010\n/data/apps/R/2.14.0/bin/R CMD BATCH runoptim.R\nrm  *.csv *.t "
+/data/abc/RunsNov2011/ActualRuns/T4/T4_D6/T4_D6_xx1010
+Your job 5907333 ("T4D6Fxx1010") has been submitted
+> 
+> proc.time()
+    user   system  elapsed 
+ 155.690  254.169 3272.162 
