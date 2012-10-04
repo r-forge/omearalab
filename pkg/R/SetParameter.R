@@ -5,31 +5,44 @@
 #   on the phylogeny will probably be used instead. Rabosky and Lovette 2008, in a response
 #   argue this is fairly okay (the two measures are correlated).
 #Inputs:
-#	t = duration of time
-#	param.root = starting parameter value at the root
-#	param.anc = starting parameter value for start of interval
-#	sigma.param = variance parameter
-#	weight.anc = determines rate inheritance
-#	weight.logistic = decides whether the model is logistic
-#	trend.scaling = 
-#	trend.exponent = 
-#	split.times = number of taxa at a start time
-#	k = carrying capacity
+#phy =the phylogeny
+#f = sampling fraction
+#model = whether a yule type model is to be used or birth-death
+#logistic = whether or not the logistic growth model is to be specified
+#inherit = whether rates are to be inherited
+#brown = whether rates vary according to a BM process
+#brown.trend = whether rates vary according to a BM process with a trend
+
+####### TO DO #######
+
+#1. Remove all the sigma.time variables from all functions
+#2. Test
+#3. Add in identifiability tests?
+#4. 
+
+#####################
+
 library(picante)
 library(ape)
 library(nloptr)
 
-GeneralDiversity<-function(phy, f=1, model=c("yule", "bd"), turnover.logistic=TRUE, eps.logistic=TRUE, turnover.inherit=T, eps.inherit=T, turnover.brown=T, eps.brown=T, turnover.brown.trend=T, eps.brown.trend=T) {
+GeneralDiversity<-function(phy, f=1, model=c("yule", "bd"), turnover.logistic=TRUE, eps.logistic=TRUE, turnover.inherit=TRUE, eps.inherit=TRUE, turnover.brown=TRUE, eps.brown=TRUE, turnover.brown.trend=TRUE, eps.brown.trend=TRUE) {
 	
 	obj <- NULL
-	#Sets the appropriate parameters to be used in the model:
-	if(model=="yule"){
-		turnover.indep = TRUE
-		eps.param.indep = FALSE
-	}
-	if(model=="bd"){
-		turnover.indep = TRUE
-		eps.param.indep = TRUE
+	#Sets the main parameters to be used in the model:
+	if (is.character(model)) {
+		if(model=="yule"){
+			turnover.indep = TRUE
+			eps.param.indep = FALSE
+			eps.logistic=FALSE
+			eps.inherit=FALSE
+			eps.brown=FALSE
+			eps.brown.trend=FALSE
+		}
+		if(model=="bd"){
+			turnover.indep = TRUE
+			eps.param.indep = TRUE
+		}
 	}
 	#Sets two important inputs:
 	split.times=branching.times(phy)
@@ -56,10 +69,12 @@ GeneralDiversity<-function(phy, f=1, model=c("yule", "bd"), turnover.logistic=TR
 	if(eps.trend==FALSE) {
 		pars<-c(pars,FALSE,FALSE)
 	}
+	#The number of trues specifies the number of parameters:
 	pars[pars==T]<-1:length(pars[pars==T])
+	np<-max(pars)
+	#All parameters not estimated are set to 1+max number of estimated parameters:
 	pars[pars==0]<-max(pars)+1
-	np<-max(pars)-1   
-
+	#Function used for 
 	DevOptimize <- function(p, pars, phylo, tot_time, f, turnover.weight.logistic, eps.weight.logistic, split.times) {
 		#Generates the final vector with the appropriate parameter estimates in the right place:
 		model.vec <- numeric(length(pars))
@@ -79,7 +94,7 @@ GeneralDiversity<-function(phy, f=1, model=c("yule", "bd"), turnover.logistic=TR
 	}
 	
 	#ip
-#l
+	#lb
 	#ub
 	opts <- list("algorithm"="NLOPT_LN_SBPLX", "maxeval"="1000000", "ftol_rel"=.Machine$double.eps^0.5)
 	out = nloptr(x0=rep(ip, length.out = np), eval_f=DevOptimize, opts=opts, pars=pars, phylo=phy, tot_time=tot_time, f=f, turnover.weight.logistic=turnover.weight.logistic, eps.weight.logistic=eps.weight.logistic, split.times=split.times)
@@ -264,15 +279,12 @@ print.diversity<-function(x,...){
 	param.est<- matrix(,5,2)
 	param.est[,1] <- x$solution[c(1,4,6,8,9)]
 	param.est[,2] <- x$solution[c(2,5,7,10,11)]
-	param.est <- data.frame(param.est, row.names="rate", "weight.anc", "BM.var", "trend.scaling", "trend.exponent")
+	param.est <- data.frame(param.est, row.names="rate", "weight.anc", "sigma", "trend.scaling", "trend.exponent")
 	names(param.est) <- c("turnover", "extinction.fraction")
 	cat("Rates\n")
 	print(param.est)
 	cat("\n")
 }
-
-
-
 
 
 
