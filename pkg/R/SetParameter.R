@@ -56,7 +56,7 @@ GeneralDiversity<-function(phy, f=1, model=c("yule", "bd"), turnover.logistic=TR
 	}	
 	#Makes a vector of parameters that are going to be estimated:
 	pars=c(turnover.indep, eps.param.indep, logistic.model, turnover.weight.anc, eps.weight.anc, turnover.sigma.indep, eps.sigma.indep)
-	#Tack on the argument for whether the BM has a trend:
+	#Tack on the argument for whether the BM has a trend -- in testing it did not like the use of else so a ton of ifs here:
 	if(turnover.trend==TRUE) {
 		pars<-c(pars,TRUE,TRUE)
 	}
@@ -69,7 +69,7 @@ GeneralDiversity<-function(phy, f=1, model=c("yule", "bd"), turnover.logistic=TR
 	if(eps.trend==FALSE) {
 		pars<-c(pars,FALSE,FALSE)
 	}
-	#The number of trues specifies the number of parameters:
+	#The trues specify the number of parameters:
 	pars[pars==T]<-1:length(pars[pars==T])
 	np<-max(pars)
 	#All parameters not estimated are set to 1+max number of estimated parameters:
