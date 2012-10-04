@@ -47,7 +47,7 @@ GeneralDiversity<-function(phy, f=1, model=c("yule", "bd"), turnover.logistic=TR
 	#Sets two important inputs:
 	split.times=branching.times(phy)
 	tot_time=max(branching.times(phy))
-	#Are going to be using a logistic model?
+	#Are we going to be using a logistic model?
 	if(turnover.weight.logistic == TRUE | eps.weight.logistic == TRUE){
 		logistic.model <- TRUE
 	}
