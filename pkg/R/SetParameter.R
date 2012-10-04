@@ -18,7 +18,7 @@
 #1. Remove all the sigma.time variables from all functions
 #2. Test
 #3. Add in identifiability tests?
-#4. 
+#4. Need better name
 
 #####################
 
