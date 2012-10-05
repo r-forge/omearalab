@@ -267,11 +267,11 @@ print.diversity<-function(x,...){
 	cat("\n")
 	
 	cat("Carrying capacity")
-	if(x$solution==1) {
+	if(x$solution[3]==1) {
 		print("logistic growth not specified")
 	}
 	else{
-		print(x$solution)
+		print(x$solution[3])
 	}
 	cat("\n")
 	
