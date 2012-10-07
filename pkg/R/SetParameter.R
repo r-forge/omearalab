@@ -70,6 +70,8 @@ GeneralDiversity<-function(phy, f=1, model=c("yule", "bd"), turnover.logistic=TR
 	if(eps.brown.trend==FALSE) {
 		pars<-c(pars,FALSE,FALSE)
 	}
+	#An index for use later:
+	tmp<-pars
 	#The trues specify the number of parameters:
 	pars[pars==T] <- 1:length(pars[pars==T])
 	np<-max(pars)
@@ -100,12 +102,17 @@ GeneralDiversity<-function(phy, f=1, model=c("yule", "bd"), turnover.logistic=TR
 		logl <- GetLikelihood(phylo=phy, tot_time, f, turnover.param.indep=model.vec[1], turnover.sigma.indep=model.vec[6], turnover.weight.anc=model.vec[4], turnover.weight.logistic=turnover.weight.logistic, turnover.trend.scaling=model.vec[8], turnover.trend.exponent=model.vec[9], eps.param.indep=model.vec[2], eps.sigma.indep=model.vec[7], eps.weight.anc=model.vec[5], eps.weight.logistic=eps.weight.logistic, eps.trend.scaling=model.vec[10], eps.trend.exponent=model.vec[11], split.times=split.times, k=model.vec[3])
 		return(-logl)
 	}
-	#need to think about yule versus bd:
-	ip <- c(1,0,100,0,0,0,0,0,1,0,1)
-	#lb -- What to do here. Turnover cannot be negative. Eps cannot either, but, in theory, can be greater than 1.
-	#ub -- Not sure on this either.
+	
+	#These are the default settings
+	def.set.pars <- c(1,0,100000,0,0,0,0,0,1,0,1)
+	ip <- def.set[tmp==TRUE]
+	def.set.lower <- c()
+	lower <- def.set.lower[tmp==TRUE]
+	def.set.upper <- c()
+	upper <- def.set.upper[tmp==TRUE]
+
 	opts <- list("algorithm"="NLOPT_LN_SBPLX", "maxeval"="1000000", "ftol_rel"=.Machine$double.eps^0.5)
-	out = nloptr(x0=ip, eval_f=DevOptimize, opts=opts, pars=pars, phylo=phy, tot_time=tot_time, f=f, turnover.weight.logistic=turnover.logistic, eps.weight.logistic=eps.logistic, split.times=split.times)
+	out = nloptr(x0=ip, eval_f=DevOptimize, lb=lower, ub=upper, opts=opts, pars=pars, phylo=phy, tot_time=tot_time, f=f, turnover.weight.logistic=turnover.logistic, eps.weight.logistic=eps.logistic, split.times=split.times)
 	loglik <- -out$objective
 	#Recreate the model vector for use in the print function:
 	solution <- numeric(length(pars))
@@ -290,7 +297,7 @@ GetLikelihood <- function(phylo,tot_time,f, turnover.param.indep, turnover.sigma
 		node.anc <- phylo$edge[which(phylo$edge[,2]==node),1]
 		if (length(node.anc)==0) {
 			node.anc <- node
-		#assume params of root = params of root parent
+			#assume params of root = params of root parent
 		}
 		else {
 			ancestral.params <- rbind(ancestral.params, data.frame(node=node, turnover=GetGeometricMeanParam(start.time=tj, stop.time=tj+phylo$edge.length[j], param.anc=ancestral.params[which(ancestral.params$node==node.anc),]$turnover, sigma.indep=turnover.sigma.indep, weight.anc=turnover.weight.anc, weight.logistic=turnover.weight.logistic, trend.scaling=turnover.trend.scaling, trend.exponent=turnover.trend.exponent, split.times=split.times, k, param.splits=turnover.splits), eps=GetGeometricMeanParam(start.time=tj, stop.time=tj+phylo$edge.length[j], param.anc=ancestral.params[which(ancestral.params$node==node.anc),]$eps, sigma.indep=eps.sigma.indep, weight.anc=eps.weight.anc, weight.logistic=eps.weight.logistic, trend.scaling=eps.trend.scaling, trend.exponent=eps.trend.exponent, split.times=split.times, k, param.splits=eps.splits)))
