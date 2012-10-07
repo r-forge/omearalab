@@ -104,7 +104,7 @@ GeneralDiversity<-function(phy, f=1, model=c("yule", "bd"), turnover.logistic=TR
 	}
 	
 	#These are the default settings
-	def.set.pars <- c(1,0,100000,0,0,0,0,0,1,0,1)
+	def.set.pars <- c(1,0.5,Ntip(phy)*2,0,0,0,0,0,1,0,1)
 	ip <- def.set[tmp==TRUE]
 	def.set.lower <- c()
 	lower <- def.set.lower[tmp==TRUE]
