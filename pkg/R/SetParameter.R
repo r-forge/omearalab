@@ -110,7 +110,7 @@ GeneralDiversity<-function(phy, f=1, model=c("yule", "bd"), turnover.logistic=TR
 	#These are the default settings
 	def.set.pars <- c(1,0.5,Ntip(phy)*2,0,0,0,0,0,1,0,1)
 	ip <- def.set.pars[tmp==TRUE]
-	def.set.lower <- c(0,0,88,0,0,0,0,0,0,0,0)
+	def.set.lower <- c(0,0,1,0,0,0,0,0,0,0,0)
 	lower <- def.set.lower[tmp==TRUE]
 	def.set.upper <- c(10,10,1e6,1,1,1e6,1e6,0,0,0,0)
 	upper <- def.set.upper[tmp==TRUE]
@@ -226,7 +226,7 @@ Psi <- function(s, t, f, turnover.param.anc, turnover.sigma.indep, turnover.weig
 }
 
 GetGeometricMeanParam <- function(start.time, stop.time, param.anc, sigma.indep, weight.anc, weight.logistic, trend.scaling=0, trend.exponent=1, split.times, k, param.splits) {
-	ancestral.rate.geometric.mean <- exp(integrate(Vectorize(SetParameter, "stop.time"), lower=stop.time, upper=start.time, param.anc=param.anc, sigma.indep=sigma.indep, weight.anc=weight.anc, weight.logistic=weight.logistic, trend.scaling=trend.scaling, trend.exponent=trend.exponent, split.times=split.times, k=k, param.splits=param.splits)$value)
+	ancestral.rate.geometric.mean <- exp(integrate(Vectorize(SetParameter, "stop.time"), lower=stop.time, upper=start.time, param.anc=param.anc, sigma.indep=sigma.indep, weight.anc=weight.anc, weight.logistic=weight.logistic, trend.scaling=trend.scaling, trend.exponent=trend.exponent, split.times=split.times, k=k, param.splits=param.splits,stop.on.error=FALSE)$value)
 	return(ancestral.rate.geometric.mean)
 }
 
@@ -313,7 +313,7 @@ print.diversity<-function(x,...){
 ######################################################################################################################################
 
 #phy<-rcoal(1000)
-phy<-read.tree("~/Dropbox/CollabBeaulieu/GeneralDiversification/test.tre")
+#phy<-read.tree("~/Dropbox/CollabBeaulieu/GeneralDiversification/test.tre")
 #phy<-drop.tip(phy, paste("t", c(1:7), sep=""))
 #phy<-drop.tip(phy, paste("t", c(1:5), sep=""))
 
@@ -328,6 +328,6 @@ phy<-read.tree("~/Dropbox/CollabBeaulieu/GeneralDiversification/test.tre")
 #print(paste("us.DD.LH - us.bd.LH", us.DD.LH - us.bd.LH))
 #phy<-tree
 
-#us.DD.LH <- GetLikelihood(phylo=phy,tot_time=max(branching.times(phy)),f=1, turnover.param.indep=0.7482758, turnover.sigma.indep=0, turnover.weight.anc=0.25, turnover.weight.logistic=0, turnover.trend.scaling=0, turnover.trend.exponent=1, eps.param.indep=0.9534149, eps.sigma.indep=0, eps.weight.anc=0.25, eps.weight.logistic=1, eps.trend.scaling=0, eps.trend.exponent=1, split.times=branching.times(phy), k=50)
+#us.DD.LH <- GetLikelihood(phylo=phy,tot_time=max(branching.times(phy)),f=1, turnover.param.indep=0.7482758, turnover.sigma.indep=0, turnover.weight.anc=0, turnover.weight.logistic=0, turnover.trend.scaling=0, turnover.trend.exponent=1, eps.param.indep=0.9534149, eps.sigma.indep=0, eps.weight.anc=0.25, eps.weight.logistic=1, eps.trend.scaling=0, eps.trend.exponent=1, split.times=branching.times(phy), k=50)
 
 
