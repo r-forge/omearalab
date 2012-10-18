@@ -11,27 +11,17 @@
 #logistic = whether or not the logistic growth model is to be specified
 #inherit = whether rates are to be inherited
 #brown = whether rates vary according to a BM process
-#brown.trend = whether rates vary according to a BM process with a trend
+#exp = whether rates vary exponentially
 
-######################## TO DO ###############################
-
-#1. Remove all the sigma.time variables from all functions -- DONE 10-4-12 (JMB)
-#2. Test
-#3. Add in identifiability tests?
-#4. Need better name -- GeneralDiversity is not that interesting or catchy.
-#5. Still really slow -- Such is life
-#6. Had an error in the logistic equation -- fixed.
-#7. As of now K can never be less than the number of species -- overflow issues due to exp in the .int.0 function
-##############################################################
-
+library(getopt)
 library(picante)
 library(ape)
 library(nloptr)
 library(gsl)
-#library(Rmpfr)
+library(Rmpfr)
 
-GeneralDiversity<-function(phy, f=1, model=c("yule", "bd"), turnover.logistic=TRUE, eps.logistic=TRUE, turnover.inherit=TRUE, eps.inherit=TRUE, turnover.brown=TRUE, eps.brown=TRUE, turnover.brown.trend=TRUE, eps.brown.trend=TRUE) {
-	
+GeneralDiversity<-function(phy, f=1, model=c("yule", "bd"), turnover.logistic=FALSE, eps.logistic=FALSE, turnover.exp=FALSE, eps.exp=FALSE, turnover.inherit=FALSE, eps.inherit=FALSE, turnover.brown=FALSE, eps.brown=FALSE, turnover.brown.trend=FALSE, eps.brown.trend=FALSE) {
+
 	obj <- NULL
 	#Sets the main parameters to be used in the model:
 	if (is.character(model)) {
@@ -41,7 +31,7 @@ GeneralDiversity<-function(phy, f=1, model=c("yule", "bd"), turnover.logistic=TR
 			eps.logistic=FALSE
 			eps.inherit=FALSE
 			eps.brown=FALSE
-			eps.brown.trend=FALSE
+			eps.exp=FALSE
 		}
 		if(model=="bd"){
 			turnover.indep = TRUE
@@ -60,18 +50,36 @@ GeneralDiversity<-function(phy, f=1, model=c("yule", "bd"), turnover.logistic=TR
 	}	
 	#Makes a vector of parameters that are going to be estimated:
 	pars=c(turnover.indep, eps.param.indep, logistic.model, turnover.inherit, eps.inherit, turnover.brown, eps.brown)
-	#Tack on the argument for whether the BM has a trend -- in testing it did not like the use of else so a ton of ifs here:
-	if(turnover.brown.trend==TRUE) {
-		pars<-c(pars,TRUE,TRUE)
+	#Tack on the argument for whether the exponential or the BM with a trend model -- in testing it did not like the use of else so a ton of ifs here:
+	if(turnover.exp==TRUE | turnover.brown.trend==TRUE) {
+		if(turnover.brown.trend==TRUE) {
+			pars<-c(pars,TRUE,TRUE)
+		}
+		else{
+			pars<-c(pars,FALSE,TRUE)
+		}
 	}
-	if(turnover.brown.trend==FALSE) {
+	if(turnover.exp==FALSE & turnover.brown.trend==FALSE) {
 		pars<-c(pars,FALSE,FALSE)
 	}
-	if(eps.brown.trend==TRUE) {
-		pars<-c(pars,TRUE,TRUE)
+	
+	if(eps.exp==TRUE | eps.brown.trend==TRUE) {
+		if(eps.brown.trend==TRUE) {
+			pars<-c(pars,TRUE,TRUE)
+		}
+		else{
+			pars<-c(pars,FALSE,TRUE)
+		}
 	}
-	if(eps.brown.trend==FALSE) {
+	if(eps.exp==FALSE & eps.brown.trend==FALSE) {
 		pars<-c(pars,FALSE,FALSE)
+	}
+	#Need to switch on sigma if using the inheritance model:
+	if(turnover.inherit==TRUE){
+		pars[6]=TRUE
+	}
+	if(eps.inherit==TRUE){
+		pars[7]=TRUE
 	}
 	#An index for use later:
 	tmp<-pars
@@ -82,11 +90,10 @@ GeneralDiversity<-function(phy, f=1, model=c("yule", "bd"), turnover.logistic=TR
 	pars[pars==0]<-max(pars)+1
 	
 	#Function used for optimizing parameters:
-	DevOptimize <- function(p, pars, phylo, tot_time, f, turnover.weight.logistic, eps.weight.logistic, split.times) {
+	DevOptimize <- function(p, pars, phylo, tot_time, f, turnover.weight.logistic, eps.weight.logistic, turnover.exp, eps.exp, split.times) {
 		#Generates the final vector with the appropriate parameter estimates in the right place:
 		model.vec <- numeric(length(pars))
 		model.vec[] <- c(p, 0)[pars]
-		print(model.vec)
 		#Now set entries in model.vec to the defaults if we are not estimating them:
 		if(turnover.weight.logistic == TRUE) {
 			turnover.weight.logistic=1
@@ -96,7 +103,13 @@ GeneralDiversity<-function(phy, f=1, model=c("yule", "bd"), turnover.logistic=TR
 		}
 		if(model.vec[3] == 0) {
 			model.vec[3] = 1
-		}		
+		}
+		if(turnover.exp == TRUE){
+			model.vec[9] == 1
+		}
+		if(eps.exp == TRUE){
+			model.vec[11] = 1
+		}
 		if(model.vec[9] == 0) {
 			model.vec[9] = 1
 		}
@@ -114,13 +127,13 @@ GeneralDiversity<-function(phy, f=1, model=c("yule", "bd"), turnover.logistic=TR
 	#These are the default settings
 	def.set.pars <- c(1,0.5,Ntip(phy)*2,0.5,0.5,0.5,0.5,0,1,0,1)
 	ip <- def.set.pars[tmp==TRUE]
-	def.set.lower <- c(0,0,88,0,0,0,0,0,0,0,0)
+	def.set.lower <- c(0,0,Ntip(phy),0,0,0,0,0,-100,0,-100)
 	lower <- def.set.lower[tmp==TRUE]
-	def.set.upper <- c(10,10,1e6,1,1,100,100,0,0,0,0)
+	def.set.upper <- c(10,10,1e6,1,1,100,100,0,100,0,100)
 	upper <- def.set.upper[tmp==TRUE]
 
-	opts <- list("algorithm"="NLOPT_LN_SBPLX", "maxeval"="1000000", "ftol_rel"=.Machine$double.eps^0.25)
-	out = nloptr(x0=ip, eval_f=DevOptimize, lb=lower, ub=upper, opts=opts, pars=pars, phylo=phy, tot_time=tot_time, f=f, turnover.weight.logistic=turnover.logistic, eps.weight.logistic=eps.logistic, split.times=split.times)
+	opts <- list("algorithm"="NLOPT_LN_BOBYQA", "maxeval"="1000000", "ftol_rel"=.Machine$double.eps^0.25)
+	out = nloptr(x0=ip, eval_f=DevOptimize, lb=lower, ub=upper, opts=opts, pars=pars, phylo=phy, tot_time=tot_time, f=f, turnover.weight.logistic=turnover.logistic, eps.weight.logistic=eps.logistic, turnover.exp=turnover.exp, eps.exp=eps.exp, split.times=split.times)
 	loglik <- -out$objective
 	#Recreate the model vector for use in the print function:
 	solution <- numeric(length(pars))
@@ -134,7 +147,7 @@ GeneralDiversity<-function(phy, f=1, model=c("yule", "bd"), turnover.logistic=TR
 	if(solution[11]==0) {
 		solution[11] = 1
 	}
-	obj = list(loglik = loglik, AIC = -2*loglik+2*np,AICc=2*loglik+2*np+(2*np*(np+1))/(1-np-1), solution=solution, opts=opts, f=f, phy=phy, iterations=out$iterations) 
+	obj = list(loglik = loglik, AIC = -2*loglik+2*np,AICc = -2*loglik+(2*np*(Ntip(phy)/(Ntip(phy)-np-1))), solution=solution, index.par = pars, opts=opts, f=f, phy=phy, iterations=out$iterations) 
 
 	class(obj)<-"diversity"		
 	return(obj)	
@@ -145,7 +158,7 @@ SetParameter <- function(stop.time, param.anc, sigma.indep, weight.anc, weight.l
 	n.taxa<-1+position
 	param.indep <- param.splits[position]
 	param.starting <- (param.indep * (1 - weight.anc)) + (param.anc * weight.anc)
-	logistic.scaling <- weight.logistic * (n.taxa * (1 - (n.taxa / k))) + (1 - weight.logistic) 
+	logistic.scaling <- 1 - (weight.logistic * (n.taxa / k))
 	param.mean <- (param.starting + trend.scaling * (stop.time ^ trend.exponent)) * logistic.scaling
 	return(param.mean)
 } 
@@ -161,6 +174,17 @@ SetBirthGivenParameters <- function(turnover, extinction.fraction) {
 	return(birth.expected)
 }
 
+SetDeath <- function(stop.time, turnover.param.anc, turnover.sigma.indep, turnover.weight.anc, turnover.weight.logistic, turnover.trend.scaling, turnover.trend.exponent, eps.param.anc, eps.sigma.indep, eps.weight.anc, eps.weight.logistic, eps.trend.scaling, eps.trend.exponent, split.times, k, turnover.splits, eps.splits) {
+  turnover<-SetParameter(stop.time=stop.time, param.anc=turnover.param.anc, sigma.indep=turnover.sigma.indep, weight.anc=turnover.weight.anc, weight.logistic=turnover.weight.logistic, trend.scaling=turnover.trend.scaling, trend.exponent=turnover.trend.exponent, split.times=split.times, k=k, param.splits=turnover.splits)
+  extinction.fraction<-SetParameter(stop.time=stop.time, param.anc=eps.param.anc, sigma.indep=eps.sigma.indep, weight.anc=eps.weight.anc, weight.logistic=eps.weight.logistic, trend.scaling=eps.trend.scaling, trend.exponent=eps.trend.exponent, split.times=split.times, k=k, param.splits=eps.splits)
+  return(SetDeathGivenParameters(turnover, extinction.fraction))
+}
+
+SetDeathGivenParameters <- function(turnover, extinction.fraction) {
+  death.expected<-(extinction.fraction * turnover) / (1 + extinction.fraction)
+  return(death.expected)
+}
+
 ######################################################################################################################################
 ######################################################################################################################################
 ### This is our solution for integating diversification  
@@ -174,10 +198,10 @@ IndefiniteIntegralForDiversification <- function(time, turnover.param.anc, turno
 	turnover.param.indep <- turnover.splits[position]
 	eps.param.indep <- eps.splits[position]
 	
-	eps.b<-	eps.weight.logistic * (n.taxa * (1 - (n.taxa / k))) + (1 - eps.weight.logistic) 
+	eps.b<-	1 - (eps.weight.logistic * (n.taxa / k))
 	eps.a<-(eps.param.indep * (1 - eps.weight.anc))
 	eps.f<-(eps.param.anc * eps.weight.anc)
-	turnover.b<- turnover.weight.logistic * (n.taxa * (1 - (n.taxa / k))) + (1 - turnover.weight.logistic)
+	turnover.b<- 1 - (turnover.weight.logistic * (n.taxa / k))
 	turnover.a<-(turnover.param.indep * (1 - turnover.weight.anc))
 	turnover.f<-(turnover.param.anc * turnover.weight.anc)
 	#Integral for turnover and extinction.fraction
@@ -297,7 +321,7 @@ print.diversity<-function(x,...){
 	print(output)
 	cat("\n")
 
-	param.est<- matrix(,6,2)
+	param.est<- matrix(0,6,2)
 	param.est[,1] <- x$solution[c(1,4,6,8,9,3)]
 	param.est[,2] <- x$solution[c(2,5,7,10,11,3)]
 	param.est <- data.frame(param.est, row.names=c("rate", "weight.anc", "sigma", "trend.scaling", "trend.exponent","K"))
@@ -333,6 +357,6 @@ print.diversity<-function(x,...){
 #print(paste("us.DD.LH - us.bd.LH", us.DD.LH - us.bd.LH))
 #phy<-tree
 
-#us.DD.LH <- GetLikelihood(phylo=phy,tot_time=max(branching.times(phy)),f=.73333, turnover.param.indep=1, turnover.sigma.indep=0, turnover.weight.anc=0, turnover.weight.logistic=1, turnover.trend.scaling=0, turnover.trend.exponent=1, eps.param.indep=.5, eps.sigma.indep=0, eps.weight.anc=0, eps.weight.logistic=1, eps.trend.scaling=0, eps.trend.exponent=1, split.times=branching.times(phy), k=176)
+#us.DD.LH <- GetLikelihood(phylo=phy,tot_time=max(branching.times(phy)),f=.73333, turnover.param.indep=1, turnover.sigma.indep=.25, turnover.weight.anc=0.25, turnover.weight.logistic=1, turnover.trend.scaling=0, turnover.trend.exponent=1, eps.param.indep=.50, eps.sigma.indep=0.25, eps.weight.anc=0.25, eps.weight.logistic=1, eps.trend.scaling=0, eps.trend.exponent=1, split.times=branching.times(phy), k=176)
 #print(paste("us.DD.LH", us.DD.LH))
 
