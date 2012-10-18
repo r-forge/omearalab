@@ -13,7 +13,6 @@
 #brown = whether rates vary according to a BM process
 #exp = whether rates vary exponentially
 
-library(getopt)
 library(picante)
 library(ape)
 library(nloptr)
@@ -88,12 +87,12 @@ GeneralDiversity<-function(phy, f=1, model=c("yule", "bd"), turnover.logistic=FA
 	np<-max(pars)
 	#All parameters not estimated are set to 1+max number of estimated parameters:
 	pars[pars==0]<-max(pars)+1
-	
 	#Function used for optimizing parameters:
 	DevOptimize <- function(p, pars, phylo, tot_time, f, turnover.weight.logistic, eps.weight.logistic, turnover.exp, eps.exp, split.times) {
 		#Generates the final vector with the appropriate parameter estimates in the right place:
 		model.vec <- numeric(length(pars))
 		model.vec[] <- c(p, 0)[pars]
+		print(model.vec)
 		#Now set entries in model.vec to the defaults if we are not estimating them:
 		if(turnover.weight.logistic == TRUE) {
 			turnover.weight.logistic=1
@@ -105,16 +104,10 @@ GeneralDiversity<-function(phy, f=1, model=c("yule", "bd"), turnover.logistic=FA
 			model.vec[3] = 1
 		}
 		if(turnover.exp == TRUE){
-			model.vec[9] == 1
+			model.vec[8] = 1
 		}
 		if(eps.exp == TRUE){
-			model.vec[11] = 1
-		}
-		if(model.vec[9] == 0) {
-			model.vec[9] = 1
-		}
-		if(model.vec[11] == 0) {
-			model.vec[11] = 1
+			model.vec[10] = 1
 		}
 		logl <- GetLikelihood(phylo=phy, tot_time, f, turnover.param.indep=model.vec[1], turnover.sigma.indep=model.vec[6], turnover.weight.anc=model.vec[4], turnover.weight.logistic=turnover.weight.logistic, turnover.trend.scaling=model.vec[8], turnover.trend.exponent=model.vec[9], eps.param.indep=model.vec[2], eps.sigma.indep=model.vec[7], eps.weight.anc=model.vec[5], eps.weight.logistic=eps.weight.logistic, eps.trend.scaling=model.vec[10], eps.trend.exponent=model.vec[11], split.times=split.times, k=model.vec[3])
 		print(logl)
@@ -125,11 +118,11 @@ GeneralDiversity<-function(phy, f=1, model=c("yule", "bd"), turnover.logistic=FA
 	}
 	
 	#These are the default settings
-	def.set.pars <- c(1,0.5,Ntip(phy)*2,0.5,0.5,0.5,0.5,0,1,0,1)
+	def.set.pars <- c(1,0.5,Ntip(phy)*2,0.5,0.5,0.5,0.5,0,0,-0.05,-0.05)
 	ip <- def.set.pars[tmp==TRUE]
-	def.set.lower <- c(0,0,Ntip(phy),0,0,0,0,0,-100,0,-100)
+	def.set.lower <- c(0,0,Ntip(phy),0,0,0,0,0,-10,0,-1)
 	lower <- def.set.lower[tmp==TRUE]
-	def.set.upper <- c(10,10,1e6,1,1,100,100,0,100,0,100)
+	def.set.upper <- c(10,10,1e6,1,1,100,100,0,10,0,0)
 	upper <- def.set.upper[tmp==TRUE]
 
 	opts <- list("algorithm"="NLOPT_LN_BOBYQA", "maxeval"="1000000", "ftol_rel"=.Machine$double.eps^0.25)
@@ -195,17 +188,15 @@ IndefiniteIntegralForDiversification <- function(time, turnover.param.anc, turno
 	
 	position<-max(which(split.times>=time),1)
 	n.taxa<-1+position
+	#Constants:
 	turnover.param.indep <- turnover.splits[position]
 	eps.param.indep <- eps.splits[position]
-	
 	eps.b<-	1 - (eps.weight.logistic * (n.taxa / k))
-	eps.a<-(eps.param.indep * (1 - eps.weight.anc))
-	eps.f<-(eps.param.anc * eps.weight.anc)
+	eps.a<-(eps.param.indep * (1 - eps.weight.anc))+(eps.param.anc * eps.weight.anc)
 	turnover.b<- 1 - (turnover.weight.logistic * (n.taxa / k))
-	turnover.a<-(turnover.param.indep * (1 - turnover.weight.anc))
-	turnover.f<-(turnover.param.anc * turnover.weight.anc)
-	#Integral for turnover and extinction.fraction
-	diversification <- -(turnover.b*time*(-2*(turnover.a+turnover.f)*(turnover.trend.exponent+1)*as.matrix(hyperg_2F1(1,1/eps.trend.exponent,1+(1/eps.trend.exponent),-((eps.b*eps.trend.scaling*(time^eps.trend.exponent))/(eps.a*eps.b+eps.f*eps.b+1))))-2*turnover.trend.scaling*(time^turnover.trend.exponent)*as.matrix(hyperg_2F1(1,(turnover.trend.exponent+1)/eps.trend.exponent,(eps.trend.exponent+turnover.trend.exponent+1)/eps.trend.exponent,-(eps.b*eps.trend.scaling*(time^eps.trend.exponent))/(eps.a*eps.b+eps.f*eps.b+1)))+(eps.a*eps.b+eps.b*eps.f+1)*(turnover.a*turnover.trend.exponent+turnover.a+turnover.trend.scaling*(time^turnover.trend.exponent)+turnover.f*turnover.trend.exponent+turnover.f)))/((turnover.trend.exponent+1)*(eps.a*eps.b+eps.b*eps.f+1))
+	turnover.a<-(turnover.param.indep * (1 - turnover.weight.anc))+(turnover.param.anc * turnover.weight.anc)
+	#Integral for turnover and extinction.fraction:
+	diversification<- -(1/((1 + turnover.trend.exponent)*(1 + eps.a*eps.b)))*turnover.b*time*((1 + eps.a*eps.b)*(turnover.a + turnover.a*turnover.trend.exponent + turnover.trend.scaling*(time^turnover.trend.exponent)) - 2*turnover.a*(1 + turnover.trend.exponent)*hyperg_2F1(1, 1/eps.trend.exponent, 1 + 1/eps.trend.exponent, -((eps.trend.scaling*eps.b*(time^eps.trend.exponent))/(1 + eps.a*eps.b))) - 2*turnover.trend.scaling*(time^turnover.trend.exponent)* hyperg_2F1(1, (1 + turnover.trend.exponent)/eps.trend.exponent, (1 + turnover.trend.exponent + eps.trend.exponent)/eps.trend.exponent,-((eps.trend.scaling*eps.b*(time^eps.trend.exponent))/(1 + eps.a*eps.b))))
 	return(diversification)
 }
 
@@ -345,9 +336,9 @@ print.diversity<-function(x,...){
 #phy<-drop.tip(phy, paste("t", c(1:7), sep=""))
 #phy<-drop.tip(phy, paste("t", c(1:5), sep=""))
 
-#f=0.5
+#f=1
 #Rprof()
-#us.DD.LH <- (GetLikelihood(phylo=phy,tot_time=max(branching.times(phy)),f=f, turnover.param.indep=.5, turnover.sigma.indep=0, turnover.weight.anc=0, turnover.weight.logistic=1, turnover.trend.scaling=0, turnover.trend.exponent=1, eps.param.indep=.25, eps.sigma.indep=0, eps.weight.anc=0, eps.weight.logistic=0, eps.trend.scaling=0, eps.trend.exponent=1, split.times=branching.times(phy), k=100))
+#us.DD.LH <- (GetLikelihood(phylo=phy,tot_time=max(branching.times(phy)),f=f, turnover.param.indep=.5, turnover.sigma.indep=0, turnover.weight.anc=0, turnover.weight.logistic=0, turnover.trend.scaling=0, turnover.trend.exponent=1, eps.param.indep=.25, eps.sigma.indep=0, eps.weight.anc=0, eps.weight.logistic=0, eps.trend.scaling=0, eps.trend.exponent=1, split.times=branching.times(phy), k=100))
 #Rprof(NULL)
 #summaryRprof()
 #us.bd.LH <- (GetLikelihood(phylo=phy,tot_time=max(branching.times(phy)),f=f, turnover.param.indep=0.5, turnover.sigma.indep=0, turnover.weight.anc=0, turnover.weight.logistic=0, turnover.trend.scaling=0, turnover.trend.exponent=1, eps.param.indep=0.25, eps.sigma.indep=0, eps.weight.anc=0, eps.weight.logistic=0, eps.trend.scaling=0, eps.trend.exponent=1, split.times=branching.times(phy), k=100))
