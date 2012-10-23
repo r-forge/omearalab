@@ -13,7 +13,7 @@ BirthTree<-function(phy, interval.length) {
 
 DeathTree<-function(phy, interval.length) {
 	#kill things: kill a taxon, then run GrowTree
-	##drop.tip does not like pruning 1 from a 2 tip tree. Throws an error. This is my fix, not sure it is legal. 
+	##drop.tip does not like pruning 1 tip from a 2 tip tree. Throws an error. This is my fix for now. 
 	if(Ntip(phy)==2){
 		return(phy=NULL)
 	}
@@ -31,15 +31,23 @@ GrowTree<-function(phy, interval.length) {
 	return(phy)
 }
 
-GetSim<-function(max.time=1, max.ntax=Inf, max.wall.time=Inf, check.file=NULL, start.file=NULL, prob.interval=0.0001, return.all.extinct=TRUE, verbose=TRUE, check.interval=1800, turnover.param.anc=1, turnover.sigma.indep=0, turnover.weight.anc=.53, turnover.weight.logistic=0, turnover.trend.scaling=0, turnover.trend.exponent=0, eps.param.anc=.86, eps.sigma.indep=0, eps.weight.anc=1, eps.weight.logistic=0, eps.trend.scaling=0, eps.trend.exponent=0, k=Inf, warning.diversity=100) {
+GetSim<-function(max.time=1, max.ntax=Inf, max.wall.time=Inf, check.file=NULL, start.file=NULL, prob.interval=0.001, return.all.extinct=TRUE, verbose=TRUE, check.interval=1800, turnover.param.indep=.53, turnover.sigma.indep=0, turnover.weight.anc=0, turnover.weight.logistic=0, turnover.trend.scaling=0, turnover.trend.exponent=0, eps.param.indep=.86, eps.sigma.indep=0, eps.weight.anc=0, eps.weight.logistic=0, eps.trend.scaling=0, eps.trend.exponent=0, k=Inf, warning.diversity=100) {
 	#first initialize
 	phy<-compute.brlen(stree(2, tip.label=c(2,1)),method=0)
 	depth.time<-max.time
 	start.time<-Sys.time()
 	last.save.time<-Sys.time()
-	split.times<-branching.times(phy)
-	birth<-SetBirth(stop.time=depth.time, turnover.param.anc, turnover.sigma.indep, turnover.weight.anc, turnover.weight.logistic, turnover.trend.scaling, turnover.trend.exponent, eps.param.anc, eps.sigma.indep, eps.weight.anc, eps.weight.logistic, eps.trend.scaling, eps.trend.exponent, split.times=split.times, k, turnover.splits=split.times, eps.splits=split.times)
-	death<-SetDeath(stop.time=depth.time, turnover.param.anc, turnover.sigma.indep, turnover.weight.anc, turnover.weight.logistic, turnover.trend.scaling, turnover.trend.exponent, eps.param.anc, eps.sigma.indep, eps.weight.anc, eps.weight.logistic, eps.trend.scaling, eps.trend.exponent, split.times=split.times, k, turnover.splits=split.times, eps.splits=split.times)
+	#The split time = 0. Crashes.
+	split.times<-branching.times(phy)+depth.time
+	turnover.param.anc <- turnover.param.indep
+	eps.param.anc <- eps.param.indep
+	turnover.splits <- abs(rnorm(length(split.times), 0, turnover.sigma.indep)+turnover.param.indep)
+	eps.splits <- abs(rnorm(length(split.times), 0, eps.sigma.indep)+eps.param.indep)
+	birth<-SetBirth(stop.time=depth.time, turnover.param.anc, turnover.sigma.indep, turnover.weight.anc, turnover.weight.logistic, turnover.trend.scaling, turnover.trend.exponent, eps.param.anc, eps.sigma.indep, eps.weight.anc, eps.weight.logistic, eps.trend.scaling, eps.trend.exponent, split.times=split.times, k, turnover.splits=turnover.splits, eps.splits=eps.splits)
+	death<-SetDeath(stop.time=depth.time, turnover.param.anc, turnover.sigma.indep, turnover.weight.anc, turnover.weight.logistic, turnover.trend.scaling, turnover.trend.exponent, eps.param.anc, eps.sigma.indep, eps.weight.anc, eps.weight.logistic, eps.trend.scaling, eps.trend.exponent, split.times=split.times, k, turnover.splits=turnover.splits, eps.splits=eps.splits)
+	print(paste("birth",birth))
+	print(paste("death",death))
+	print(paste("birth-death",birth-death))
 	approx.expected.diversity=2*exp((birth-death)*max.time) #note that this is rough, as it does not take into account changing rates nor ascertainment bias
 	if(approx.expected.diversity>warning.diversity) {
 		warning(paste("Expected diversity is very roughly",approx.expected.diversity))
@@ -53,10 +61,16 @@ GetSim<-function(max.time=1, max.ntax=Inf, max.wall.time=Inf, check.file=NULL, s
 		load(start.file)
 	}
 	while(depth.time>0 & Ntip(phy)<=max.ntax & (Sys.time()-start.time)<max.wall.time) {
-		depth.time<-depth.time-interval.length
-		split.times<-branching.times(phy)
-		birth<-SetBirth(stop.time=depth.time, turnover.param.anc, turnover.sigma.indep, turnover.weight.anc, turnover.weight.logistic, turnover.trend.scaling, turnover.trend.exponent, eps.param.anc, eps.sigma.indep, eps.weight.anc, eps.weight.logistic, eps.trend.scaling, eps.trend.exponent, split.times=split.times, k, turnover.splits=split.times, eps.splits=split.times)
-		death<-SetDeath(stop.time=depth.time, turnover.param.anc, turnover.sigma.indep, turnover.weight.anc, turnover.weight.logistic, turnover.trend.scaling, turnover.trend.exponent, eps.param.anc, eps.sigma.indep, eps.weight.anc, eps.weight.logistic, eps.trend.scaling, eps.trend.exponent, split.times=split.times, k, turnover.splits=split.times, eps.splits=split.times)
+		depth.time<-depth.time-interval.length #change to depth.time<-depth.time-rexp(1, 1/turnover rate (check, might be turnover rate))
+		if (depth.time<0) {
+#stop, b/c we have waited past the present for the next event. Instead, grow the tree to the present and return it.
+		}
+		split.times<-branching.times(phy)+depth.time
+		turnover.splits <- abs(rnorm(length(split.times), 0, turnover.sigma.indep)+turnover.param.indep)
+		eps.splits <- abs(rnorm(length(split.times), 0, eps.sigma.indep)+eps.param.indep)
+		birth<-SetBirth(stop.time=depth.time, turnover.param.anc, turnover.sigma.indep, turnover.weight.anc, turnover.weight.logistic, turnover.trend.scaling, turnover.trend.exponent, eps.param.anc, eps.sigma.indep, eps.weight.anc, eps.weight.logistic, eps.trend.scaling, eps.trend.exponent, split.times=split.times, k, turnover.splits=turnover.splits, eps.splits=eps.splits)
+		death<-SetDeath(stop.time=depth.time, turnover.param.anc, turnover.sigma.indep, turnover.weight.anc, turnover.weight.logistic, turnover.trend.scaling, turnover.trend.exponent, eps.param.anc, eps.sigma.indep, eps.weight.anc, eps.weight.logistic, eps.trend.scaling, eps.trend.exponent, split.times=split.times, k, turnover.splits=turnover.splits, eps.splits=eps.splits)
+#here, rather than doing the rpois, we have to see whether it is a birth or a death. if (runif(1,0,1)<birth/turnover, do a birth. otherwise, do a death
 		if(rpois(1,Ntip(phy)*birth*interval.length)>0) {
 			phy<-BirthTree(phy, interval.length)
 			if(verbose) {
