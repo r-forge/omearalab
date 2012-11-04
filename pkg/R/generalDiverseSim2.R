@@ -15,17 +15,8 @@ source("SetParameter.R")
 #at end, renumber so ape is happy, convert to phylo object
 #need to pass turnover 
 
-###########################REMAINING ISSUE###########################
-#Need to check that the stop time is correct for all calls to SetParameter
-#Need to check that the stop time is correct for all calls to UpdateTerminalParams
-#Need to check that split times is being set up correctly
-#Need to check that param.splits are being set up correctly -- as of right now they are not	
-#####################################################################
+GetSim<-function(max.time=1, max.ntax=Inf, max.wall.time=Inf, check.file=NULL, start.file=NULL, prob.interval=0.001, return.all.extinct=TRUE, verbose=TRUE, check.interval=1800, turnover.param.indep=.55, turnover.sigma.indep=0, turnover.weight.anc=0, turnover.weight.logistic=1, turnover.trend.scaling=0, turnover.trend.exponent=0, eps.param.indep=0.85, eps.sigma.indep=0, eps.weight.anc=0, eps.weight.logistic=0, eps.trend.scaling=0, eps.trend.exponent=0, k=40, turnover.sigma.anc=0, eps.sigma.anc=0, warning.diversity=100) {
 
-
-GetSim<-function(max.time=1, max.ntax=Inf, max.wall.time=Inf, check.file=NULL, start.file=NULL, prob.interval=0.001, return.all.extinct=TRUE, verbose=TRUE, check.interval=1800, turnover.param.indep=.55, turnover.sigma.indep=0, turnover.weight.anc=0, turnover.weight.logistic=0, turnover.trend.scaling=0, turnover.trend.exponent=0, eps.param.indep=0.85, eps.sigma.indep=0, eps.weight.anc=0, eps.weight.logistic=0, eps.trend.scaling=0, eps.trend.exponent=0, k=Inf, turnover.sigma.anc=0, eps.sigma.anc=0, warning.diversity=100) {
-
-	#first initialize
 	depth.time<-max.time
 	start.time<-Sys.time()
 	last.save.time<-Sys.time()
@@ -39,7 +30,7 @@ GetSim<-function(max.time=1, max.ntax=Inf, max.wall.time=Inf, check.file=NULL, s
 	
 	birth<-SetBirth(stop.time=depth.time, turnover.param.anc, turnover.sigma.indep, turnover.weight.anc, turnover.weight.logistic, turnover.trend.scaling, turnover.trend.exponent, eps.param.anc, eps.sigma.indep, eps.weight.anc, eps.weight.logistic, eps.trend.scaling, eps.trend.exponent, split.times=c(0), k, turnover.splits=turnover.splits, eps.splits=eps.splits)
 	death<-SetDeath(stop.time=depth.time, turnover.param.anc, turnover.sigma.indep, turnover.weight.anc, turnover.weight.logistic, turnover.trend.scaling, turnover.trend.exponent, eps.param.anc, eps.sigma.indep, eps.weight.anc, eps.weight.logistic, eps.trend.scaling, eps.trend.exponent, split.times=c(0), k, turnover.splits=turnover.splits, eps.splits=eps.splits)
-	
+
 	approx.expected.diversity=2*exp((birth-death)*max.time) #note that this is rough, as it does not take into account changing rates nor ascertainment bias
 	
 	if(approx.expected.diversity>warning.diversity) {
@@ -52,11 +43,6 @@ GetSim<-function(max.time=1, max.ntax=Inf, max.wall.time=Inf, check.file=NULL, s
 	sim.object<-InitializeSimObject(birth,death, turnover.param.anc, eps.param.anc)
 	phy<-sim2phylo(sim.object)
 	split.times<-branching.times(phy)+depth.time
-
-	###########################REMAINING ISSUE###########################
-	#Should be deleted?
-	#interval.length<-qexp(prob.interval, rate=Ntip(phy)*(birth+death))
-	#####################################################################
 	
 	print(paste("approx.expected.diversity*(birth+death)",approx.expected.diversity*(birth+death),approx.expected.diversity,(birth+death)))
 	
@@ -66,45 +52,50 @@ GetSim<-function(max.time=1, max.ntax=Inf, max.wall.time=Inf, check.file=NULL, s
 	
 	while(depth.time>0 & Ntip(phy)<=max.ntax & (Sys.time()-start.time)<max.wall.time) {
 
-		interval.length<-rexp(1, length(split.times)*birth+death)
+		alive<-length(branching.times(phy))
+		interval.length<-rexp(1, alive*(birth+death))
 		depth.time<-depth.time-interval.length
 
 		if (depth.time<0) {
-			#This part is a bit embarrassing:
-#			phy <- sim2phylo(sim.object)
-#			phy <- reorder(phy,"pruningwise")
-#			phy <- reorder(phy,"cladewise")
-#			sim.object <- GrowSimObject(sim.object, max.time-max(branching.times(phy)))
+			
+			###########################REMAINING ISSUE###########################
+			#If node 1 remains in sim.object after max.time, then the total height should equal max.time, right?
 			phy <- sim2phylo(sim.object)
-			#These last two steps probably are not necessary, but for plotting purposes, necessary:
+			sim.object <- GrowSimObject(sim.object, max.time-max(branching.times(phy)))
+			#####################################################################
+			
+			phy <- sim2phylo(sim.object)
+
+			###########################REMAINING ISSUE###########################
 			phy <- reorder(phy,"pruningwise")
 			phy <- reorder(phy,"cladewise")
+			#####################################################################
+
 			return(phy)
 		}
 		
-		###########################REMAINING ISSUE###########################
-		split.times<-branching.times(phy)+depth.time
-		#####################################################################
+		split.times<-sort(branching.times(phy)+depth.time, decreasing=TRUE)
 		
 		###########################REMAINING ISSUE###########################
-		#Temporary fix until I fix other more serious bugs:
-		turnover.splits <- c(turnover.splits, exp(rnorm(1, log(turnover.param.indep), turnover.sigma.indep)))
-		eps.splits <- c(eps.splits, exp(rnorm(1, log(eps.param.indep), turnover.sigma.indep)))
-		#What we had before -- cannot remember why there are a bunch of NAs:
-		#turnover.splits <- c(rep(NA,length(turnover.splits)),exp(rnorm(1, log(turnover.param.indep), turnover.sigma.indep)))
-		#eps.splits <- c(rep(NA,length(eps.splits)),exp(rnorm(1, log(eps.param.indep), eps.sigma.indep)))
+		#What we had before -- cannot remember why we use NAs:
+#		turnover.splits <- c(rep(NA,length(turnover.splits)),exp(rnorm(1, log(turnover.param.indep), turnover.sigma.indep)))
+#		eps.splits <- c(rep(NA,length(eps.splits)),exp(rnorm(1, log(eps.param.indep), eps.sigma.indep)))
+		#The following should be equivalent. The benefit of doing it this way, is that we do not have to worry about position:
+###Should not be NA:
+		turnover.splits <- rep(exp(rnorm(1, log(turnover.param.indep), turnover.sigma.indep)),length(split.times))
+		eps.splits <- rep(exp(rnorm(1, log(eps.param.indep), turnover.sigma.indep)),length(split.times))
 		#####################################################################
-		
-#		position <- max(which(split.times>=depth.time),1)
-#		stop.time <- mean(split.times[position], depth.time)
 
 		birth<-SetBirth(stop.time=depth.time, turnover.param.anc, turnover.sigma.indep, turnover.weight.anc, turnover.weight.logistic, turnover.trend.scaling, turnover.trend.exponent, eps.param.anc, eps.sigma.indep, eps.weight.anc, eps.weight.logistic, eps.trend.scaling, eps.trend.exponent, split.times=split.times, k, turnover.splits=turnover.splits, eps.splits=eps.splits)
 		death<-SetDeath(stop.time=depth.time, turnover.param.anc, turnover.sigma.indep, turnover.weight.anc, turnover.weight.logistic, turnover.trend.scaling, turnover.trend.exponent, eps.param.anc, eps.sigma.indep, eps.weight.anc, eps.weight.logistic, eps.trend.scaling, eps.trend.exponent, split.times=split.times, k, turnover.splits=turnover.splits, eps.splits=eps.splits)
 		
-		if(runif(1,0,1)<(birth/(birth+death))){
+		birth.proportion<-0
+		if((birth+death)>0) {
+			birth.proportion<-birth/(birth+death)
+		}
+		if(runif(1,0,1)<birth.proportion){
 			sim.object <- BirthSimObject(sim.object=sim.object, interval.length=interval.length, stop.time=depth.time, turnover.sigma.indep=turnover.sigma.indep, turnover.weight.anc=turnover.weight.anc, turnover.weight.logistic=turnover.weight.logistic, turnover.trend.scaling=turnover.trend.scaling, turnover.trend.exponent=turnover.trend.exponent, split.times=split.times, k=k, turnover.splits=turnover.splits, turnover.sigma.anc=turnover.sigma.anc, eps.sigma.indep=eps.sigma.indep, eps.weight.anc=eps.weight.anc, eps.weight.logistic=eps.weight.logistic, eps.trend.scaling=eps.trend.scaling, eps.trend.exponent=eps.trend.exponent, eps.splits=eps.splits, eps.sigma.anc=eps.sigma.anc)
 			phy <- sim2phylo(sim.object)
-			
 			if(verbose) {
 				print(c(Ntip(phy),depth.time))
 			}
@@ -113,6 +104,8 @@ GetSim<-function(max.time=1, max.ntax=Inf, max.wall.time=Inf, check.file=NULL, s
 			sim.object <- DeathSimObject(sim.object=sim.object, interval.length=interval.length, stop.time=depth.time, turnover.sigma.indep=turnover.sigma.indep, turnover.weight.anc=turnover.weight.anc, turnover.weight.logistic=turnover.weight.logistic, turnover.trend.scaling=turnover.trend.scaling, turnover.trend.exponent=turnover.trend.exponent, split.times=split.times, k=k, turnover.splits=turnover.splits, turnover.sigma.anc=turnover.sigma.anc, eps.sigma.indep=eps.sigma.indep, eps.weight.anc=eps.weight.anc, eps.weight.logistic=eps.weight.logistic, eps.trend.scaling=eps.trend.scaling, eps.trend.exponent=eps.trend.exponent, eps.splits=eps.splits, eps.sigma.anc=eps.sigma.anc)
 
 			###########################REMAINING ISSUE###########################
+			#Necessary? Probably not, because again, the vector is being remade each time
+			#but is that right?
 			turnover.splits<-turnover.splits[-1]
 			eps.splits<-eps.splits[-1]
 			#####################################################################
@@ -148,7 +141,9 @@ sim2phylo<-function(sim.object) {
 	phy$edge<-matrix(NA,nrow=n.edge.all,ncol=2)
 	equivalence<-data.frame(phylo=sequence(n.edge.all+1),sim.object=rep(NA,n.edge.all+1))
 	equivalence[sequence(n.tip),2]<-sim.object$to[sim.object$tip]
-	#sim.object$from[which(!sim.object$from%in%sim.object$to)][1] is to designate the root in case "1" is killed:
+	#sim.object$from[which(!sim.object$from%in%sim.object$to)][1] is to designate the root in case "1" is murdered:
+	print(sim.object$from[which(!sim.object$from%in%sim.object$to)])
+	print(sim.object)
 	equivalence[c((n.tip+1):(n.edge.all+1)),2]<-sort(c(sim.object$from[which(!sim.object$from%in%sim.object$to)][1],sim.object$to[!sim.object$tip]))
 	for(i in sequence(n.edge.all)) {
 		#Defines the row in the equivalence table that is equal to the row in the sim.object:
@@ -207,7 +202,7 @@ BirthSimObject<-function(sim.object, interval.length, stop.time, turnover.sigma.
 DeathSimObject<-function(sim.object, interval.length, stop.time, turnover.sigma.indep, turnover.weight.anc, turnover.weight.logistic, turnover.trend.scaling, turnover.trend.exponent, split.times, k, turnover.splits, turnover.sigma.anc, eps.sigma.indep, eps.weight.anc, eps.weight.logistic, eps.trend.scaling, eps.trend.exponent, eps.splits, eps.sigma.anc) {
 	
 	###########################REMAINING ISSUE###########################
-	#Error is thrown when N==2 during a death event -- not ideal. Although, 
+	#Error is thrown when N<=2 during a death event -- not ideal. Although, 
 	#we would have to live with this if we were still relying on ape...
 	if(length(sim.object[,1])<=2){
 		return(NULL)
@@ -222,7 +217,7 @@ DeathSimObject<-function(sim.object, interval.length, stop.time, turnover.sigma.
 		surviving.descendant.of.merged.edge<-sim.object$to[which(sim.object$from==merged.edge)]
 		#Defines the sister of the tip:
 		surviving.descendant.of.merged.edge<-surviving.descendant.of.merged.edge[which(surviving.descendant.of.merged.edge!=unlucky.tip)]
-		#Combines the pieces of the two merged edge together if the sister is also tip:
+		#Combines the pieces of the two merged edges together if the sister is also a tip:
 		if(sim.object$tip[which(sim.object$to==surviving.descendant.of.merged.edge)]==TRUE){			
 			sim.object$edge.length[which(sim.object$to==merged.edge)]<-sim.object$edge.length[which(sim.object$to==surviving.descendant.of.merged.edge)]+sim.object$edge.length[which(sim.object$to==merged.edge)]
 			#Defines the ancestor of the unlucky tip
@@ -247,7 +242,6 @@ DeathSimObject<-function(sim.object, interval.length, stop.time, turnover.sigma.
 		return(sim.object)
 	}
 }
-
 
 #sim.object2<-BirthSimObject(sim.object, interval.length=.5, stop.time=8, turnover.sigma.indep=0, turnover.weight.anc=0, turnover.weight.logistic=0, turnover.trend.scaling=0, turnover.trend.exponent=0, split.times=branching.times(phy), k=1, turnover.splits=c(rep(.7,length(branching.times(phy)))), turnover.sigma.anc=0, eps.sigma.indep=0, eps.weight.anc=0, eps.weight.logistic=0, eps.trend.scaling=0, eps.trend.exponent=0, eps.splits=c(rep(.95,length(branching.times(phy)))), eps.sigma.anc=0)
 
