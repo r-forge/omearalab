@@ -15,7 +15,7 @@ library(ape)
 #at end, renumber so ape is happy, convert to phylo object
 #need to pass turnover 
 
-GetSim<-function(max.time=1, max.ntax=Inf, max.wall.time=Inf, check.file=NULL, start.file=NULL, return.all.extinct=TRUE, verbose=TRUE, check.interval=1800, turnover.param.indep=.10, turnover.sigma.indep=0.7, turnover.weight.anc=0, turnover.weight.logistic=0, turnover.trend.exponent=0, turn.k=Inf, turnover.sigma.anc=0, eps.param.indep=0.0, eps.sigma.indep=0, eps.weight.anc=0, eps.weight.logistic=0, eps.trend.exponent=0, eps.k=Inf, eps.sigma.anc=0, warning.diversity=Inf) {
+GetSim<-function(max.time=1, max.ntax=Inf, max.wall.time=Inf, check.file=NULL, start.file=NULL, return.all.extinct=TRUE, verbose=FALSE, check.interval=1800, turnover.param.indep=.10, turnover.sigma.indep=0.0, turnover.weight.anc=0, turnover.weight.logistic=0, turnover.trend.exponent=0, turn.k=Inf, turnover.sigma.anc=0, eps.param.indep=0.0, eps.sigma.indep=0, eps.weight.anc=0, eps.weight.logistic=0, eps.trend.exponent=0, eps.k=Inf, eps.sigma.anc=0, warning.diversity=Inf) {
 	
 	depth.time<-max.time
 	start.time<-Sys.time()
@@ -33,6 +33,7 @@ GetSim<-function(max.time=1, max.ntax=Inf, max.wall.time=Inf, check.file=NULL, s
 	
 	birth<-SetBirth(stop.time=depth.time, turnover.param.anc, turnover.sigma.indep, turnover.weight.anc, turnover.weight.logistic, turnover.trend.exponent, eps.param.anc, eps.sigma.indep, eps.weight.anc, eps.weight.logistic, eps.trend.exponent, split.times=c(0), turn.k=turn.k, eps.k=eps.k, turnover.splits=turnover.splits, eps.splits=eps.splits)
 	death<-SetDeath(stop.time=depth.time, turnover.param.anc, turnover.sigma.indep, turnover.weight.anc, turnover.weight.logistic, turnover.trend.exponent, eps.param.anc, eps.sigma.indep, eps.weight.anc, eps.weight.logistic, eps.trend.exponent, split.times=c(0), turn.k, eps.k, turnover.splits=turnover.splits, eps.splits=eps.splits)
+	
 	#note that this is rough, as it does not take into account changing rates nor ascertainment bias
 	approx.expected.diversity=2*exp((birth-death)*max.time) 	
 	
@@ -61,7 +62,11 @@ GetSim<-function(max.time=1, max.ntax=Inf, max.wall.time=Inf, check.file=NULL, s
 	while(depth.time>0 & Ntip(phy)<=max.ntax & (Sys.time()-start.time)<max.wall.time) {
 		
 		alive<-Ntip(phy)
-		interval.length<-rexp(1, alive*(birth+death))
+		
+		##Should be the sum of all rates (b and d) -- the ntax is now unnecessary:
+#		interval.length<-rexp(1, alive*(birth+death))
+		interval.length<-rexp(1, sum(sim.object$turnover.anc[which(sim.object$tip==TRUE)],sim.object$eps.anc[which(sim.object$tip==TRUE)]))
+		
 		depth.time<-depth.time-interval.length
 		
 		if(is.finite(max.time)){
@@ -70,6 +75,7 @@ GetSim<-function(max.time=1, max.ntax=Inf, max.wall.time=Inf, check.file=NULL, s
 				root.depth<-root.tracker[which(root.tracker[,1]==root.node),2]
 				phy <- sim2phylo(sim.object)
 				sim.object <- GrowSimObject(sim.object, root.depth-max(branching.times(phy)))
+				print(sim.object)
 				phy <- sim2phylo(sim.object)
 				###########################REMAINING ISSUE###########################
 				phy <- reorder(phy,"pruningwise")
@@ -93,20 +99,20 @@ GetSim<-function(max.time=1, max.ntax=Inf, max.wall.time=Inf, check.file=NULL, s
 #				return(phy)
 			}
 		}
-		
 		split.times<-sort(branching.times(phy)+depth.time, decreasing=TRUE)
 		turnover.splits <- rep(exp(rnorm(1, log(turnover.param.indep), turnover.sigma.indep)), length(split.times)) #gets refilled each interval, even though the last one is the only one used
 		eps.splits <- rep(exp(rnorm(1, log(eps.param.indep), eps.sigma.indep)), length(split.times))
 		
 		birth<-SetBirth(stop.time=depth.time, turnover.param.anc, turnover.sigma.indep, turnover.weight.anc, turnover.weight.logistic, turnover.trend.exponent, eps.param.anc, eps.sigma.indep, eps.weight.anc, eps.weight.logistic, eps.trend.exponent, split.times=split.times, turn.k=turn.k, eps.k=eps.k, turnover.splits=turnover.splits, eps.splits=eps.splits)
 		death<-SetDeath(stop.time=depth.time, turnover.param.anc, turnover.sigma.indep, turnover.weight.anc, turnover.weight.logistic, turnover.trend.exponent, eps.param.anc, eps.sigma.indep, eps.weight.anc, eps.weight.logistic, eps.trend.exponent, split.times=split.times, turn.k, eps.k, turnover.splits=turnover.splits, eps.splits=eps.splits)
-		
-		birth.proportion<-0
-		if((birth+death)>0) {
-			birth.proportion<-birth/(birth+death)
-		}
-		if(runif(1,0,1)<birth.proportion){
-			sim.object <- BirthSimObject(sim.object=sim.object, interval.length=interval.length, stop.time=depth.time, turnover.sigma.indep=turnover.sigma.indep, turnover.weight.anc=turnover.weight.anc, turnover.weight.logistic=turnover.weight.logistic, turnover.trend.exponent=turnover.trend.exponent, split.times=split.times, turn.k=turn.k, eps.k=eps.k, turnover.splits=turnover.splits, turnover.sigma.anc=turnover.sigma.anc, eps.sigma.indep=eps.sigma.indep, eps.weight.anc=eps.weight.anc, eps.weight.logistic=eps.weight.logistic, eps.trend.exponent=eps.trend.exponent, eps.splits=eps.splits, eps.sigma.anc=eps.sigma.anc, max.tip.count=max.tip.count)
+				
+		the.chosen.one<-which(rmultinom(1,1,prob=c(sim.object$turnover.anc[which(sim.object$tip==TRUE)],sim.object$eps.anc[which(sim.object$tip==TRUE)]))==1)
+		#Choose a tip using a rmultinom with the first half of the prob vector corresponding to birth, and the second half corresponding to death.
+		#If the lucky.tip is less than or equal to the number of tips, then it is a birth event:
+		if(the.chosen.one <= alive){
+#		if(runif(1,0,1)<birth.proportion){
+			lucky.tip<-(sim.object$to[which(sim.object$tip)])[the.chosen.one]
+			sim.object <- BirthSimObject(sim.object=sim.object, interval.length=interval.length, stop.time=depth.time, eps.constant=eps.param.indep, turnover.sigma.indep=turnover.sigma.indep, turnover.weight.anc=turnover.weight.anc, turnover.weight.logistic=turnover.weight.logistic, turnover.trend.exponent=turnover.trend.exponent, split.times=split.times, turn.k=turn.k, eps.k=eps.k, turnover.splits=turnover.splits, turnover.sigma.anc=turnover.sigma.anc, eps.sigma.indep=eps.sigma.indep, eps.weight.anc=eps.weight.anc, eps.weight.logistic=eps.weight.logistic, eps.trend.exponent=eps.trend.exponent, eps.splits=eps.splits, eps.sigma.anc=eps.sigma.anc, max.tip.count=max.tip.count,lucky.tip=lucky.tip)
 			max.tip.count<-max(sim.object$to)
 			rate.track<-c(rate.track,turnover.splits[1])
 			time.track<-c(time.track,depth.time)
@@ -120,7 +126,9 @@ GetSim<-function(max.time=1, max.ntax=Inf, max.wall.time=Inf, check.file=NULL, s
 			}
 		}
 		else {
-			sim.object <- DeathSimObject(sim.object=sim.object, interval.length=interval.length, stop.time=depth.time, turnover.sigma.indep=turnover.sigma.indep, turnover.weight.anc=turnover.weight.anc, turnover.weight.logistic=turnover.weight.logistic, turnover.trend.exponent=turnover.trend.exponent, split.times=split.times, turn.k=turn.k, eps.k=eps.k, turnover.splits=turnover.splits, turnover.sigma.anc=turnover.sigma.anc, eps.sigma.indep=eps.sigma.indep, eps.weight.anc=eps.weight.anc, eps.weight.logistic=eps.weight.logistic, eps.trend.exponent=eps.trend.exponent, eps.splits=eps.splits, eps.sigma.anc=eps.sigma.anc)
+			#If the lucky.tip is greater than the number of tips, then it is a death event and we rescale the value so that it actually corresponds to a tip:
+			unlucky.tip <- (sim.object$to[which(sim.object$tip)])[the.chosen.one - alive]
+			sim.object <- DeathSimObject(sim.object=sim.object, interval.length=interval.length, stop.time=depth.time, turnover.sigma.indep=turnover.sigma.indep, turnover.weight.anc=turnover.weight.anc, turnover.weight.logistic=turnover.weight.logistic, turnover.trend.exponent=turnover.trend.exponent, split.times=split.times, turn.k=turn.k, eps.k=eps.k, turnover.splits=turnover.splits, turnover.sigma.anc=turnover.sigma.anc, eps.sigma.indep=eps.sigma.indep, eps.weight.anc=eps.weight.anc, eps.weight.logistic=eps.weight.logistic, eps.trend.exponent=eps.trend.exponent, eps.splits=eps.splits, eps.sigma.anc=eps.sigma.anc, unlucky.tip=unlucky.tip)
 			if(!is.null(sim.object)){
 				phy <- sim2phylo(sim.object) 
 			}
@@ -171,7 +179,7 @@ sim2phylo<-function(sim.object) {
 }
 
 InitializeSimObject<-function(birth, death, turnover.anc, eps.anc) {
-	return(data.frame(from=c(1,1),to=c(2,3), edge.length=rep(0,2), tip=rep(TRUE,2), turnover.anc=turnover.anc, turnover.present=rep(birth+death,2), eps.anc=eps.anc, eps.present=rep(death/birth,2)))
+	return(data.frame(from=c(1,1),to=c(2,3), edge.length=rep(0,2), tip=rep(TRUE,2), turnover.anc=birth, turnover.present=rep(birth-death,2), eps.anc=death, eps.present=rep(death/birth,2)))
 }
 
 GrowSimObject<-function(sim.object, interval.length) {
@@ -189,13 +197,16 @@ UpdateTerminalParams<-function(sim.object, stop.time, turnover.sigma.indep, turn
 	return(sim.object)
 }
 
-BirthSimObject<-function(sim.object, interval.length, stop.time, turnover.sigma.indep, turnover.weight.anc, turnover.weight.logistic, turnover.trend.exponent, split.times, turn.k, eps.k, turnover.splits, turnover.sigma.anc, eps.sigma.indep, eps.weight.anc, eps.weight.logistic, eps.trend.exponent, eps.splits, eps.sigma.anc, max.tip.count){
-	lucky.tip<-(sim.object$to[which(sim.object$tip)])[floor(runif(1,1,1+sum(sim.object$tip)))]
+BirthSimObject<-function(sim.object, interval.length, stop.time, turnover.sigma.indep, turnover.weight.anc, turnover.weight.logistic, turnover.trend.exponent, split.times, turn.k, eps.k, turnover.splits, turnover.sigma.anc, eps.constant, eps.sigma.indep, eps.weight.anc, eps.weight.logistic, eps.trend.exponent, eps.splits, eps.sigma.anc, max.tip.count, lucky.tip){
+#	lucky.tip<-(sim.object$to[which(sim.object$tip)])[floor(runif(1,1,1+sum(sim.object$tip)))]
 	lucky.edge<-which(sim.object$to==lucky.tip)
 	sim.object<-GrowSimObject(sim.object, interval.length)
 	sim.object<-UpdateTerminalParams(sim.object=sim.object, stop.time=stop.time, turnover.sigma.indep=turnover.sigma.indep, turnover.weight.anc=turnover.weight.anc, turnover.weight.logistic=turnover.weight.logistic, turnover.trend.exponent=turnover.trend.exponent, split.times=split.times, turn.k=turn.k, eps.k=eps.k, turnover.splits=turnover.splits, turnover.sigma.anc=turnover.sigma.anc, eps.sigma.indep=eps.sigma.indep, eps.weight.anc=eps.weight.anc, eps.weight.logistic=eps.weight.logistic, eps.trend.exponent=eps.trend.exponent, eps.splits=eps.splits, eps.sigma.anc=eps.sigma.anc)
 	sim.object<-rbind(sim.object, sim.object[lucky.edge,], sim.object[lucky.edge,])
 	sim.object$tip[lucky.edge]<-FALSE
+	#Update the ancestor for the new descendants:
+	new.birth.anc <- GetNewAncParam(stop.time, parent.branch.length=sim.object$edge.length[lucky.edge], param.anc=sim.object$turnover.anc[lucky.edge], sigma.indep=turnover.sigma.indep, weight.anc=turnover.weight.anc, weight.logistic=turnover.weight.logistic, trend.exponent=turnover.trend.exponent, split.times=split.times, k=turn.k, param.splits=turnover.splits, param.sigma.anc=turnover.sigma.anc)
+	new.death.anc <- new.birth.anc * eps.constant
 	descendants<-c(dim(sim.object)[1]-1, dim(sim.object)[1]) #the new taxa are in the last two rows, so just look at these
 	for (descendant.index in sequence(length(descendants))) {
 		descendant<-descendants[descendant.index]
@@ -203,15 +214,16 @@ BirthSimObject<-function(sim.object, interval.length, stop.time, turnover.sigma.
 		sim.object$to[descendant]<-1+max.tip.count
 		sim.object$from[descendant]<-lucky.tip
 		sim.object$edge.length[descendant]<-0
-		sim.object$turnover.anc[descendant] <- GetNewAncParam(stop.time, param.anc=sim.object$turnover.present[lucky.edge], sigma.indep=turnover.sigma.indep, weight.anc=turnover.weight.anc, weight.logistic=turnover.weight.logistic, trend.exponent=turnover.trend.exponent, split.times=split.times, k=turn.k, param.splits=turnover.splits, param.sigma.anc=turnover.sigma.anc)
-		sim.object$eps.anc[descendant] <- GetNewAncParam(stop.time, param.anc=sim.object$eps.present[lucky.edge], sigma.indep=eps.sigma.indep, weight.anc=eps.weight.anc, weight.logistic=eps.weight.logistic, trend.exponent=eps.trend.exponent, split.times=split.times, k=eps.k, param.splits=eps.splits, param.sigma.anc=eps.sigma.anc)
+		#Apply the ancestor of the new descendants:
+		sim.object$turnover.anc[descendant]<-new.birth.anc
+		sim.object$eps.anc[descendant]<-new.death.anc
 		max.tip.count<-max(sim.object$to)
 	}
 	sim.object<-UpdateTerminalParams(sim.object=sim.object, stop.time=stop.time, turnover.sigma.indep=turnover.sigma.indep, turnover.weight.anc=turnover.weight.anc, turnover.weight.logistic=turnover.weight.logistic, turnover.trend.exponent=turnover.trend.exponent, split.times=split.times, turn.k=turn.k, eps.k=eps.k, turnover.splits=turnover.splits, turnover.sigma.anc=turnover.sigma.anc, eps.sigma.indep=eps.sigma.indep, eps.weight.anc=eps.weight.anc, eps.weight.logistic=eps.weight.logistic, eps.trend.exponent=eps.trend.exponent, eps.splits=eps.splits, eps.sigma.anc=eps.sigma.anc)
 	return(sim.object)
 }
 
-DeathSimObject<-function(sim.object, interval.length, stop.time, turnover.sigma.indep, turnover.weight.anc, turnover.weight.logistic, turnover.trend.exponent, split.times, turn.k, eps.k, turnover.splits, turnover.sigma.anc, eps.sigma.indep, eps.weight.anc, eps.weight.logistic, eps.trend.exponent, eps.splits, eps.sigma.anc) {
+DeathSimObject<-function(sim.object, interval.length, stop.time, turnover.sigma.indep, turnover.weight.anc, turnover.weight.logistic, turnover.trend.exponent, split.times, turn.k, eps.k, turnover.splits, turnover.sigma.anc, eps.sigma.indep, eps.weight.anc, eps.weight.logistic, eps.trend.exponent, eps.splits, eps.sigma.anc, unlucky.tip) {
 	
 	###########################REMAINING ISSUE###########################
 	#Error is thrown when N<=2 during a death event -- not ideal. Although, 
@@ -221,7 +233,7 @@ DeathSimObject<-function(sim.object, interval.length, stop.time, turnover.sigma.
 	}
 	#####################################################################
 	else{
-		unlucky.tip<-(sim.object$to[which(sim.object$tip)])[floor(runif(1,1,1+sum(sim.object$tip)))]
+#		unlucky.tip<-(sim.object$to[which(sim.object$tip)])[floor(runif(1,1,1+sum(sim.object$tip)))]
 		sim.object<-GrowSimObject(sim.object, interval.length)
 		#Defines the new tip:
 		merged.edge<-sim.object$from[which(sim.object$to==unlucky.tip)]
@@ -256,12 +268,14 @@ DeathSimObject<-function(sim.object, interval.length, stop.time, turnover.sigma.
 	}
 }
 
-
-GetNewAncParam<-function(stop.time, param.anc, sigma.indep, weight.anc, weight.logistic, trend.exponent, split.times, k, param.splits, param.sigma.anc){
-	result<-exp(rnorm(1,log(SetParameter(stop.time=stop.time, param.anc=param.anc, sigma.indep=sigma.indep, weight.anc=weight.anc, weight.logistic=weight.logistic, trend.exponent=trend.exponent, split.times=split.times, k=k, param.splits=param.splits)), param.sigma.anc))
+GetNewAncParam<-function(stop.time, parent.branch.length, param.anc, sigma.indep, weight.anc, weight.logistic, trend.exponent, split.times, k, param.splits, param.sigma.anc){
+	#A source of ambiguity comes from the odd rlnorm() function in R: it uses logmean and logsd. Here we assume that Rabosky was listing the values according to a normal and, therefore, we transformed these values to fit the desired values under a lognormal.
+	s=sqrt(log((((param.sigma.anc*sqrt(parent.branch.length))/param.anc)^2)+1))
+	m=log((param.anc^2)/sqrt(((param.sigma.anc*sqrt(parent.branch.length))^2)+(param.anc^2)))
+	result<-rlnorm(1, m, s)
+	#Here we attempt to mimic what Rabosky does. However, note that variance, if speciation rate is evolving in a Browian way, increases as sigma-squared*T, so sd should increase as sigma*sqrt(T). Based on the paper, Rabosky uses sigma*T. This is a problem: one expects that the variance at a given node based on the rate at the ancestral node should not vary based on how many intervening speciation events there are. Under the paramaterization of Rabosky, variance does change: the longer the branch, the more variance. So we do sd*sqrt(T)
 	return(result)
 }
-
 
 SetParameter <- function(stop.time, param.anc, sigma.indep, weight.anc, weight.logistic, trend.exponent, split.times, k, param.splits) {
 	position <- max(which(split.times>=stop.time),1)
@@ -273,6 +287,26 @@ SetParameter <- function(stop.time, param.anc, sigma.indep, weight.anc, weight.l
 	return(param.mean)
 }
 
+SetBirth <- function(stop.time, turnover.param.anc, turnover.sigma.indep, turnover.weight.anc, turnover.weight.logistic, turnover.trend.exponent, eps.param.anc, eps.sigma.indep, eps.weight.anc, eps.weight.logistic, eps.trend.exponent, split.times, turn.k, eps.k, turnover.splits, eps.splits) {
+	turnover <- SetParameter(stop.time=stop.time, param.anc=turnover.param.anc, sigma.indep=turnover.sigma.indep, weight.anc=turnover.weight.anc, weight.logistic=turnover.weight.logistic, trend.exponent=turnover.trend.exponent, split.times=split.times, k=turn.k, param.splits=turnover.splits)
+	extinction.fraction <- SetParameter(stop.time=stop.time, param.anc=eps.param.anc, sigma.indep=eps.sigma.indep, weight.anc=eps.weight.anc, weight.logistic=eps.weight.logistic, trend.exponent=eps.trend.exponent, split.times=split.times, k=eps.k, param.splits=eps.splits)
+	return(SetBirthGivenParameters(turnover, extinction.fraction))
+}
 
+SetBirthGivenParameters <- function(turnover, extinction.fraction) {
+	birth.expected <- turnover / (1 - extinction.fraction)
+	return(birth.expected)
+}
+
+SetDeath <- function(stop.time, turnover.param.anc, turnover.sigma.indep, turnover.weight.anc, turnover.weight.logistic, turnover.trend.exponent, eps.param.anc, eps.sigma.indep, eps.weight.anc, eps.weight.logistic, eps.trend.exponent, split.times, turn.k, eps.k, turnover.splits, eps.splits) {
+	turnover<-SetParameter(stop.time=stop.time, param.anc=turnover.param.anc, sigma.indep=turnover.sigma.indep, weight.anc=turnover.weight.anc, weight.logistic=turnover.weight.logistic, trend.exponent=turnover.trend.exponent, split.times=split.times, k=turn.k, param.splits=turnover.splits)
+	extinction.fraction<-SetParameter(stop.time=stop.time, param.anc=eps.param.anc, sigma.indep=eps.sigma.indep, weight.anc=eps.weight.anc, weight.logistic=eps.weight.logistic, trend.exponent=eps.trend.exponent, split.times=split.times, k=eps.k, param.splits=eps.splits)
+	return(SetDeathGivenParameters(turnover, extinction.fraction))
+}
+
+SetDeathGivenParameters <- function(turnover, extinction.fraction) {
+	death.expected<-(extinction.fraction * turnover) / (1 - extinction.fraction)
+	return(death.expected)
+}
 
 

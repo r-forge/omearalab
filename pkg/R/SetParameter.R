@@ -52,7 +52,7 @@ GeneralDiversity<-function(phy, f=1, model=c("yule", "bd"), turnover.logistic=FA
 	#All parameters not estimated are set to 1+max number of estimated parameters:
 	pars[pars==0]<-max(pars)+1
 	#Function used for optimizing parameters:
-	DevOptimize <- function(p, pars, phy, tot_time, f, turnover.weight.logistic, eps.weight.logistic, split.times, n.cores) {
+	DevOptimize <- function(p, pars, phy, tot_time, f, turnover.weight.logistic, eps.weight.logistic, split.times, quantile.set, n.cores) {
 		#Generates the final vector with the appropriate parameter estimates in the right place:
 		model.vec <- numeric(length(pars))
 		model.vec[] <- c(p, 0)[pars]
@@ -81,10 +81,10 @@ GeneralDiversity<-function(phy, f=1, model=c("yule", "bd"), turnover.logistic=FA
 		if(!model.vec[6] == 0 | !model.vec[8] == 0 | !model.vec[9] == 0 | !model.vec[10] == 0){
 			if(is.null(n.cores)){
 				tot.logl <-c()
-				for(i in 1:100){
-					tot.logl <- c(tot.logl,GetLikelihood(phylo=phy, tot_time, f, turnover.param.indep=model.vec[1], turnover.sigma.indep=model.vec[9], turnover.weight.anc=model.vec[5], turnover.weight.logistic=turnover.weight.logistic, turnover.trend.exponent=model.vec[11], turnover.sigma.anc=model.vec[6], eps.param.indep=model.vec[2], eps.sigma.indep=model.vec[10], eps.weight.anc=model.vec[7], eps.weight.logistic=eps.weight.logistic, eps.trend.exponent=model.vec[12], eps.sigma.anc=model.vec[8], split.times=split.times, turn.k=model.vec[3], eps.k=model.vec[4]))
+				for(i in 1:length(quantile.set)){
+					tot.logl <- c(tot.logl,GetLikelihood(phylo=phy, tot_time, f, turnover.param.indep=model.vec[1], turnover.sigma.indep=model.vec[9], turnover.weight.anc=model.vec[5], turnover.weight.logistic=turnover.weight.logistic, turnover.trend.exponent=model.vec[11], turnover.sigma.anc=model.vec[6], eps.param.indep=model.vec[2], eps.sigma.indep=model.vec[10], eps.weight.anc=model.vec[7], eps.weight.logistic=eps.weight.logistic, eps.trend.exponent=model.vec[12], eps.sigma.anc=model.vec[8], split.times=split.times, turn.k=model.vec[3], eps.k=model.vec[4], scaled.set=quantile.set[[i]]))
 				}
-				logl <- mean(tot.logl[is.finite(tot.logl)],na.rm=T)
+				logl<-mean(tot.logl[is.finite(tot.logl)],na.rm=T)
 				if(!is.finite(logl)){
 					return(10000000)
 				}
@@ -92,18 +92,18 @@ GeneralDiversity<-function(phy, f=1, model=c("yule", "bd"), turnover.logistic=FA
 			else{
 				SimSigma<-function(nstart){
 					tmp = matrix(,1,ncol=1)
-					tot.logl <- GetLikelihood(phylo=phy, tot_time, f, turnover.param.indep=model.vec[1], turnover.sigma.indep=model.vec[9], turnover.weight.anc=model.vec[5], turnover.weight.logistic=turnover.weight.logistic, turnover.trend.exponent=model.vec[11], turnover.sigma.anc=model.vec[6], eps.param.indep=model.vec[2], eps.sigma.indep=model.vec[10], eps.weight.anc=model.vec[7], eps.weight.logistic=eps.weight.logistic, eps.trend.exponent=model.vec[12], eps.sigma.anc=model.vec[8], split.times=split.times, turn.k=model.vec[3], eps.k=model.vec[4])
+					tot.logl <- GetLikelihood(phylo=phy, tot_time, f, turnover.param.indep=model.vec[1], turnover.sigma.indep=model.vec[9], turnover.weight.anc=model.vec[5], turnover.weight.logistic=turnover.weight.logistic, turnover.trend.exponent=model.vec[11], turnover.sigma.anc=model.vec[6], eps.param.indep=model.vec[2], eps.sigma.indep=model.vec[10], eps.weight.anc=model.vec[7], eps.weight.logistic=eps.weight.logistic, eps.trend.exponent=model.vec[12], eps.sigma.anc=model.vec[8], split.times=split.times, turn.k=model.vec[3], eps.k=model.vec[4], scaled.set=quantile.set[[nstart]])
 					tmp[,1] = tot.logl
 					tmp
 				}
-				sim.set<-mclapply(1:100, SimSigma, mc.cores=n.cores)
+				sim.set<-mclapply(1:length(quantile.set), SimSigma, mc.cores=n.cores)
 				tot.logl<-unlist(sim.set)
 				logl<-mean(tot.logl[is.finite(tot.logl)],na.rm=T)
 			}
 			return(-logl)
 		}
 		else{
-			logl <- GetLikelihood(phylo=phy, tot_time, f, turnover.param.indep=model.vec[1], turnover.sigma.indep=model.vec[9], turnover.weight.anc=model.vec[5], turnover.weight.logistic=turnover.weight.logistic, turnover.trend.exponent=model.vec[11], turnover.sigma.anc=model.vec[6], eps.param.indep=model.vec[2], eps.sigma.indep=model.vec[10], eps.weight.anc=model.vec[7], eps.weight.logistic=eps.weight.logistic, eps.trend.exponent=model.vec[12], eps.sigma.anc=model.vec[8], split.times=split.times, turn.k=model.vec[3], eps.k=model.vec[4])
+			logl <- GetLikelihood(phylo=phy, tot_time, f, turnover.param.indep=model.vec[1], turnover.sigma.indep=model.vec[9], turnover.weight.anc=model.vec[5], turnover.weight.logistic=turnover.weight.logistic, turnover.trend.exponent=model.vec[11], turnover.sigma.anc=model.vec[6], eps.param.indep=model.vec[2], eps.sigma.indep=model.vec[10], eps.weight.anc=model.vec[7], eps.weight.logistic=eps.weight.logistic, eps.trend.exponent=model.vec[12], eps.sigma.anc=model.vec[8], split.times=split.times, turn.k=model.vec[3], eps.k=model.vec[4], scaled.set=quantile.set)
 			if(!is.finite(logl)){
 				return(10000000)
 			}
@@ -112,16 +112,28 @@ GeneralDiversity<-function(phy, f=1, model=c("yule", "bd"), turnover.logistic=FA
 	}
 	#These are the default settings
 	#Set the variance to always be the inverse of the total length of the tree. 
-	def.set.pars <- c(1,0.5,Ntip(phy)*2,Ntip(phy)*2,0.5,1/max(branching.times(phy)),0.5,1/max(branching.times(phy)),1/max(branching.times(phy)),1/max(branching.times(phy)),0,0)
+	def.set.pars <- c(1,0.5,Ntip(phy)*2,Ntip(phy)*2,0.5,0.5,0.5,0.5,0.5,0.5,0,0)
 	ip <- def.set.pars[tmp==TRUE]
 	def.set.lower <- c(1e-10,0,-1e6,-1e6,0,0,0,0,0,0,-10,-10)
 	lower <- def.set.lower[tmp==TRUE]
 	def.set.upper <- c(10,10,1e6,1e6,1,10,1,10,10,10,1,1)
 	upper <- def.set.upper[tmp==TRUE]
-	print(pars)
+
+	#If inheritance model is chosen, create a list of quantiles for each edge in the tree:
+	if(turnover.inherit==TRUE | eps.inherit==TRUE){ 
+		GetQuantileSet<-function(nstarts){
+			GetQuantiles(phylo=phy)
+		}
+		quantile.set<-lapply(1:100, GetQuantileSet)
+	}
+	else{
+		quantile.set<-GetQuantiles(phylo=phy)
+	}
+	
 	opts <- list("algorithm"="NLOPT_LN_SBPLX", "maxeval"="1000000", "ftol_rel"=.Machine$double.eps^0.25)
-	out = nloptr(x0=ip, eval_f=DevOptimize, lb=lower, ub=upper, opts=opts, pars=pars, phy=phy, tot_time=tot_time, f=f, turnover.weight.logistic=turnover.logistic, eps.weight.logistic=eps.logistic, split.times=split.times, n.cores=n.cores)
+	out = nloptr(x0=ip, eval_f=DevOptimize, lb=lower, ub=upper, opts=opts, pars=pars, phy=phy, tot_time=tot_time, f=f, turnover.weight.logistic=turnover.logistic, eps.weight.logistic=eps.logistic, split.times=split.times, quantile.set=quantile.set, n.cores=n.cores)
 	loglik <- -out$objective
+	print(out)
 	#Recreate the model vector for use in the print function:
 	solution <- numeric(length(pars))
 	solution[] <- c(out$solution, 0)[pars]
@@ -130,7 +142,7 @@ GeneralDiversity<-function(phy, f=1, model=c("yule", "bd"), turnover.logistic=FA
 	
 	class(obj)<-"diversity"		
 	return(obj)	
-}	
+}
 
 SetParameter <- function(stop.time, param.anc, sigma.indep, weight.anc, weight.logistic, trend.exponent, split.times, k, param.splits) {
 	position <- max(which(split.times>=stop.time),1)
@@ -235,6 +247,49 @@ Psi <- function(s, t, f, turnover.param.anc, turnover.sigma.indep, turnover.weig
 	return(res)
 }
 
+######################################################################################################################################
+######################################################################################################################################
+### For inheritance model obtains a dataframe of quantiles for each edge:
+######################################################################################################################################
+######################################################################################################################################
+
+GetQuantiles<-function(phylo){
+	
+	#Initiates the dataframe with the root given the 50th quantile:
+	param.quantiles <- data.frame(node=Ntip(phylo)+1, turnover=0.5, eps=0.5)
+	
+	nbtips <- Ntip(phylo)
+	for (j in 1:(nbtips-1)){
+		node <- (nbtips+j)
+		edges <- phylo$edge[phylo$edge[,1]==node,]
+		node.anc <- phylo$edge[which(phylo$edge[,2]==node),1]
+		if (length(node.anc)==0) {
+			node.anc <- node
+			#assume params of root = params of root parent
+		}
+		else {
+			#Generates a column of randomly drawn quantiles for both parameters:
+			param.quantiles <- rbind(param.quantiles, data.frame(node=node, turnover=runif(1,0,1), eps=runif(1,0,1)))
+		}			
+	}
+	return(param.quantiles)
+}
+
+######################################################################################################################################
+######################################################################################################################################
+### For inheritance model rescales tree based on weight of the ancestor parameter:
+######################################################################################################################################
+######################################################################################################################################
+
+GetNewAncParam<-function(stop.time, param.anc, sigma.indep, weight.anc, weight.logistic, trend.exponent, split.times, k, param.splits, param.sigma.anc, quantile.node){
+	result<-qlnorm(quantile.node,log(SetParameter(stop.time=stop.time, param.anc=param.anc, sigma.indep=sigma.indep, weight.anc=weight.anc, weight.logistic=weight.logistic, trend.exponent=trend.exponent, split.times=split.times, k=k, param.splits=param.splits)),param.sigma.anc)
+	return(result)
+}
+
+#GetNewAncParam<-function(stop.time, param.anc, sigma.indep, weight.anc, weight.logistic, trend.exponent, split.times, k, param.splits, param.sigma.anc){
+#	result<-exp(rnorm(1,log(SetParameter(stop.time=stop.time, param.anc=param.anc, sigma.indep=sigma.indep, weight.anc=weight.anc, weight.logistic=weight.logistic, trend.exponent=trend.exponent, split.times=split.times, k=k, param.splits=param.splits)), param.sigma.anc))
+#	return(result)
+#}
 
 ######################################################################################################################################
 ######################################################################################################################################
@@ -242,29 +297,24 @@ Psi <- function(s, t, f, turnover.param.anc, turnover.sigma.indep, turnover.weig
 ######################################################################################################################################
 ######################################################################################################################################
 
-GetNewAncParam<-function(stop.time, param.anc, sigma.indep, weight.anc, weight.logistic, trend.exponent, split.times, k, param.splits, param.sigma.anc){
-	result<-exp(rnorm(1,log(SetParameter(stop.time=stop.time, param.anc=param.anc, sigma.indep=sigma.indep, weight.anc=weight.anc, weight.logistic=weight.logistic, trend.exponent=trend.exponent, split.times=split.times, k=k, param.splits=param.splits)), param.sigma.anc))
-	return(result)
-}
+GetLikelihood <- function(phylo,tot_time,f, turnover.param.indep, turnover.sigma.indep, turnover.weight.anc, turnover.weight.logistic, turnover.trend.exponent, turnover.sigma.anc, eps.param.indep, eps.sigma.indep, eps.weight.anc, eps.weight.logistic, eps.trend.exponent, eps.sigma.anc, split.times, turn.k, eps.k, scaled.set){
 
-GetLikelihood <- function(phylo,tot_time,f, turnover.param.indep, turnover.sigma.indep, turnover.weight.anc, turnover.weight.logistic, turnover.trend.exponent, turnover.sigma.anc, eps.param.indep, eps.sigma.indep, eps.weight.anc, eps.weight.logistic, eps.trend.exponent, eps.sigma.anc, split.times, turn.k, eps.k){
-	
+	scaled.set<-as.data.frame(scaled.set)
 	indLikelihood <- c()
 	nbfinal <- length(phylo)
 	nbtips_tot <- 0
 
 	turnover.param.anc <- turnover.param.indep
 	eps.param.anc <- eps.param.indep
+	ancestral.params <- data.frame(node=Ntip(phylo)+1, turnover=turnover.param.anc,eps=eps.param.anc)
 
-	ancestral.params <- data.frame(node=Ntip(phylo)+1, turnover=turnover.param.anc, eps=eps.param.anc)
-	
 	###########################REMAINING ISSUE###########################
 	#Need to figure out the best way to set up timeslice. Basically, it should be an argument that is passed, as to how many and when,
 	#or if any NAs, then estimate the most likely time(s) of the slice(s). Should be easyish...
 	turnover.splits <- exp(rnorm(length(split.times), log(turnover.param.indep), turnover.sigma.indep))
 	eps.splits <- exp(rnorm(length(split.times), log(eps.param.indep), eps.sigma.indep))
 	#####################################################################
-
+	
 	from_past <- cbind(phylo$edge,node.age(phylo)$ages)
 	nbtips <- Ntip(phylo)
 	nbtips_tot <- nbtips_tot+nbtips
@@ -289,11 +339,12 @@ GetLikelihood <- function(phylo,tot_time,f, turnover.param.indep, turnover.sigma
 			#Here stop.time is the midpoint of the last interval on ancestral branch
 			last.interval <- min(split.times[which(split.times>tj)])
 			stop.time <- mean(last.interval, last.interval)
-			ancestral.params <- rbind(ancestral.params, data.frame(node=node, turnover=GetNewAncParam(stop.time, param.anc=ancestral.params[which(ancestral.params$node==node.anc),]$turnover, sigma.indep=turnover.sigma.indep, weight.anc=turnover.weight.anc, weight.logistic=turnover.weight.logistic, trend.exponent=turnover.trend.exponent, split.times=split.times, k=turn.k, param.splits=turnover.splits, param.sigma.anc=turnover.sigma.anc), eps=GetNewAncParam(stop.time, param.anc=ancestral.params[which(ancestral.params$node==node.anc),]$eps, sigma.indep=eps.sigma.indep, weight.anc=eps.weight.anc, weight.logistic=eps.weight.logistic, trend.exponent=eps.trend.exponent, split.times=split.times, k=eps.k, param.splits=eps.splits, param.sigma.anc=eps.sigma.anc)))
+			#Here we want to just scale the tree based on the input list and a given inheritance parameter:
+			ancestral.params <- rbind(ancestral.params, data.frame(node=node, turnover=GetNewAncParam(stop.time, param.anc=ancestral.params[which(ancestral.params$node==node.anc),]$turnover, sigma.indep=turnover.sigma.indep, weight.anc=turnover.weight.anc, weight.logistic=turnover.weight.logistic, trend.exponent=turnover.trend.exponent, split.times=split.times, k=turn.k, param.splits=turnover.splits, param.sigma.anc=turnover.sigma.anc, quantile.node=scaled.set[which(scaled.set$node==node),]$turnover), eps=GetNewAncParam(stop.time, param.anc=ancestral.params[which(ancestral.params$node==node.anc),]$eps, sigma.indep=eps.sigma.indep, weight.anc=eps.weight.anc, weight.logistic=eps.weight.logistic, trend.exponent=eps.trend.exponent, split.times=split.times, k=eps.k, param.splits=eps.splits, param.sigma.anc=eps.sigma.anc, quantile.node=scaled.set[which(scaled.set$node==node),]$eps)))
 		}
 		indLikelihood <- c(indLikelihood,SetBirth(stop.time=tj, turnover.param.anc=ancestral.params[which(ancestral.params$node==node),]$turnover, turnover.sigma.indep=turnover.sigma.indep, turnover.weight.anc=turnover.weight.anc, turnover.weight.logistic=turnover.weight.logistic, turnover.trend.exponent=turnover.trend.exponent, eps.param.anc=ancestral.params[which(ancestral.params$node==node),]$eps, eps.sigma.indep=eps.sigma.indep, eps.weight.anc=eps.weight.anc, eps.weight.logistic=eps.weight.logistic, eps.trend.exponent=eps.trend.exponent, split.times=split.times, turn.k=turn.k, eps.k=eps.k, turnover.splits=turnover.splits, eps.splits=eps.splits)*Psi(s=sj1,t=tj, f=f, turnover.param.anc=ancestral.params[which(ancestral.params$node==node),]$turnover, turnover.sigma.indep=turnover.sigma.indep, turnover.weight.anc=turnover.weight.anc, turnover.weight.logistic=turnover.weight.logistic, turnover.trend.exponent=turnover.trend.exponent, eps.param.anc=ancestral.params[which(ancestral.params$node==node),]$eps, eps.sigma.indep=eps.sigma.indep, eps.weight.anc=eps.weight.anc, eps.weight.logistic=eps.weight.logistic, eps.trend.exponent=eps.trend.exponent, split.times=split.times, turn.k=turn.k, eps.k=eps.k, turnover.splits=turnover.splits, eps.splits=eps.splits)*Psi(s=sj2,t=tj,f=f, turnover.param.anc=ancestral.params[which(ancestral.params$node==node),]$turnover, turnover.sigma.indep=turnover.sigma.indep, turnover.weight.anc=turnover.weight.anc, turnover.weight.logistic=turnover.weight.logistic, turnover.trend.exponent=turnover.trend.exponent, eps.param.anc=ancestral.params[which(ancestral.params$node==node),]$eps, eps.sigma.indep=eps.sigma.indep, eps.weight.anc=eps.weight.anc, eps.weight.logistic=eps.weight.logistic, eps.trend.exponent=eps.trend.exponent, split.times=split.times, turn.k=turn.k, eps.k=eps.k, turnover.splits=turnover.splits, eps.splits=eps.splits))
 	}
-#	return(ancestral.params)
+	print(ancestral.params)
 	#Modification of Eq. 1 from Morlon et al 2011 so the calculation is done in logspace:
 	data_lik <- sum(log(indLikelihood))+(nbtips_tot*log(f))
 	Phi <- Phi(stop.time=tot_time,f=f, turnover.param.anc=turnover.param.anc, turnover.sigma.indep=turnover.sigma.indep, turnover.weight.anc=turnover.weight.anc, turnover.weight.logistic=turnover.weight.logistic, turnover.trend.exponent=turnover.trend.exponent, eps.param.anc=eps.param.anc, eps.sigma.indep=eps.sigma.indep, eps.weight.anc=eps.weight.anc, eps.weight.logistic=eps.weight.logistic, eps.trend.exponent=eps.trend.exponent, split.times=split.times, turn.k=turn.k, eps.k=eps.k, turnover.splits=turnover.splits, eps.splits=eps.splits)
@@ -320,9 +371,7 @@ print.diversity<-function(x,...){
 	cat("Rates\n")
 	print(param.est)
 	cat("\n")
-	
 }
-
 
 ######################################################################################################################################
 ######################################################################################################################################
@@ -331,89 +380,16 @@ print.diversity<-function(x,...){
 ######################################################################################################################################
 
 #phy<-rcoal(130)
-#phy<-read.tree("~/Dropbox/CollabBeaulieu/GeneralDiversification/test.tre")
+phy<-read.tree("~/Dropbox/CollabBeaulieu/GeneralDiversification/test.tre")
 #phy<-drop.tip(phy, paste("t", c(1:7), sep=""))
 #phy<-drop.tip(phy, paste("t", c(1:5), sep=""))
 #phy<-tree
 #f=1
 #Rprof()
-#us.DD.LH <- (GetLikelihood(phylo=phy,tot_time=max(branching.times(phy)),f=f, turnover.param.indep=.5, turnover.sigma.indep=0, turnover.weight.anc=0, turnover.weight.logistic=0, turnover.trend.exponent=0, eps.param.indep=.25, eps.sigma.indep=0, eps.weight.anc=0, eps.weight.logistic=0, eps.trend.exponent=0, split.times=branching.times(phy), turn.k=100, eps.k=1))
+#scaled.set<-tree.set
+#scaled.set[,2]<-qlnorm(tree.set[,2], log(.85), 0.1)
+#scaled.set[,3]<-qlnorm(tree.set[,3], log(.25), 0.00)
+#us.DD.LH <- (GetLikelihood(phylo=phy,tot_time=max(branching.times(phy)),f=1, turnover.param.indep=0.4948420525, turnover.sigma.indep=0,turnover.sigma.anc=0.0, turnover.weight.anc=0, turnover.weight.logistic=0, turnover.trend.exponent=0, eps.param.indep=0.7078933716, eps.sigma.indep=0, eps.weight.anc=0, eps.weight.logistic=0, eps.trend.exponent=0, eps.sigma.anc=0, split.times=branching.times(phy), turn.k=1, eps.k=1,scaled.set=scaled.set))
 #Rprof(NULL)
 #summaryRprof()
-
-#us.bd.LH <-list()
-#for(i in 1:100){
-#us.bd.LH[[i]] <- GetLikelihood(phylo=phy,tot_time=max(branching.times(phy)),f=88/120, turnover.param.indep=0.05699413, turnover.sigma.indep=1.58149170, turnover.weight.anc=0.96881104, turnover.weight.logistic=0, turnover.trend.exponent=0, eps.param.indep=0.4752965, eps.sigma.indep=1.2637307, eps.weight.anc=0.4752965, eps.weight.logistic=0, eps.trend.exponent=0, split.times=branching.times(phy), turn.k=100, eps.k=1)
-#}
-#print(paste("us.bd.LH", us.bd.LH))
-#print(paste("us.DD.LH", us.DD.LH))
-#print(paste("us.DD.LH - us.bd.LH", us.DD.LH - us.bd.LH))
-#phy<-tree
-
-#us.DD.LH <- GetLikelihood(phylo=phy, tot_time=max(branching.times(phy)), 88/120, turnover.param.indep=0.026, turnover.sigma.indep=0, turnover.weight.anc=.503, turnover.weight.logistic=0, turnover.trend.exponent=.20677, turnover.sigma.anc=0.0026, eps.param.indep=1.755, eps.sigma.indep=0, eps.weight.anc=1, eps.weight.logistic=0, eps.trend.exponent=-1.1035, eps.sigma.anc=.015, split.times=sort(branching.times(phy),decreasing=T), turn.k=1, eps.k=1)
-#}
-#mm<-cbind(us.DD.LH,branching.times(phy))	
-#us.DD.LH <- GetLikelihood(phylo=tree, tot_time=max(branching.times(tree)), 88/120, turnover.param.indep=1.67439, turnover.sigma.indep=0, turnover.weight.anc=0, turnover.weight.logistic=1, turnover.trend.exponent=0, turnover.sigma.anc=0, eps.param.indep=0.9187097, eps.sigma.indep=0, eps.weight.anc=0, eps.weight.logistic=0, eps.trend.exponent=0.01964569, eps.sigma.anc=0, split.times=branching.times(tree), turn.k=135, eps.k=0)
-
-#print(paste("us.DD.LH", us.DD.LH))
-
-#pdf("NotoFig.pdf")
-#par(mfcol=c(2,2), mar=c(4,4,0.5,0.5), oma=c(1.5,2,1,1))
-
-#res=c()
-#for(i in 1:length(us.bd.LH[[1]][,1])){
-#	mm<-c()
-#	for(j in 1:100){	
-#		mm<-c(mm,us.bd.LH[[j]][i,2])
-#	}
-#	res<-c(res,mean(mm))
-#}
-#scatter.smooth(mm[,4],mm[,2], xlim=c(80,0),ylim=c(0,2),pch=19, evaluation = 100, cex=.5,col="grey",xlab="Time (MA)", ylab="Turnover", family="symmetric")
-#plot(mm[,3],mm[,1],xlim=c(80,0),ylim=c(0,1.5),pch=19, cex=.5,col="grey",xlab="Time (MA)", ylab="Turnover")
-#lines(smooth.spline(mm[,3],mm[,1], df=15),xlim=c(80,0),ylim=c(0,1.5))
-#scatter.smooth(rev(us.bd.LH[,4]),rev(res), xlim=c(80,0),ylim=c(0,1.25),pch=19, cex=.5,col="grey",xlab="Time (MA)", ylab="Turnover", family="symmetric")
-#loess.smooth(rev(us.bd.LH[[1]][,4]),rev(res), span = 2/3, degree = 1, family = c("gaussian"))
-#abline(v=14,lty=2)
-#abline(v=11,lty=2)
-#plot(1:87,mm[,1][order(mm[,1])], xlab="", ylab="Turnover", ylim=c(0,1.5))
-
-#res=c()
-#for(i in 1:length(us.bd.LH[[1]][,1])){
-#	mm<-c()
-#	for(j in 1:100){	
-#		mm<-c(mm,us.bd.LH[[j]][i,3])
-#	}
-#	res<-c(res,mean(mm))
-#}
-#scatter.smooth(mm[,4],mm[,3], xlim=c(80,0),ylim=c(0,1.25),pch=19, cex=.5,col="grey",xlab="Time (MA)", ylab="Extinction fraction", family="symmetric")
-#plot(mm[,3],mm[,2],xlim=c(80,0),ylim=c(0,1.25),pch=19, cex=.5,col="grey",xlab="Time (MA)", ylab="Extinction fraction")
-#lines(smooth.spline(mm[,3],mm[,2], df=15),xlim=c(80,0),ylim=c(0,1.5))
-#scatter.smooth(rev(us.bd.LH[[1]][,4]),rev(res), xlim=c(80,0),ylim=c(0,1.25),pch=19, cex=.5,col="grey",xlab="Time (MA)", ylab="Extinction fraction")
-#loess.smooth(rev(us.bd.LH[[1]][,4]),rev(res), span = 2/3, degree = 1, family = c("gaussian"))
-#abline(h=1,lty=2)
-#plot(1:87,mm[,2][order(mm[,2])], xlab="", ylim=c(0,1.5), ylab="Extinction fraction")
-#dev.off()
-
-#stop.time=0.160056963
-#turnover.param.indep=4.46
-#turnover.sigma.indep=0
-#split.times=branching.times(phy)
-#turnover.splits <- exp(rnorm(length(branching.times(phy)), log(turnover.param.indep), turnover.sigma.indep))
-#us.DD.LH<-c()
-#for(i in 1:length(split.times)){
-#us.DD.LH<-c(us.DD.LH, SetParameter(stop.time=split.times[1], param.anc=turnover.param.indep, sigma.indep=0, weight.anc=0, weight.logistic=1, trend.exponent=0, split.times=branching.times(phy), k=89.5, param.splits=turnover.splits))
-#}
-
-#eps.param.indep=0.9505
-#eps.sigma.indep=0
-#eps.splits <- exp(rnorm(length(branching.times(phy)), log(eps.param.indep), eps.sigma.indep))
-#us.DD.LH2<-c()
-#for(i in 1:length(split.times)){
-#	us.DD.LH2<-c(us.DD.LH2, SetParameter(stop.time=split.times[i], param.anc=eps.param.indep, sigma.indep=0, weight.anc=0, weight.logistic=1, trend.exponent=0.0487, split.times=branching.times(phy), k=89.5, param.splits=eps.splits))
-#}
-
-#mm<-cbind(us.DD.LH2,branching.times(phy))
-
-
-###Add in an extra K, allow for it have either sign. Get rid of eps.log crap.
-
+#0.4948420525 0.7078933716
