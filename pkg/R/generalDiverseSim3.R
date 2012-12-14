@@ -75,7 +75,6 @@ GetSim<-function(max.time=1, max.ntax=Inf, max.wall.time=Inf, check.file=NULL, s
 				root.depth<-root.tracker[which(root.tracker[,1]==root.node),2]
 				phy <- sim2phylo(sim.object)
 				sim.object <- GrowSimObject(sim.object, root.depth-max(branching.times(phy)))
-				print(sim.object)
 				phy <- sim2phylo(sim.object)
 				###########################REMAINING ISSUE###########################
 				phy <- reorder(phy,"pruningwise")
@@ -269,11 +268,16 @@ DeathSimObject<-function(sim.object, interval.length, stop.time, turnover.sigma.
 }
 
 GetNewAncParam<-function(stop.time, parent.branch.length, param.anc, sigma.indep, weight.anc, weight.logistic, trend.exponent, split.times, k, param.splits, param.sigma.anc){
-	#A source of ambiguity comes from the odd rlnorm() function in R: it uses logmean and logsd. Here we assume that Rabosky was listing the values according to a normal and, therefore, we transformed these values to fit the desired values under a lognormal.
+	#Here we attempt to mimic what Rabosky does. However, note that variance -- if speciation rate is evolving in a Browian way -- increases as sigma-squared*T, so sd should increase as sigma*sqrt(T). Based on the paper, Rabosky uses sigma*T. This is a problem: one expects that the variance at a given node based on the rate at the ancestral node should not vary based on how many intervening speciation events there are. Under the paramaterization of Rabosky, variance does change: the longer the branch, the more variance. So we do sd*sqrt(T).
+	#Another source of ambiguity comes from the odd rlnorm() function in R: it uses logmean and logsd. Here we assume that Rabosky was listing the values according to a normal (mu, sigma) and, therefore, we transformed these values to fit the desired values under a lognormal (m, s).
 	s=sqrt(log((((param.sigma.anc*sqrt(parent.branch.length))/param.anc)^2)+1))
 	m=log((param.anc^2)/sqrt(((param.sigma.anc*sqrt(parent.branch.length))^2)+(param.anc^2)))
+#  The non-naive rlnorm use:
 	result<-rlnorm(1, m, s)
-	#Here we attempt to mimic what Rabosky does. However, note that variance, if speciation rate is evolving in a Browian way, increases as sigma-squared*T, so sd should increase as sigma*sqrt(T). Based on the paper, Rabosky uses sigma*T. This is a problem: one expects that the variance at a given node based on the rate at the ancestral node should not vary based on how many intervening speciation events there are. Under the paramaterization of Rabosky, variance does change: the longer the branch, the more variance. So we do sd*sqrt(T)
+#	The naive rlorm use:
+#	result<-rlnorm(1,log(param.anc),param.sigma.anc*sqrt(parent.branch.length))
+#	The super-naive rlorm use:
+#	result<-rlnorm(1,log(param.anc),param.sigma.anc*parent.branch.length)
 	return(result)
 }
 
