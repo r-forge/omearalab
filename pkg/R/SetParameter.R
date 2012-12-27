@@ -78,7 +78,7 @@ GeneralDiversity<-function(phy, f=1, model=c("yule", "bd"), turnover.logistic=FA
 		if(pars[3]<(length(p)+1) & abs(model.vec[3])<Ntip(phy) | pars[4]<(length(p)+1) & abs(model.vec[4])<Ntip(phy)){
 				return(10000000)
 		}
-		if(!model.vec[6] == 0 | !model.vec[8] == 0 | !model.vec[9] == 0 | !model.vec[10] == 0){
+		if(pars[6] < max(pars) | pars[8] < max(pars) | pars[9] < max(pars) | pars[10] < max(pars)){
 			if(is.null(n.cores)){
 				tot.logl <-c()
 				for(i in 1:length(quantile.set)){
@@ -281,7 +281,7 @@ GetQuantiles<-function(phylo){
 ######################################################################################################################################
 
 GetNewAncParam<-function(stop.time, param.anc, sigma.indep, weight.anc, weight.logistic, trend.exponent, split.times, k, param.splits, param.sigma.anc, quantile.node){
-	result<-qlnorm(quantile.node,log(SetParameter(stop.time=stop.time, param.anc=param.anc, sigma.indep=sigma.indep, weight.anc=weight.anc, weight.logistic=weight.logistic, trend.exponent=trend.exponent, split.times=split.times, k=k, param.splits=param.splits)),param.sigma.anc)
+	result<-qlnorm(quantile.node,log(SetParameter(stop.time=stop.time, param.anc=param.anc, sigma.indep=sigma.indep, weight.anc=weight.anc, weight.logistic=weight.logistic, trend.exponent=trend.exponent, split.times=split.times, k=k, param.splits=param.splits)), param.sigma.anc)
 	return(result)
 }
 
@@ -337,7 +337,7 @@ GetLikelihood <- function(phylo,tot_time,f, turnover.param.indep, turnover.sigma
 		else {
 			#Here stop.time is the midpoint of the last interval on ancestral branch
 			last.interval <- min(split.times[which(split.times>tj)])
-			stop.time <- mean(last.interval, last.interval)
+			stop.time <- mean(last.interval, tj)
 			#Here we want to just scale the tree based on the input list and a given inheritance parameter:
 			ancestral.params <- rbind(ancestral.params, data.frame(node=node, turnover=GetNewAncParam(stop.time, param.anc=ancestral.params[which(ancestral.params$node==node.anc),]$turnover, sigma.indep=turnover.sigma.indep, weight.anc=turnover.weight.anc, weight.logistic=turnover.weight.logistic, trend.exponent=turnover.trend.exponent, split.times=split.times, k=turn.k, param.splits=turnover.splits, param.sigma.anc=turnover.sigma.anc, quantile.node=scaled.set[which(scaled.set$node==node),]$turnover), eps=GetNewAncParam(stop.time, param.anc=ancestral.params[which(ancestral.params$node==node.anc),]$eps, sigma.indep=eps.sigma.indep, weight.anc=eps.weight.anc, weight.logistic=eps.weight.logistic, trend.exponent=eps.trend.exponent, split.times=split.times, k=eps.k, param.splits=eps.splits, param.sigma.anc=eps.sigma.anc, quantile.node=scaled.set[which(scaled.set$node==node),]$eps)))
 		}

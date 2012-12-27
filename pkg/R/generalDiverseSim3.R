@@ -101,10 +101,7 @@ GetSim<-function(max.time=1, max.ntax=Inf, max.wall.time=Inf, check.file=NULL, s
 		split.times<-sort(branching.times(phy)+depth.time, decreasing=TRUE)
 		turnover.splits <- rep(exp(rnorm(1, log(turnover.param.indep), turnover.sigma.indep)), length(split.times)) #gets refilled each interval, even though the last one is the only one used
 		eps.splits <- rep(exp(rnorm(1, log(eps.param.indep), eps.sigma.indep)), length(split.times))
-		
-		birth<-SetBirth(stop.time=depth.time, turnover.param.anc, turnover.sigma.indep, turnover.weight.anc, turnover.weight.logistic, turnover.trend.exponent, eps.param.anc, eps.sigma.indep, eps.weight.anc, eps.weight.logistic, eps.trend.exponent, split.times=split.times, turn.k=turn.k, eps.k=eps.k, turnover.splits=turnover.splits, eps.splits=eps.splits)
-		death<-SetDeath(stop.time=depth.time, turnover.param.anc, turnover.sigma.indep, turnover.weight.anc, turnover.weight.logistic, turnover.trend.exponent, eps.param.anc, eps.sigma.indep, eps.weight.anc, eps.weight.logistic, eps.trend.exponent, split.times=split.times, turn.k, eps.k, turnover.splits=turnover.splits, eps.splits=eps.splits)
-				
+
 		the.chosen.one<-which(rmultinom(1,1,prob=c(sim.object$turnover.anc[which(sim.object$tip==TRUE)],sim.object$eps.anc[which(sim.object$tip==TRUE)]))==1)
 		#Choose a tip using a rmultinom with the first half of the prob vector corresponding to birth, and the second half corresponding to death.
 		#If the lucky.tip is less than or equal to the number of tips, then it is a birth event:
