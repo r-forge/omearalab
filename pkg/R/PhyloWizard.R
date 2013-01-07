@@ -36,7 +36,7 @@ DoSingleResolve <- function(constraint) {
 }
 
 MakeUpBranchlengths <- function(phy) {
-  warning(paste("Responding to lack of information (in this case, lack of information about the phylogeny) by making it up is generally considered a bad thing, even if you do it", nrep, "times"))
+  warning(paste("Responding to lack of information (in this case, lack of information about the phylogeny) by making it up is generally considered a bad thing"))
   tree.depth<-1
   if (is.null(phy$edge.length)) {
     phy<-compute.brlen(phy, method=0)
