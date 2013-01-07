@@ -21,7 +21,7 @@ require(ape)
 
 PhyloWizard <- function( tips=NA, constraint=NA, nrep=100) {
   phy<-NULL
-  if(!is.na(constraint)) {
+  if(!is.na(constraint[1])) {
     return(replicate(nrep, DoSingleResolve(constraint), simplify=FALSE))
   }
   if (length(tips)>2) {
