@@ -9,11 +9,11 @@ ShrinkByPercent<-function(phy, p) {
    return(di2multi(phy, cutoff))
 }
 
-fractions<-seq(from=0, to=1, length.out=5)
+fractions<-seq(from=0, to=1, length.out=6)
 ntax<-100
 b<-1
 d<-0.5
-nrep<-4
+nrep<-10
 est.eps<-rep(NA,length(fractions))
 est.div<-est.eps
 
@@ -36,3 +36,8 @@ for (fraction.index in sequence(length(fractions))) {
   
 }
 
+par(mfcol=c(1,2))
+plot(fractions, est.eps, type="l", bty="n", xlab="Fraction unknown", ylab="eps")
+lines(x=range(fractions), y=rep(d/b, 2), lty="dotted")
+plot(fractions, est.div, type="l", bty="n", xlab="Fraction unknown", ylab="div")
+lines(x=range(fractions), y=rep(b-d, 2), lty="dotted")
