@@ -15,25 +15,32 @@ library(ape)
 #at end, renumber so ape is happy, convert to phylo object
 #need to pass turnover 
 
-GetSim<-function(max.time=1, max.ntax=Inf, max.wall.time=Inf, check.file=NULL, start.file=NULL, return.all.extinct=TRUE, verbose=TRUE, check.interval=1800, turnover.param.indep=.064, turnover.sigma.indep=0.0, turnover.weight.anc=0.75, turnover.weight.logistic=0, turnover.trend.exponent=0, turn.k=Inf, turnover.sigma.anc=0.1, eps.param.indep=0.0, eps.sigma.indep=0, eps.weight.anc=0, eps.weight.logistic=0, eps.trend.exponent=0, eps.k=Inf, eps.sigma.anc=0, warning.diversity=Inf) {
+GetSim<-function(max.time=1, max.ntax=Inf, max.wall.time=Inf, check.file=NULL, start.file=NULL, return.all.extinct=TRUE, verbose=TRUE, check.interval=1800, turnover.param.anc=0.0, turnover.param.indep=5.71, turnover.sigma.indep=0.0, turnover.weight.anc=.99642, turnover.weight.logistic=0, turnover.trend.exponent=0, turn.k=Inf, turnover.sigma.anc=0.0, eps.param.anc=0.0, eps.param.indep=NULL, eps.sigma.indep=0, eps.weight.anc=0, eps.weight.logistic=0, eps.trend.exponent=0, eps.k=Inf, eps.sigma.anc=0, warning.diversity=Inf) {
 	
 	depth.time<-max.time
 	start.time<-Sys.time()
 	last.save.time<-Sys.time()
-		options(digits=10)
+	options(digits=10)
 	root.tracker=matrix(c(1,depth.time),nrow=1,ncol=2)
-	turnover.param.anc <- turnover.param.indep
-	eps.param.anc <- eps.param.indep
+
+	turnover.param.anc <- turnover.param.anc
+	eps.param.anc <- eps.param.anc
 	
+	if(is.null(turnover.param.indep)){
+		turnover.param.indep=turnover.param.anc
+	}
+
+	if(is.null(eps.param.indep)){
+		eps.param.indep=eps.param.anc
+	}
+
 	turnover.splits <- exp(rnorm(1, log(turnover.param.indep), turnover.sigma.indep))
 	eps.splits <- exp(rnorm(1, log(eps.param.indep), eps.sigma.indep))
 	
-	rate.track<-turnover.splits[1]
-	time.track<-depth.time
+	rate.track<-matrix(c(depth.time,turnover.param.anc),1,2)
 	
 	birth<-SetBirth(stop.time=depth.time, turnover.param.anc, turnover.sigma.indep, turnover.weight.anc, turnover.weight.logistic, turnover.trend.exponent, eps.param.anc, eps.sigma.indep, eps.weight.anc, eps.weight.logistic, eps.trend.exponent, split.times=c(0), turn.k=turn.k, eps.k=eps.k, turnover.splits=turnover.splits, eps.splits=eps.splits)
 	death<-SetDeath(stop.time=depth.time, turnover.param.anc, turnover.sigma.indep, turnover.weight.anc, turnover.weight.logistic, turnover.trend.exponent, eps.param.anc, eps.sigma.indep, eps.weight.anc, eps.weight.logistic, eps.trend.exponent, split.times=c(0), turn.k, eps.k, turnover.splits=turnover.splits, eps.splits=eps.splits)
-
 	#note that this is rough, as it does not take into account changing rates nor ascertainment bias
 	approx.expected.diversity=2*exp((birth-death)*max.time) 	
 	
@@ -62,8 +69,7 @@ GetSim<-function(max.time=1, max.ntax=Inf, max.wall.time=Inf, check.file=NULL, s
 	while(depth.time>0 & Ntip(phy)<=max.ntax & (Sys.time()-start.time)<max.wall.time) {
 		
 		alive<-Ntip(phy)
-#########Check this: It should be .present not .ancestor here
-#########Also, I entered in the present values as a vector and the output is a vector to be used in cases where birth and death vary:		
+
 		birth<-SetBirth(stop.time=depth.time, turnover.param.anc=sim.object$turnover.present[which(sim.object$tip==TRUE)], turnover.sigma.indep, turnover.weight.anc, turnover.weight.logistic, turnover.trend.exponent, eps.param.anc=sim.object$eps.present[which(sim.object$tip==TRUE)], eps.sigma.indep, eps.weight.anc, eps.weight.logistic, eps.trend.exponent, split.times=split.times, turn.k=turn.k, eps.k=eps.k, turnover.splits=turnover.splits, eps.splits=eps.splits)
 		death<-SetDeath(stop.time=depth.time, turnover.param.anc=sim.object$turnover.present[which(sim.object$tip==TRUE)], turnover.sigma.indep, turnover.weight.anc, turnover.weight.logistic, turnover.trend.exponent, eps.param.anc=sim.object$eps.present[which(sim.object$tip==TRUE)], eps.sigma.indep, eps.weight.anc, eps.weight.logistic, eps.trend.exponent, split.times=split.times, turn.k, eps.k, turnover.splits=turnover.splits, eps.splits=eps.splits)
 		interval.length<-rexp(1, sum(birth,death))
@@ -72,12 +78,12 @@ GetSim<-function(max.time=1, max.ntax=Inf, max.wall.time=Inf, check.file=NULL, s
 		the.chosen.one<-which(rmultinom(1,1,prob=c(birth,death))==1)
 		if(is.finite(max.time)){
 			if (depth.time<0) {
+				#plot(rate.track[,1],rate.track[,2])
 				root.node<-sim.object$from[which(!sim.object$from%in%sim.object$to)][1]
 				root.depth<-root.tracker[which(root.tracker[,1]==root.node),2]
 				phy <- sim2phylo(sim.object)
 				sim.object <- GrowSimObject(sim.object, root.depth-max(branching.times(phy)))
 				phy <- sim2phylo(sim.object)
-				print(sim.object)
 				###########################REMAINING ISSUE###########################
 				phy <- reorder(phy,"pruningwise")
 				phy <- reorder(phy,"cladewise")
@@ -93,11 +99,9 @@ GetSim<-function(max.time=1, max.ntax=Inf, max.wall.time=Inf, check.file=NULL, s
 				phy <- reorder(phy,"pruningwise")
 				phy <- reorder(phy,"cladewise")
 				#####################################################################
-#				obj$phy<-phy
-#				obj$rates<-rate.track
-				obj$sim.object<-sim.object
-				return(obj)
-#				return(phy)
+#				rates<-rate.track
+				sim.object<-sim.object
+				return(phy)
 			}
 		}
 		
@@ -112,8 +116,8 @@ GetSim<-function(max.time=1, max.ntax=Inf, max.wall.time=Inf, check.file=NULL, s
 			lucky.tip <- (sim.object$to[which(sim.object$tip)])[the.chosen.one]
 			sim.object <- BirthSimObject(sim.object=sim.object, interval.length=interval.length, stop.time=depth.time, turnover.sigma.indep=turnover.sigma.indep, turnover.weight.anc=turnover.weight.anc, turnover.weight.logistic=turnover.weight.logistic, turnover.trend.exponent=turnover.trend.exponent, split.times=split.times, turn.k=turn.k, eps.k=eps.k, turnover.splits=turnover.splits, turnover.sigma.anc=turnover.sigma.anc, eps.sigma.indep=eps.sigma.indep, eps.weight.anc=eps.weight.anc, eps.weight.logistic=eps.weight.logistic, eps.trend.exponent=eps.trend.exponent, eps.splits=eps.splits, eps.sigma.anc=eps.sigma.anc, max.tip.count=max.tip.count,lucky.tip=lucky.tip)
 			max.tip.count<-max(sim.object$to)
-			rate.track<-c(rate.track,turnover.splits[1])
-			time.track<-c(time.track,depth.time)
+			tmp<-cbind(depth.time,sim.object$turnover.present[which(sim.object$tip==TRUE)])
+			rate.track<-rbind(rate.track,tmp)
 			#Keeps track of the splits in the tree so we can add the last bit at the end if the starting root !== ending root:
 			root.tracker<-rbind(root.tracker,c(sim.object$from[which(!sim.object$from%in%root.tracker[,1])][1],depth.time))
 			phy <- sim2phylo(sim.object)
