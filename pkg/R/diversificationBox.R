@@ -1,8 +1,8 @@
 library(Rmpfr)
 prec<-400
-t<-160 #units of millions of years
-min.N<-250000
-max.N<-500000
+t<-530 #units of millions of years
+min.N<-1000000
+max.N<-20000000
 
 r.conversion<-function(b, eps) {
   return(b*(1-eps)) 
@@ -39,7 +39,7 @@ negloglikelihood<-function(x, b, N, t, bad.value=100000000) {
 
 
 n.species.vector<-seq(from=min.N, to = max.N, length.out=10)
-b.vector<-seq(from=log(min(n.species.vector))/t, to=1, length.out=100)
+b.vector<-seq(from=log(min(n.species.vector))/t, to=1, length.out=50)
 results<-matrix(nrow=length(n.species.vector), ncol=length(b.vector))
 for (n.species.index in sequence(length(n.species.vector))) {
   N<-n.species.vector[n.species.index]
@@ -53,6 +53,8 @@ for (n.species.index in sequence(length(n.species.vector))) {
 rownames(results)<-paste(round(n.species.vector)," species")
 colnames(results)<-paste(round(b.vector, 4)," birth")
 print(results)
-pdf(file="/Users/bomeara/Dropbox/CollabBeaulieu/angiosperms.div.pdf")
-contour(x=n.species.vector, y=b.vector, z=results,xlab="n.species",ylab="speciation rate", bty="n")
+pdf(file="~/Dropbox/CollabBeaulieu/metazoa.pdf")
+contour(x=n.species.vector, y=b.vector, z=results,xlab="n.species",ylab="speciation rate absolute", bty="n", nlevels=25)
+axis(side=4, at=seq(from=min(b.vector), to=max(b.vector), length.out=5), labels=round(seq(from=min(b.vector), to=max(b.vector), length.out=5)/(log(max(n.species.vector))/t),2))
+
 dev.off()
