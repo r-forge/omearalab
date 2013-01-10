@@ -131,7 +131,7 @@ GeneralDiversity<-function(phy, f=1, model=c("yule", "bd"), turnover.logistic=FA
 	init.ip <- init.set.pars[init.tmp==TRUE]
 	init.set.lower <- c(0,0,0,0,-1e6,-1e6,0,0,0,0,0,0,-10,-10)
 	lower.init <- init.set.lower[init.tmp==TRUE]
-	init.set.upper <- c(100,100,100,100,1e6,1e6,1,10,1,10,10,10,10,10)
+	init.set.upper <- c(10,10,10,10,1e6,1e6,1,10,1,10,10,10,10,10)
 	upper.init <- init.set.upper[init.tmp==TRUE]
 	init = nloptr(x0=init.ip, eval_f=DevOptimize, lb=lower.init, ub=upper.init, opts=opts, pars=init.pars, phy=phy, tot_time=tot_time, f=f, turnover.inherit=FALSE, turnover.weight.logistic=FALSE, eps.inherit=FALSE, eps.weight.logistic=FALSE, split.times=split.times, quantile.set=init.quantile.set, n.cores=n.cores)
 
