@@ -1,24 +1,18 @@
+##DEEP42 -- Diversification Estimates Extracted from Phylogenies using 42 models##
+
 #Overall goal is to have turnover rate or extinction fraction vary as a result of various
 #   parameters.
 #Note that with logistic growth, it makes the most sense to pass in split.times as actual
 #   split.times (including those with no descendants, but in practice, split.times reconstructed
 #   on the phylogeny will probably be used instead. Rabosky and Lovette 2008, in a response
 #   argue this is fairly okay (the two measures are correlated).
-#Inputs:
-#phy =the phylogeny
-#f = sampling fraction
-#model = whether a yule type model is to be used or birth-death
-#logistic = whether or not the logistic growth model is to be specified
-#inherit = whether rates are to be inherited
-#brown = whether rates vary according to a BM process
-#exp = whether rates vary exponentially
 
 library(picante)
 library(ape)
 library(nloptr)
 library(multicore)
 
-GeneralDiversity<-function(phy, f=1, model=c("yule", "bd"), turnover.logistic=FALSE, eps.logistic=FALSE, turnover.exp=FALSE, eps.exp=FALSE, turnover.inherit=FALSE, eps.inherit=FALSE, turnover.slice=FALSE, eps.slice=FALSE, n.cores=NULL, nsims=NULL) {
+Deep<-function(phy, f=1, model=c("yule", "bd"), turnover.logistic=FALSE, eps.logistic=FALSE, turnover.exp=FALSE, eps.exp=FALSE, turnover.inherit=FALSE, eps.inherit=FALSE, turnover.slice=FALSE, eps.slice=FALSE, n.cores=NULL, nsims=NULL) {
 	
 	#Helps keep the numbers consistent so we can more confidently assess which interval we are in:	
 	options(digits=10)

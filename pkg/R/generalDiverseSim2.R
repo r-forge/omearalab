@@ -15,7 +15,7 @@ library(ape)
 #at end, renumber so ape is happy, convert to phylo object
 #need to pass turnover 
 
-GetSim<-function(max.time=1, max.ntax=Inf, max.wall.time=Inf, check.file=NULL, start.file=NULL, return.all.extinct=TRUE, verbose=TRUE, check.interval=1800, turnover.param.anc=0.0, turnover.param.indep=5.71, turnover.sigma.indep=0.0, turnover.weight.anc=.99642, turnover.weight.logistic=0, turnover.trend.exponent=0, turn.k=Inf, turnover.sigma.anc=0.0, eps.param.anc=0.0, eps.param.indep=NULL, eps.sigma.indep=0, eps.weight.anc=0, eps.weight.logistic=0, eps.trend.exponent=0, eps.k=Inf, eps.sigma.anc=0, warning.diversity=Inf) {
+GetSim<-function(max.time=1, max.ntax=Inf, max.wall.time=Inf, check.file=NULL, start.file=NULL, return.all.extinct=TRUE, verbose=TRUE, check.interval=1800, turnover.param.anc=0.064, turnover.param.indep=0.02, turnover.sigma.indep=0.0, turnover.weight.anc=0.99, turnover.weight.logistic=0, turnover.trend.exponent=0, turn.k=Inf, turnover.sigma.anc=0.7, eps.param.anc=0.0, eps.param.indep=NULL, eps.sigma.indep=0, eps.weight.anc=0, eps.weight.logistic=0, eps.trend.exponent=0, eps.k=Inf, eps.sigma.anc=0, warning.diversity=Inf) {
 	
 	depth.time<-max.time
 	start.time<-Sys.time()
@@ -33,10 +33,9 @@ GetSim<-function(max.time=1, max.ntax=Inf, max.wall.time=Inf, check.file=NULL, s
 	if(is.null(eps.param.indep)){
 		eps.param.indep=eps.param.anc
 	}
-
+	
 	turnover.splits <- exp(rnorm(1, log(turnover.param.indep), turnover.sigma.indep))
 	eps.splits <- exp(rnorm(1, log(eps.param.indep), eps.sigma.indep))
-	
 	rate.track<-matrix(c(depth.time,turnover.param.anc),1,2)
 	
 	birth<-SetBirth(stop.time=depth.time, turnover.param.anc, turnover.sigma.indep, turnover.weight.anc, turnover.weight.logistic, turnover.trend.exponent, eps.param.anc, eps.sigma.indep, eps.weight.anc, eps.weight.logistic, eps.trend.exponent, split.times=c(0), turn.k=turn.k, eps.k=eps.k, turnover.splits=turnover.splits, eps.splits=eps.splits)
@@ -78,7 +77,7 @@ GetSim<-function(max.time=1, max.ntax=Inf, max.wall.time=Inf, check.file=NULL, s
 		the.chosen.one<-which(rmultinom(1,1,prob=c(birth,death))==1)
 		if(is.finite(max.time)){
 			if (depth.time<0) {
-				#plot(rate.track[,1],rate.track[,2])
+				plot(rate.track[,1],rate.track[,2])
 				root.node<-sim.object$from[which(!sim.object$from%in%sim.object$to)][1]
 				root.depth<-root.tracker[which(root.tracker[,1]==root.node),2]
 				phy <- sim2phylo(sim.object)
