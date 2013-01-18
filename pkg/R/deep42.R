@@ -4,7 +4,7 @@
 #   parameters.
 #Note that with logistic growth, it makes the most sense to pass in split.times as actual
 #   split.times (including those with no descendants, but in practice, split.times reconstructed
-#   on the phylogeny will probably be used instead. Rabosky and Lovette 2008, in a response
+#   on the phylogeny will probably be used instead. Rabosky and Lovette 2008, in a response,
 #   argue this is fairly okay (the two measures are correlated).
 
 library(picante)
@@ -12,7 +12,7 @@ library(ape)
 library(nloptr)
 library(multicore)
 
-Deep<-function(phy, f=1, model=c("yule", "bd"), turnover.logistic=FALSE, eps.logistic=FALSE, turnover.exp=FALSE, eps.exp=FALSE, turnover.inherit=FALSE, eps.inherit=FALSE, turnover.slice=FALSE, eps.slice=FALSE, n.cores=NULL, nsims=NULL) {
+Deep<-function(phy, f=1, model=c("yule", "bd"), turnover.logistic=FALSE, eps.logistic=FALSE, turnover.exp=FALSE, eps.exp=FALSE, turnover.inherit=FALSE, eps.inherit=FALSE, turnover.slice=FALSE, eps.slice=FALSE, n.cores=NULL, nsims=1000) {
 	
 	#Helps keep the numbers consistent so we can more confidently assess which interval we are in:	
 	options(digits=10)
@@ -129,9 +129,7 @@ Deep<-function(phy, f=1, model=c("yule", "bd"), turnover.logistic=FALSE, eps.log
 	upper.init <- init.set.upper[init.tmp==TRUE]
 	init = nloptr(x0=init.ip, eval_f=DevOptimize, lb=lower.init, ub=upper.init, opts=opts, pars=init.pars, phy=phy, tot_time=tot_time, f=f, turnover.inherit=FALSE, turnover.weight.logistic=FALSE, eps.inherit=FALSE, eps.weight.logistic=FALSE, split.times=split.times, quantile.set=init.quantile.set, n.cores=n.cores)
 
-	cat("Finished. Begin thorough search...", "\n")
-	
-	#Now begin more thorough search using estimates from constant bd model:
+	#Set initials using estimates from constant bd model:
 	def.set.pars <- c(init$solution[1],init$solution[1],init$solution[2],init$solution[2],Ntip(phy)*2,Ntip(phy)*2,0.5,0.5,0.5,0.5,0.5,0.5,0,0)
 	ip <- def.set.pars[tmp==TRUE]
 	def.set.lower <- c(0,0,0,0,-1e6,-1e6,0,0,0,0,0,0,-10,-10)
@@ -139,26 +137,35 @@ Deep<-function(phy, f=1, model=c("yule", "bd"), turnover.logistic=FALSE, eps.log
 	def.set.upper <- c(100,100,100,100,1e6,1e6,1,10,1,10,10,10,10,10)
 	upper <- def.set.upper[tmp==TRUE]
 
-	#If inheritance model is chosen, create a list of quantiles for each edge in the tree:
+	#If inheritance model is chosen, create a list of quantiles for each edge in the tree and perform 3 independent analyses:
 	if(turnover.inherit==TRUE | eps.inherit==TRUE){ 
-		if(is.null(nsims)){
-			warning("Number of sim reps not specified. Setting reps to 1000")		   
+		cat("Finished. Begin thorough search...", "\n")
+		res<-c()
+		for(i in 1:3){
+			cat("Restart", i, "of 3", "\n")
+			GetQuantileSet<-function(nstarts){
+				GetQuantiles(phylo=phy)
+			}
+			quantile.set<-lapply(1:nsims, GetQuantileSet)
+			out = nloptr(x0=ip, eval_f=DevOptimize, lb=lower, ub=upper, opts=opts, pars=pars, phy=phy, tot_time=tot_time, f=f, turnover.inherit=turnover.inherit, turnover.weight.logistic=turnover.logistic, eps.inherit=eps.inherit, eps.weight.logistic=eps.logistic, split.times=split.times, quantile.set=quantile.set, n.cores=n.cores)
+			res<-rbind(res,c(-out$objective,out$solution))
 		}
-		GetQuantileSet<-function(nstarts){
-			GetQuantiles(phylo=phy)
-		}
-		quantile.set<-lapply(1:nsims, GetQuantileSet)
+		print(res)
+		loglik <- res[which.max(res[,1]),1]
+		solution <- numeric(length(pars))
+		solution[] <- c(res[which.max(res[,1]),2:dim(res)[2]],0)[pars]
 	}
+	#If no inheritance, perform thorough search:
 	else{
+		cat("Finished. Begin thorough search...", "\n")
 		quantile.set<-GetQuantiles(phylo=phy)
+		out = nloptr(x0=ip, eval_f=DevOptimize, lb=lower, ub=upper, opts=opts, pars=pars, phy=phy, tot_time=tot_time, f=f, turnover.inherit=turnover.inherit, turnover.weight.logistic=turnover.logistic, eps.inherit=eps.inherit, eps.weight.logistic=eps.logistic, split.times=split.times, quantile.set=quantile.set, n.cores=n.cores)
+		loglik <- -out$objective
+		#Recreate the model vector for use in the print function:
+		solution <- numeric(length(pars))
+		solution[] <- c(out$solution, 0)[pars]
 	}
 	
-	out = nloptr(x0=ip, eval_f=DevOptimize, lb=lower, ub=upper, opts=opts, pars=pars, phy=phy, tot_time=tot_time, f=f, turnover.inherit=turnover.inherit, turnover.weight.logistic=turnover.logistic, eps.inherit=eps.inherit, eps.weight.logistic=eps.logistic, split.times=split.times, quantile.set=quantile.set, n.cores=n.cores)
-	loglik <- -out$objective
-	#Recreate the model vector for use in the print function:
-	solution <- numeric(length(pars))
-	solution[] <- c(out$solution, 0)[pars]
-
 	obj = list(loglik = loglik, AIC = -2*loglik+2*np,AICc = -2*loglik+(2*np*(Ntip(phy)/(Ntip(phy)-np-1))), solution=solution, index.par = pars, opts=opts, f=f, phy=phy, iterations=out$iterations) 
 	
 	class(obj)<-"diversity"		
@@ -384,7 +391,7 @@ print.diversity<-function(x,...){
 	
 	param.est<- matrix(0,7,2)
 	param.est[,1] <- x$solution[c(1,2,7,8,11,13,5)]
-	param.est[,2] <- x$solution[c(3,4,8,9,12,14,6)]
+	param.est[,2] <- x$solution[c(3,4,9,10,12,14,6)]
 	param.est <- data.frame(param.est, row.names=c("rate","rate.indep","weight.anc","weight.anc.sigma","time.slice.sigma","exponent","K"))
 	names(param.est) <- c("turnover", "extinct.frac")
 	cat("Rates\n")
