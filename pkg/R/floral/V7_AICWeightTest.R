@@ -72,7 +72,7 @@ doRunWithinForeach<-function(rep, generating.models, testing.model.subset) {
     names(pars)<-NULL
     phy<-NULL
     while(is.null(phy)) {
-      try(phy<-tree.musse(pars=pars, max.taxa=464, x0=1))
+      try(phy<-tree.musse(pars=pars, max.taxa=466, x0=1))
     }
     #for (testing.model.index in sequence(1)) {
       
@@ -95,5 +95,5 @@ doRunWithinForeach<-function(rep, generating.models, testing.model.subset) {
   }
 }
 
-foreach  (rep=sequence(nreps)) %dopar% doRunWithinForeach(rep, generating.models, testing.model.subset)
+foreach  (rep=sequence(nreps)) %dopar% try(doRunWithinForeach(rep, generating.models, testing.model.subset))
 
