@@ -1,5 +1,5 @@
 #this will export the correct formats for cytoscape
-source("/Users/bomeara/Documents/MyDocuments/Active/FloralAssembly/RunsJan2012/UnifiedApproachScripts/V6_UtilityFns.R")
+source("/Users/bomeara/Documents/MyDocuments/Active/OMearaLabR/pkg/R/floral/V6_UtilityFns.R")
 load("/Users/bomeara/Documents/MyDocuments/Active/FloralAssembly/RunsJan2012/Summaries/all.results.cleaned.Rsave") 
 
 plot.reduced=TRUE
