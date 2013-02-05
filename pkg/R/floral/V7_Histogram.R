@@ -84,7 +84,8 @@ for (i in 1:64) {
   if(col.value==0) {
     col="blue" 
   }
-  print(c(col.value, col))
+  col="black"
+  #print(c(col.value, col))
  lines(x=rep(i,2), y=c(0, comboProportions[state]),col=col) 
  states<-comboAsBinaryVector(state, S)
  for (j in sequence(length(states))) {
@@ -94,6 +95,9 @@ for (i in 1:64) {
  }
 }
 
-#axis(side=2, pos=0, at=seq(from=0,to=max(comboProportions), length.out=3), labels=c("","",round(max(comboProportions),2)))
+par(las=1)
+axis(side=2, pos=0, at=seq(from=0,to=max(comboProportions), length.out=4), labels=c("",0.05, 0.10 ,0.15),cex=0.5, col="darkgray")
 
-save(list=ls(), file="ComponentsForPlottingHistogram.RData", compress=TRUE)
+#save(list=ls(), file="ComponentsForPlottingHistogram.RData", compress=TRUE)
+
+
