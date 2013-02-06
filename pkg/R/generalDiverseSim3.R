@@ -1,7 +1,6 @@
 ##General diversification simulation##
 
 library(ape)
-#source("SetParameter.R")
 
 #our object while we are building up a tree is a data.frame
 #first two columns are an edge matrix
@@ -33,7 +32,6 @@ GetSim<-function(max.time=1, max.ntax=Inf, max.wall.time=Inf, check.file=NULL, s
 	
 	birth<-SetBirth(stop.time=depth.time, turnover.param.anc, turnover.sigma.indep, turnover.weight.anc, turnover.weight.logistic, turnover.trend.exponent, eps.param.anc, eps.sigma.indep, eps.weight.anc, eps.weight.logistic, eps.trend.exponent, split.times=c(0), turn.k=turn.k, eps.k=eps.k, turnover.splits=turnover.splits, eps.splits=eps.splits)
 	death<-SetDeath(stop.time=depth.time, turnover.param.anc, turnover.sigma.indep, turnover.weight.anc, turnover.weight.logistic, turnover.trend.exponent, eps.param.anc, eps.sigma.indep, eps.weight.anc, eps.weight.logistic, eps.trend.exponent, split.times=c(0), turn.k, eps.k, turnover.splits=turnover.splits, eps.splits=eps.splits)
-	
 	#note that this is rough, as it does not take into account changing rates nor ascertainment bias
 	approx.expected.diversity=2*exp((birth-death)*max.time) 	
 	
@@ -65,10 +63,8 @@ GetSim<-function(max.time=1, max.ntax=Inf, max.wall.time=Inf, check.file=NULL, s
 		
 		##Should be the sum of all rates (b and d) -- the ntax is now unnecessary:
 #		interval.length<-rexp(1, alive*(birth+death))
-		interval.length<-rexp(1, sum(sim.object$turnover.anc[which(sim.object$tip==TRUE)],sim.object$eps.anc[which(sim.object$tip==TRUE)]))
-		
+		interval.length<-rexp(1, sum(sim.object$turnover.anc[which(sim.object$tip==TRUE)],sim.object$eps.anc[which(sim.object$tip==TRUE)]))		
 		depth.time<-depth.time-interval.length
-		
 		if(is.finite(max.time)){
 			if (depth.time<0) {
 				root.node<-sim.object$from[which(!sim.object$from%in%sim.object$to)][1]
@@ -98,6 +94,7 @@ GetSim<-function(max.time=1, max.ntax=Inf, max.wall.time=Inf, check.file=NULL, s
 #				return(phy)
 			}
 		}
+
 		split.times<-sort(branching.times(phy)+depth.time, decreasing=TRUE)
 		turnover.splits <- rep(exp(rnorm(1, log(turnover.param.indep), turnover.sigma.indep)), length(split.times)) #gets refilled each interval, even though the last one is the only one used
 		eps.splits <- rep(exp(rnorm(1, log(eps.param.indep), eps.sigma.indep)), length(split.times))
@@ -265,7 +262,7 @@ DeathSimObject<-function(sim.object, interval.length, stop.time, turnover.sigma.
 }
 
 GetNewAncParam<-function(stop.time, parent.branch.length, param.anc, sigma.indep, weight.anc, weight.logistic, trend.exponent, split.times, k, param.splits, param.sigma.anc){
-	#Here we attempt to mimic what Rabosky does. However, note that variance -- if speciation rate is evolving in a Browian way -- increases as sigma-squared*T, so sd should increase as sigma*sqrt(T). Based on the paper, Rabosky uses sigma*T. This is a problem: one expects that the variance at a given node based on the rate at the ancestral node should not vary based on how many intervening speciation events there are. Under the paramaterization of Rabosky, variance does change: the longer the branch, the more variance. So we do sd*sqrt(T).
+	#Here we attempt to mimic what Rabosky does. However, note that variance -- if speciation rate is evolving in a Browian way -- increases as sigma-squared*T, so sd should increase as sigma*sqrt(T). Based on the paper, Rabosky uses sigma*T, the longer the branch, the more variance. So we do sd*sqrt(T).
 	#Another source of ambiguity comes from the odd rlnorm() function in R: it uses logmean and logsd. Here we assume that Rabosky was listing the values according to a normal (mu, sigma) and, therefore, we transformed these values to fit the desired values under a lognormal (m, s).
 	s=sqrt(log((((param.sigma.anc*sqrt(parent.branch.length))/param.anc)^2)+1))
 	m=log((param.anc^2)/sqrt(((param.sigma.anc*sqrt(parent.branch.length))^2)+(param.anc^2)))

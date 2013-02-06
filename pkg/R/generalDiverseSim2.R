@@ -1,7 +1,6 @@
 ##General diversification simulation##
 
 library(ape)
-#source("SetParameter.R")
 
 #our object while we are building up a tree is a data.frame
 #first two columns are an edge matrix
@@ -15,21 +14,20 @@ library(ape)
 #at end, renumber so ape is happy, convert to phylo object
 #need to pass turnover 
 
-GetSim<-function(max.time=1, max.ntax=Inf, max.wall.time=Inf, check.file=NULL, start.file=NULL, return.all.extinct=TRUE, verbose=TRUE, check.interval=1800, turnover.param.anc=0.064, turnover.param.indep=0.02, turnover.sigma.indep=0.0, turnover.weight.anc=0.99, turnover.weight.logistic=0, turnover.trend.exponent=0, turn.k=Inf, turnover.sigma.anc=0.7, eps.param.anc=0.0, eps.param.indep=NULL, eps.sigma.indep=0, eps.weight.anc=0, eps.weight.logistic=0, eps.trend.exponent=0, eps.k=Inf, eps.sigma.anc=0, warning.diversity=Inf) {
+GetSim<-function(max.time=Inf, max.ntax=250, max.wall.time=Inf, check.file=NULL, start.file=NULL, return.all.extinct=TRUE, verbose=TRUE, check.interval=1800, turnover.param.anc=0.50, turnover.param.indep=NULL, turnover.sigma.indep=0, turnover.weight.anc=0, turnover.weight.logistic=0, turnover.trend.exponent=0, turn.k=Inf, turnover.sigma.anc=0, eps.param.anc=1.0, eps.param.indep=NULL, eps.sigma.indep=0, eps.weight.anc=0, eps.weight.logistic=0, eps.trend.exponent=0, eps.k=Inf, eps.sigma.anc=0, warning.diversity=Inf) {
 	
 	depth.time<-max.time
 	start.time<-Sys.time()
 	last.save.time<-Sys.time()
 	options(digits=10)
 	root.tracker=matrix(c(1,depth.time),nrow=1,ncol=2)
-
 	turnover.param.anc <- turnover.param.anc
 	eps.param.anc <- eps.param.anc
 	
 	if(is.null(turnover.param.indep)){
 		turnover.param.indep=turnover.param.anc
 	}
-
+	
 	if(is.null(eps.param.indep)){
 		eps.param.indep=eps.param.anc
 	}
@@ -68,16 +66,17 @@ GetSim<-function(max.time=1, max.ntax=Inf, max.wall.time=Inf, check.file=NULL, s
 	while(depth.time>0 & Ntip(phy)<=max.ntax & (Sys.time()-start.time)<max.wall.time) {
 		
 		alive<-Ntip(phy)
-
-		birth<-SetBirth(stop.time=depth.time, turnover.param.anc=sim.object$turnover.present[which(sim.object$tip==TRUE)], turnover.sigma.indep, turnover.weight.anc, turnover.weight.logistic, turnover.trend.exponent, eps.param.anc=sim.object$eps.present[which(sim.object$tip==TRUE)], eps.sigma.indep, eps.weight.anc, eps.weight.logistic, eps.trend.exponent, split.times=split.times, turn.k=turn.k, eps.k=eps.k, turnover.splits=turnover.splits, eps.splits=eps.splits)
-		death<-SetDeath(stop.time=depth.time, turnover.param.anc=sim.object$turnover.present[which(sim.object$tip==TRUE)], turnover.sigma.indep, turnover.weight.anc, turnover.weight.logistic, turnover.trend.exponent, eps.param.anc=sim.object$eps.present[which(sim.object$tip==TRUE)], eps.sigma.indep, eps.weight.anc, eps.weight.logistic, eps.trend.exponent, split.times=split.times, turn.k, eps.k, turnover.splits=turnover.splits, eps.splits=eps.splits)
-		interval.length<-rexp(1, sum(birth,death))
+		
+#		interval.length<-rexp(1, sum(birth,death))
+		###########################REMAINING ISSUE###########################
+#		Check this:
+		interval.length<-rexp(1, sum(sim.object$turnover.present[which(sim.object$tip==TRUE)],sim.object$eps.present[which(sim.object$tip==TRUE)]))
+		#####################################################################
 		depth.time<-depth.time-interval.length
 		#Choose a tip using rmultinom with the first half of the prob vector corresponding to birth, and the second half corresponding to death.
-		the.chosen.one<-which(rmultinom(1,1,prob=c(birth,death))==1)
 		if(is.finite(max.time)){
 			if (depth.time<0) {
-				plot(rate.track[,1],rate.track[,2])
+#				plot(rate.track[,1],rate.track[,2])
 				root.node<-sim.object$from[which(!sim.object$from%in%sim.object$to)][1]
 				root.depth<-root.tracker[which(root.tracker[,1]==root.node),2]
 				phy <- sim2phylo(sim.object)
@@ -108,10 +107,11 @@ GetSim<-function(max.time=1, max.ntax=Inf, max.wall.time=Inf, check.file=NULL, s
 		#gets refilled each interval, even though the last one is the only one used
 		turnover.splits <- rep(exp(rnorm(1, log(turnover.param.indep), turnover.sigma.indep)), length(split.times)) 
 		eps.splits <- rep(exp(rnorm(1, log(eps.param.indep), eps.sigma.indep)), length(split.times))
-				
+		
+		the.chosen.one<-which(rmultinom(1,1,prob=c(sim.object$turnover.anc[which(sim.object$tip==TRUE)],sim.object$eps.anc[which(sim.object$tip==TRUE)]))==1)	
 		#If the lucky.tip is less than or equal to the number of tips, then it is a birth event:
 		if(the.chosen.one <= alive){
-		#if(runif(1,0,1)<birth.proportion){
+			#if(runif(1,0,1)<birth.proportion){
 			lucky.tip <- (sim.object$to[which(sim.object$tip)])[the.chosen.one]
 			sim.object <- BirthSimObject(sim.object=sim.object, interval.length=interval.length, stop.time=depth.time, turnover.sigma.indep=turnover.sigma.indep, turnover.weight.anc=turnover.weight.anc, turnover.weight.logistic=turnover.weight.logistic, turnover.trend.exponent=turnover.trend.exponent, split.times=split.times, turn.k=turn.k, eps.k=eps.k, turnover.splits=turnover.splits, turnover.sigma.anc=turnover.sigma.anc, eps.sigma.indep=eps.sigma.indep, eps.weight.anc=eps.weight.anc, eps.weight.logistic=eps.weight.logistic, eps.trend.exponent=eps.trend.exponent, eps.splits=eps.splits, eps.sigma.anc=eps.sigma.anc, max.tip.count=max.tip.count,lucky.tip=lucky.tip)
 			max.tip.count<-max(sim.object$to)
@@ -133,7 +133,7 @@ GetSim<-function(max.time=1, max.ntax=Inf, max.wall.time=Inf, check.file=NULL, s
 			if(!is.null(sim.object)){
 				phy <- sim2phylo(sim.object) 
 			}
-			if (is.null(sim.object)) { 
+			if(is.null(sim.object)) { 
 				if(return.all.extinct) {
 					return(NULL)
 				}
@@ -220,7 +220,6 @@ BirthSimObject<-function(sim.object, interval.length, stop.time, turnover.sigma.
 }
 
 DeathSimObject<-function(sim.object, interval.length, stop.time, turnover.sigma.indep, turnover.weight.anc, turnover.weight.logistic, turnover.trend.exponent, split.times, turn.k, eps.k, turnover.splits, turnover.sigma.anc, eps.sigma.indep, eps.weight.anc, eps.weight.logistic, eps.trend.exponent, eps.splits, eps.sigma.anc, unlucky.tip) {
-	
 	###########################REMAINING ISSUE###########################
 	#Error is thrown when N<=2 during a death event -- not ideal. Although, 
 	#we would have to live with this if we were still relying on ape...
@@ -229,7 +228,7 @@ DeathSimObject<-function(sim.object, interval.length, stop.time, turnover.sigma.
 	}
 	#####################################################################
 	else{
-		unlucky.tip<-(sim.object$to[which(sim.object$tip)])[floor(runif(1,1,1+sum(sim.object$tip)))]
+		#unlucky.tip<-(sim.object$to[which(sim.object$tip)])[floor(runif(1,1,1+sum(sim.object$tip)))]
 		sim.object<-GrowSimObject(sim.object, interval.length)
 		#Defines the new tip:
 		merged.edge<-sim.object$from[which(sim.object$to==unlucky.tip)]
@@ -300,7 +299,4 @@ SetDeathGivenParameters <- function(turnover, extinction.fraction) {
 	death.expected<-(extinction.fraction * turnover) / (1 + extinction.fraction)
 	return(death.expected)
 }
-
-
-
 

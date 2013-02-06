@@ -12,7 +12,7 @@ library(ape)
 library(nloptr)
 library(multicore)
 
-Deep<-function(phy, f=1, model=c("yule", "bd"), turnover.logistic=FALSE, eps.logistic=FALSE, turnover.exp=FALSE, eps.exp=FALSE, turnover.inherit=FALSE, eps.inherit=FALSE, turnover.slice=FALSE, eps.slice=FALSE, n.cores=NULL, nsims=1000) {
+Deep<-function(phy, f=1, model=c("yule", "bd"), turnover.logistic=FALSE, eps.logistic=FALSE, turnover.exp=FALSE, eps.exp=FALSE, turnover.inherit=FALSE, eps.inherit=FALSE, turnover.slice=FALSE, eps.slice=FALSE, turnover.fix=NULL, eps.fix=NULL, n.cores=NULL, nsims=1000) {
 	
 	#Helps keep the numbers consistent so we can more confidently assess which interval we are in:	
 	options(digits=10)
@@ -36,6 +36,7 @@ Deep<-function(phy, f=1, model=c("yule", "bd"), turnover.logistic=FALSE, eps.log
 	#Sets two important inputs:
 	split.times=sort(branching.times(phy), decreasing=TRUE)
 	tot_time=max(branching.times(phy))
+	
 	#Makes a vector of parameters that are going to be estimated:
 	pars=c(turnover.param, turnover.inherit, eps.param, eps.inherit, turnover.logistic, eps.logistic, turnover.inherit, turnover.inherit, eps.inherit, eps.inherit, turnover.slice, eps.slice, turnover.exp, eps.exp)
 	#An index for use later:
@@ -46,29 +47,30 @@ Deep<-function(phy, f=1, model=c("yule", "bd"), turnover.logistic=FALSE, eps.log
 	#All parameters not estimated are set to 1+max number of estimated parameters:
 	pars[pars==0]<-max(pars)+1
 	#Function used for optimizing parameters:
-	DevOptimize <- function(p, pars, phy, tot_time, f, turnover.inherit, turnover.weight.logistic, eps.inherit, eps.weight.logistic, split.times, quantile.set, n.cores) {
+	DevOptimize <- function(p, pars, phy, tot_time, f, turnover.inherit, turnover.weight.logistic, turnover.exp, eps.inherit, eps.weight.logistic, eps.exp, split.times, quantile.set, n.cores) {
 		#Generates the final vector with the appropriate parameter estimates in the right place:
 		model.vec <- numeric(length(pars))
 		model.vec[] <- c(p, 0)[pars]
-		#Now set entries in model.vec to the defaults if we are not estimating them:
+		#Now set entries in model.vec to the defaults if we are not estimating them, or, if a vector of values are supplied, make these fixed values
+		#in the model. Will be useful for doing likelihood profiles, contours, etc.:
 		if(turnover.inherit == FALSE) {
 			model.vec[2]=model.vec[1]
 		}
 		if(eps.inherit == FALSE) {
 			model.vec[4]=model.vec[3]
-		}				
+		}
 		if(turnover.weight.logistic == TRUE) {
 			turnover.weight.logistic=1
 		}
 		if(turnover.weight.logistic == FALSE) {
 			turnover.weight.logistic=0
-		}		
+		}				
 		if(eps.weight.logistic == TRUE) {
 			eps.weight.logistic=1
 		}
 		if(eps.weight.logistic == FALSE) {
 			eps.weight.logistic=0
-		}
+		}		
 		if(model.vec[5] == 0) {
 			model.vec[5] = 1
 		}
@@ -117,7 +119,7 @@ Deep<-function(phy, f=1, model=c("yule", "bd"), turnover.logistic=FALSE, eps.log
 	
 	#Begin with a rough search to find estimates from constant bd to be used as starting points in thorough search:
 	init.quantile.set<-GetQuantiles(phylo=phy)
-	init.pars=c(turnover.param, FALSE, eps.param, FALSE, TRUE, FALSE, FALSE, FALSE, FALSE, FALSE, FALSE, FALSE, FALSE, FALSE)
+	init.pars=c(turnover.param, FALSE, eps.param, FALSE, FALSE, FALSE, FALSE, FALSE, FALSE, FALSE, FALSE, FALSE, FALSE, FALSE)
 	init.tmp<-init.pars
 	init.pars[init.pars==T] <- 1:length(init.pars[init.pars==T])
 	init.pars[init.pars==0]<-max(init.pars)+1
@@ -125,32 +127,32 @@ Deep<-function(phy, f=1, model=c("yule", "bd"), turnover.logistic=FALSE, eps.log
 	init.ip <- init.set.pars[init.tmp==TRUE]
 	init.set.lower <- c(0,0,0,0,-1e6,-1e6,0,0,0,0,0,0,-10,-10)
 	lower.init <- init.set.lower[init.tmp==TRUE]
-	init.set.upper <- c(100,100,100,100,1e6,1e6,1,10,1,10,10,10,10,10)
+	init.set.upper <- c(10,10,10,10,1e6,1e6,1,10,1,10,10,10,10,10)
 	upper.init <- init.set.upper[init.tmp==TRUE]
-	init = nloptr(x0=init.ip, eval_f=DevOptimize, lb=lower.init, ub=upper.init, opts=opts, pars=init.pars, phy=phy, tot_time=tot_time, f=f, turnover.inherit=FALSE, turnover.weight.logistic=FALSE, eps.inherit=FALSE, eps.weight.logistic=FALSE, split.times=split.times, quantile.set=init.quantile.set, n.cores=n.cores)
+	init = nloptr(x0=init.ip, eval_f=DevOptimize, lb=lower.init, ub=upper.init, opts=opts, pars=init.pars, phy=phy, tot_time=tot_time, f=f, turnover.inherit=FALSE, turnover.weight.logistic=FALSE, turnover.exp=FALSE, eps.inherit=FALSE, eps.weight.logistic=FALSE, eps.exp=FALSE, split.times=split.times, quantile.set=init.quantile.set, n.cores=n.cores)
+
+	def.set.pars <- c(init$solution[1],init$solution[1],init$solution[2],init$solution[2],Ntip(phy)*2,Ntip(phy)*2,0.5,0.5,0.5,0.5,0.5,0.5,0,0)
 
 	#Set initials using estimates from constant bd model:
-	def.set.pars <- c(init$solution[1],init$solution[1],init$solution[2],init$solution[2],Ntip(phy)*2,Ntip(phy)*2,0.5,0.5,0.5,0.5,0.5,0.5,0,0)
 	ip <- def.set.pars[tmp==TRUE]
 	def.set.lower <- c(0,0,0,0,-1e6,-1e6,0,0,0,0,0,0,-10,-10)
 	lower <- def.set.lower[tmp==TRUE]
-	def.set.upper <- c(100,100,100,100,1e6,1e6,1,10,1,10,10,10,10,10)
+	def.set.upper <- c(10,10,10,10,1e6,1e6,1,10,1,10,10,10,10,10)
 	upper <- def.set.upper[tmp==TRUE]
 
 	#If inheritance model is chosen, create a list of quantiles for each edge in the tree and perform 3 independent analyses:
-	if(turnover.inherit==TRUE | eps.inherit==TRUE){ 
+	if(turnover.inherit==TRUE | eps.inherit==TRUE | is.numeric(turnover.inherit)==TRUE | is.numeric(eps.inherit)==TRUE){ 
 		cat("Finished. Begin thorough search...", "\n")
+		GetQuantileSet<-function(nstarts){
+			GetQuantiles(phylo=phy)
+		}
+		quantile.set<-lapply(1:nsims, GetQuantileSet)
 		res<-c()
 		for(i in 1:3){
-			cat("Restart", i, "of 3", "\n")
-			GetQuantileSet<-function(nstarts){
-				GetQuantiles(phylo=phy)
-			}
-			quantile.set<-lapply(1:nsims, GetQuantileSet)
-			out = nloptr(x0=ip, eval_f=DevOptimize, lb=lower, ub=upper, opts=opts, pars=pars, phy=phy, tot_time=tot_time, f=f, turnover.inherit=turnover.inherit, turnover.weight.logistic=turnover.logistic, eps.inherit=eps.inherit, eps.weight.logistic=eps.logistic, split.times=split.times, quantile.set=quantile.set, n.cores=n.cores)
+		cat("Restart", i, "of 3", "\n")
+			out = nloptr(x0=ip, eval_f=DevOptimize, lb=lower, ub=upper, opts=opts, pars=pars, phy=phy, tot_time=tot_time, f=f, turnover.inherit=turnover.inherit, turnover.weight.logistic=turnover.logistic, turnover.exp=turnover.exp, eps.inherit=eps.inherit, eps.weight.logistic=eps.logistic, eps.exp=eps.exp, split.times=split.times, quantile.set=quantile.set, n.cores=n.cores)
 			res<-rbind(res,c(-out$objective,out$solution))
 		}
-		print(res)
 		loglik <- res[which.max(res[,1]),1]
 		solution <- numeric(length(pars))
 		solution[] <- c(res[which.max(res[,1]),2:dim(res)[2]],0)[pars]
@@ -159,7 +161,7 @@ Deep<-function(phy, f=1, model=c("yule", "bd"), turnover.logistic=FALSE, eps.log
 	else{
 		cat("Finished. Begin thorough search...", "\n")
 		quantile.set<-GetQuantiles(phylo=phy)
-		out = nloptr(x0=ip, eval_f=DevOptimize, lb=lower, ub=upper, opts=opts, pars=pars, phy=phy, tot_time=tot_time, f=f, turnover.inherit=turnover.inherit, turnover.weight.logistic=turnover.logistic, eps.inherit=eps.inherit, eps.weight.logistic=eps.logistic, split.times=split.times, quantile.set=quantile.set, n.cores=n.cores)
+		out = nloptr(x0=ip, eval_f=DevOptimize, lb=lower, ub=upper, opts=opts, pars=pars, phy=phy, tot_time=tot_time, f=f, turnover.inherit=turnover.inherit, turnover.weight.logistic=turnover.logistic, turnover.exp=turnover.exp, eps.inherit=eps.inherit, eps.weight.logistic=eps.logistic, eps.exp=eps.exp, split.times=split.times, quantile.set=quantile.set, n.cores=n.cores)
 		loglik <- -out$objective
 		#Recreate the model vector for use in the print function:
 		solution <- numeric(length(pars))
