@@ -14,12 +14,12 @@ library(ape)
 #at end, renumber so ape is happy, convert to phylo object
 #need to pass turnover 
 
-GetSim<-function(max.time=1, max.ntax=Inf, max.wall.time=Inf, check.file=NULL, start.file=NULL, return.all.extinct=TRUE, verbose=FALSE, check.interval=1800, turnover.param.indep=.10, turnover.sigma.indep=0.0, turnover.weight.anc=0, turnover.weight.logistic=0, turnover.trend.exponent=0, turn.k=Inf, turnover.sigma.anc=0, eps.param.indep=0.0, eps.sigma.indep=0, eps.weight.anc=0, eps.weight.logistic=0, eps.trend.exponent=0, eps.k=Inf, eps.sigma.anc=0, warning.diversity=Inf) {
+GetSim<-function(max.time=1, max.ntax=Inf, max.wall.time=Inf, check.file=NULL, start.file=NULL, return.all.extinct=TRUE, verbose=TRUE, check.interval=1800, turnover.param.indep=.10, turnover.sigma.indep=0.0, turnover.weight.anc=0, turnover.weight.logistic=0, turnover.trend.exponent=0, turn.k=Inf, turnover.sigma.anc=0, eps.param.indep=0.0, eps.sigma.indep=0, eps.weight.anc=0, eps.weight.logistic=0, eps.trend.exponent=0, eps.k=Inf, eps.sigma.anc=0, warning.diversity=Inf) {
 	
 	depth.time<-max.time
 	start.time<-Sys.time()
 	last.save.time<-Sys.time()
-		options(digits=10)
+	options(digits=10)
 	root.tracker=matrix(c(1,depth.time),nrow=1,ncol=2)
 	turnover.param.anc <- turnover.param.indep
 	eps.param.anc <- eps.param.indep
@@ -34,11 +34,12 @@ GetSim<-function(max.time=1, max.ntax=Inf, max.wall.time=Inf, check.file=NULL, s
 	death<-SetDeath(stop.time=depth.time, turnover.param.anc, turnover.sigma.indep, turnover.weight.anc, turnover.weight.logistic, turnover.trend.exponent, eps.param.anc, eps.sigma.indep, eps.weight.anc, eps.weight.logistic, eps.trend.exponent, split.times=c(0), turn.k, eps.k, turnover.splits=turnover.splits, eps.splits=eps.splits)
 	#note that this is rough, as it does not take into account changing rates nor ascertainment bias
 	approx.expected.diversity=2*exp((birth-death)*max.time) 	
-	
+	print(birth)
+	print(death)
 	if(is.finite(max.time)){
-		if(approx.expected.diversity>warning.diversity) {
-			warning(paste("Expected diversity is very roughly", approx.expected.diversity))
-		}
+#		if(approx.expected.diversity>warning.diversity) {
+#			warning(paste("Expected diversity is very roughly", approx.expected.diversity))
+#		}
 		if(verbose) {
 			print(paste("Expected diversity is very roughly", approx.expected.diversity))
 		}
