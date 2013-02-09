@@ -205,6 +205,9 @@ SetParameter <- function(stop.time, param.anc, sigma.indep, weight.anc.0, weight
 	param.indep <- param.splits[position]
 #	t.edge <- TALK TO JEREMY
 	weight.anc <- weight.anc.0 * exp(-t.edge * log(2) / weight.anc.half) #so if weight.anc.halflife = INF, is the same as our original weight.anc model
+	if(is.na(weight.anc)){
+		weight.anc = 0
+	}
 	param.starting <- (param.indep * (1 - weight.anc)) + (param.anc * weight.anc) #same as autoregressive model
 	logistic.scaling <- 1 - (weight.logistic * (n.taxa / k))
 	param.mean <- (param.starting * (n.taxa ^ trend.exponent)) * logistic.scaling
@@ -386,7 +389,7 @@ GetLikelihood <- function(phylo,tot_time,f, turnover.param.root, turnover.param.
 		if (length(node.anc)==0) {
 			node.anc <- node
 			#Just needs to be non-zero so that it does not throw an error:
-			t.edge=0.000000001
+			t.edge=0
 			#assume params of root = params of root parent
 		}
 		else {
@@ -402,7 +405,7 @@ GetLikelihood <- function(phylo,tot_time,f, turnover.param.root, turnover.param.
 	}
 	#Modification of Eq. 1 from Morlon et al 2011 so the calculation is done in logspace:
 	data_lik <- sum(log(indLikelihood))+(nbtips_tot*log(f))
-	t.edge=age
+	t.edge=0
 	Phi <- Phi(stop.time=tot_time,f=f, turnover.param.anc=turnover.param.anc, turnover.sigma.indep=turnover.sigma.indep, turnover.weight.anc.0=turnover.weight.anc.0, turnover.weight.anc.half=turnover.weight.anc.half,turnover.weight.logistic=turnover.weight.logistic, turnover.trend.exponent=turnover.trend.exponent, eps.param.anc=eps.param.anc, eps.sigma.indep=eps.sigma.indep, eps.weight.anc.0=eps.weight.anc.0, eps.weight.anc.half=eps.weight.anc.half, eps.weight.logistic=eps.weight.logistic, eps.trend.exponent=eps.trend.exponent, split.times=split.times, turn.k=turn.k, eps.k=eps.k, turnover.splits=turnover.splits, eps.splits=eps.splits, t.edge=t.edge)
 	final_lik <- data_lik - log(1-Phi)
 
@@ -417,7 +420,6 @@ print.diversity<-function(x,...){
 	cat("\nFit\n")
 	print(output)
 	cat("\n")
-	print(x$solution)
 	param.est <- matrix(0,10,2)
 	param.est[,1] <- x$solution[c(1,2,7,8,9,13,17,18,15,5)]
 	param.est[,2] <- x$solution[c(3,4,10,11,12,14,19,20,16,6)]
