@@ -14,7 +14,7 @@ library(ape)
 #at end, renumber so ape is happy, convert to phylo object
 #need to pass turnover 
 
-GetSim<-function(max.time=2, max.ntax=Inf, max.wall.time=Inf, check.file=NULL, start.file=NULL, return.all.extinct=TRUE, verbose=TRUE, check.interval=1800, turnover.param.anc=0.50, turnover.param.indep=.50, turnover.sigma.indep=0, turnover.weight.anc.0=0, turnover.weight.anc.half=0, turnover.weight.logistic=0, turnover.trend.exponent=0, turn.k=Inf, turnover.sigma.anc=0, turnover.prob.kick=0, turnover.kick.value=0, eps.param.anc=1, eps.param.indep=1, eps.sigma.indep=0, eps.weight.anc.0=0, eps.weight.anc.half=0, eps.weight.logistic=0, eps.trend.exponent=0, eps.k=Inf, eps.sigma.anc=0, eps.prob.kick=0, eps.kick.value=0, warning.diversity=Inf) {
+DeepSim<-function(max.time=2, max.ntax=Inf, max.wall.time=Inf, check.file=NULL, start.file=NULL, return.all.extinct=TRUE, verbose=FALSE, check.interval=1800, turnover.param.anc=0.50, turnover.param.indep=.50, turnover.sigma.indep=0, turnover.weight.anc.0=0, turnover.weight.anc.half=0, turnover.weight.logistic=0, turnover.trend.exponent=0, turn.k=Inf, turnover.sigma.anc=0, turnover.prob.kick=0, turnover.kick.value=0, eps.param.anc=1, eps.param.indep=1, eps.sigma.indep=0, eps.weight.anc.0=0, eps.weight.anc.half=0, eps.weight.logistic=0, eps.trend.exponent=0, eps.k=Inf, eps.sigma.anc=0, eps.prob.kick=0, eps.kick.value=0, warning.diversity=Inf) {
 
 	depth.time<-max.time
 	start.time<-Sys.time()

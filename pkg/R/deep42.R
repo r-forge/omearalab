@@ -1,4 +1,4 @@
-##DEEP42 -- Diversification Estimates Extracted from Phylogenies using 42 models##
+##DEEP42 -- Diversification Estimates Extracted from Phylogenies using 42 (err 90) models##
 
 #Overall goal is to have turnover rate or extinction fraction vary as a result of various
 #   parameters.
@@ -11,6 +11,7 @@ library(picante)
 library(ape)
 library(nloptr)
 library(multicore)
+source("deepSim.R")
 
 Deep<-function(phy, f=1, model=c("yule", "bd"), turnover.logistic=FALSE, eps.logistic=FALSE, turnover.exp=FALSE, eps.exp=FALSE, turnover.inherit=FALSE, eps.inherit=FALSE, turnover.slice=FALSE, eps.slice=FALSE, turnover.ratch=FALSE, eps.ratch=FALSE, n.cores=NULL, nsims=1000) {
 	
@@ -74,6 +75,7 @@ Deep<-function(phy, f=1, model=c("yule", "bd"), turnover.logistic=FALSE, eps.log
 	pars[pars==0]<-max(pars)+1
 	#Function used for optimizing parameters:
 	DevOptimize <- function(p, pars, phy, tot_time, f, turnover.inherit, turnover.weight.logistic, turnover.exp, turnover.ratch, eps.inherit, eps.weight.logistic, eps.exp, eps.ratch, split.times, quantile.set, n.cores) {
+		
 		#Generates the final vector with the appropriate parameter estimates in the right place:
 		model.vec <- numeric(length(pars))
 		model.vec[] <- c(p, 0)[pars]
@@ -106,13 +108,19 @@ Deep<-function(phy, f=1, model=c("yule", "bd"), turnover.logistic=FALSE, eps.log
 		if(pars[5]<(length(p)+1) & abs(model.vec[5])<Ntip(phy) | pars[6]<(length(p)+1) & abs(model.vec[6])<Ntip(phy)){
 				return(10000000)
 		}
+		#An input of PhiAll:
+		turnover.splits <- exp(rnorm(length(split.times), log(model.vec[2]), model.vec[13]))
+		eps.splits <- exp(rnorm(length(split.times), log(model.vec[4]), model.vec[14]))
+		#
 		if(pars[9] < max(pars) | pars[13] < max(pars) | pars[12] < max(pars) | pars[14] < max(pars)){
 			if(is.null(n.cores)){
 				tot.logl <-c()
 				for(i in 1:length(quantile.set)){
 					tot.logl <- c(tot.logl,GetLikelihood(phylo=phy, tot_time, f, turnover.param.root=model.vec[1], turnover.param.indep=model.vec[2], turnover.sigma.indep=model.vec[13], turnover.weight.anc.0=model.vec[7], turnover.weight.anc.half=model.vec[8], turnover.weight.logistic=turnover.weight.logistic, turnover.trend.exponent=model.vec[15], turnover.sigma.anc=model.vec[9], eps.param.root=model.vec[3], eps.param.indep=model.vec[4], eps.sigma.indep=model.vec[14], eps.weight.anc.0=model.vec[10], eps.weight.anc.half=model.vec[11], eps.weight.logistic=eps.weight.logistic, eps.trend.exponent=model.vec[16], eps.sigma.anc=model.vec[12], split.times=split.times, turn.k=model.vec[5], eps.k=model.vec[6], turnover.prob.kick=model.vec[17], turnover.kick.value=model.vec[18], eps.prob.kick=model.vec[19], eps.kick.value=model.vec[20], scaled.set=quantile.set[[i]]))
 				}
-				logl<-mean(tot.logl[is.finite(tot.logl)],na.rm=T)
+				phi<-PhiAll(max.time=max(branching.times(phy)), f, turnover.param.root=model.vec[1], turnover.param.indep=model.vec[2], turnover.sigma.indep=model.vec[13], turnover.weight.anc.0=model.vec[7], turnover.weight.anc.half=model.vec[8], turnover.weight.logistic=turnover.weight.logistic, turnover.trend.exponent=model.vec[15], turnover.sigma.anc=model.vec[9], eps.param.root=model.vec[3], eps.param.indep=model.vec[4], eps.sigma.indep=model.vec[14], eps.weight.anc.0=model.vec[10], eps.weight.anc.half=model.vec[11], eps.weight.logistic=eps.weight.logistic, eps.trend.exponent=model.vec[16], eps.sigma.anc=model.vec[12], split.times=split.times, turn.k=model.vec[5], eps.k=model.vec[6], turnover.prob.kick=model.vec[17], turnover.kick.value=model.vec[18], eps.prob.kick=model.vec[19], eps.kick.value=model.vec[20], turnover.splits, eps.splits, t.edge=0, precision, sanity.cutoff=Inf)
+				scaled.logl<-tot.logl[is.finite(tot.logl)] - log(1-phi)
+				logl<-mean(scaled.logl,na.rm=TRUE)
 				if(!is.finite(logl)){
 					return(10000000)
 				}
@@ -126,12 +134,16 @@ Deep<-function(phy, f=1, model=c("yule", "bd"), turnover.logistic=FALSE, eps.log
 				}
 				sim.set<-mclapply(1:length(quantile.set), SimSigma, mc.cores=n.cores)
 				tot.logl<-unlist(sim.set)
-				logl<-mean(tot.logl[is.finite(tot.logl)],na.rm=T)
+				phi<-PhiAll(max.time=max(branching.times(phy)), f, turnover.param.root=model.vec[1], turnover.param.indep=model.vec[2], turnover.sigma.indep=model.vec[13], turnover.weight.anc.0=model.vec[7], turnover.weight.anc.half=model.vec[8], turnover.weight.logistic=turnover.weight.logistic, turnover.trend.exponent=model.vec[15], turnover.sigma.anc=model.vec[9], eps.param.root=model.vec[3], eps.param.indep=model.vec[4], eps.sigma.indep=model.vec[14], eps.weight.anc.0=model.vec[10], eps.weight.anc.half=model.vec[11], eps.weight.logistic=eps.weight.logistic, eps.trend.exponent=model.vec[16], eps.sigma.anc=model.vec[12], split.times=split.times, turn.k=model.vec[5], eps.k=model.vec[6], turnover.prob.kick=model.vec[17], turnover.kick.value=model.vec[18], eps.prob.kick=model.vec[19], eps.kick.value=model.vec[20], turnover.splits, eps.splits, t.edge=0, precision, sanity.cutoff=Inf)
+				scaled.logl<-tot.logl[is.finite(tot.logl)] - log(1-phi)
+				logl<-mean(scaled.logl,na.rm=TRUE)
 			}
 			return(-logl)
 		}
 		else{
-			logl <- GetLikelihood(phylo=phy, tot_time, f, turnover.param.root=model.vec[1], turnover.param.indep=model.vec[2], turnover.sigma.indep=model.vec[13], turnover.weight.anc.0=model.vec[7], turnover.weight.anc.half=model.vec[8], turnover.weight.logistic=turnover.weight.logistic, turnover.trend.exponent=model.vec[15], turnover.sigma.anc=model.vec[9], eps.param.root=model.vec[3], eps.param.indep=model.vec[4], eps.sigma.indep=model.vec[14], eps.weight.anc.0=model.vec[10], eps.weight.anc.half=model.vec[11], eps.weight.logistic=eps.weight.logistic, eps.trend.exponent=model.vec[16], eps.sigma.anc=model.vec[12], split.times=split.times, turn.k=model.vec[5], eps.k=model.vec[6], turnover.prob.kick=model.vec[17], turnover.kick.value=model.vec[18], eps.prob.kick=model.vec[19], eps.kick.value=model.vec[20], scaled.set=quantile.set)
+			raw.logl <- GetLikelihood(phylo=phy, tot_time, f, turnover.param.root=model.vec[1], turnover.param.indep=model.vec[2], turnover.sigma.indep=model.vec[13], turnover.weight.anc.0=model.vec[7], turnover.weight.anc.half=model.vec[8], turnover.weight.logistic=turnover.weight.logistic, turnover.trend.exponent=model.vec[15], turnover.sigma.anc=model.vec[9], eps.param.root=model.vec[3], eps.param.indep=model.vec[4], eps.sigma.indep=model.vec[14], eps.weight.anc.0=model.vec[10], eps.weight.anc.half=model.vec[11], eps.weight.logistic=eps.weight.logistic, eps.trend.exponent=model.vec[16], eps.sigma.anc=model.vec[12], split.times=split.times, turn.k=model.vec[5], eps.k=model.vec[6], turnover.prob.kick=model.vec[17], turnover.kick.value=model.vec[18], eps.prob.kick=model.vec[19], eps.kick.value=model.vec[20], scaled.set=quantile.set)
+			phi<-PhiAll(max.time=max(branching.times(phy)), f, turnover.param.root=model.vec[1], turnover.param.indep=model.vec[2], turnover.sigma.indep=model.vec[13], turnover.weight.anc.0=model.vec[7], turnover.weight.anc.half=model.vec[8], turnover.weight.logistic=turnover.weight.logistic, turnover.trend.exponent=model.vec[15], turnover.sigma.anc=model.vec[9], eps.param.root=model.vec[3], eps.param.indep=model.vec[4], eps.sigma.indep=model.vec[14], eps.weight.anc.0=model.vec[10], eps.weight.anc.half=model.vec[11], eps.weight.logistic=eps.weight.logistic, eps.trend.exponent=model.vec[16], eps.sigma.anc=model.vec[12], split.times=split.times, turn.k=model.vec[5], eps.k=model.vec[6], turnover.prob.kick=model.vec[17], turnover.kick.value=model.vec[18], eps.prob.kick=model.vec[19], eps.kick.value=model.vec[20], turnover.splits, eps.splits, t.edge=0, precision, sanity.cutoff=Inf)
+			logl <- raw.logl - log(1-phi)
 			if(!is.finite(logl)){
 				return(10000000)
 			}
@@ -283,9 +295,37 @@ IntegrateDiversificationOverTime.int.int <- function(stop.time, start.time, turn
 ######################################################################################################################################
 ######################################################################################################################################
 
-Phi <- function(stop.time, f, turnover.param.anc, turnover.sigma.indep, turnover.weight.anc.0, turnover.weight.anc.half, turnover.weight.logistic, turnover.trend.exponent, eps.param.anc, eps.sigma.indep, eps.weight.anc.0, eps.weight.anc.half, eps.weight.logistic, eps.trend.exponent, split.times, turn.k, eps.k, turnover.splits, eps.splits, t.edge) {
-	res <- (1-exp((SetDiversification(stop.time=stop.time, turnover.param.anc=turnover.param.anc, turnover.sigma.indep=turnover.sigma.indep, turnover.weight.anc.0=turnover.weight.anc.0, turnover.weight.anc.half=turnover.weight.anc.half, turnover.weight.logistic=turnover.weight.logistic, turnover.trend.exponent=turnover.trend.exponent, eps.param.anc=eps.param.anc, eps.sigma.indep=eps.sigma.indep, eps.weight.anc.0=eps.weight.anc.0, eps.weight.anc.half=eps.weight.anc.half, eps.weight.logistic=eps.weight.logistic, eps.trend.exponent=eps.trend.exponent, split.times=split.times, turn.k=turn.k, eps.k=eps.k, turnover.splits=turnover.splits, eps.splits=eps.splits, t.edge=t.edge)*stop.time)-(SetDiversification(stop.time=0, turnover.param.anc=turnover.param.anc, turnover.sigma.indep=turnover.sigma.indep, turnover.weight.anc.0=turnover.weight.anc.0, turnover.weight.anc.half=turnover.weight.anc.half, turnover.weight.logistic=turnover.weight.logistic, turnover.trend.exponent=turnover.trend.exponent, eps.param.anc=eps.param.anc, eps.sigma.indep=eps.sigma.indep, eps.weight.anc.0=eps.weight.anc.0, eps.weight.anc.half=eps.weight.anc.half, eps.weight.logistic=eps.weight.logistic, eps.trend.exponent=eps.trend.exponent, split.times=split.times, turn.k=turn.k, eps.k=eps.k, turnover.splits=turnover.splits, eps.splits=eps.splits, t.edge=t.edge)*0)) / (1/f+IntegrateDiversificationOverTime.int.int(stop.time=0,start.time=stop.time, turnover.param.anc=turnover.param.anc, turnover.sigma.indep=turnover.sigma.indep, turnover.weight.anc.0=turnover.weight.anc.0, turnover.weight.anc.half=turnover.weight.anc.half, turnover.weight.logistic=turnover.weight.logistic, turnover.trend.exponent=turnover.trend.exponent, eps.param.anc=eps.param.anc, eps.sigma.indep=eps.sigma.indep, eps.weight.anc.0=eps.weight.anc.0, eps.weight.anc.half=eps.weight.anc.half, eps.weight.logistic=eps.weight.logistic, eps.trend.exponent=eps.trend.exponent, split.times=split.times, turn.k=turn.k, eps.k=eps.k, turnover.splits=turnover.splits, eps.splits=eps.splits, t.edge=t.edge)))
-	return(res)	
+PhiMorlon <- function(stop.time, f, turnover.param.anc, turnover.sigma.indep, turnover.weight.anc.0, turnover.weight.anc.half, turnover.weight.logistic, turnover.trend.exponent, eps.param.anc, eps.sigma.indep, eps.weight.anc.0, eps.weight.anc.half, eps.weight.logistic, eps.trend.exponent, split.times, turn.k, eps.k, turnover.splits, eps.splits, t.edge) {
+	morlon.phi <- (1-exp((SetDiversification(stop.time=stop.time, turnover.param.anc=turnover.param.anc, turnover.sigma.indep=turnover.sigma.indep, turnover.weight.anc.0=turnover.weight.anc.0, turnover.weight.anc.half=turnover.weight.anc.half, turnover.weight.logistic=turnover.weight.logistic, turnover.trend.exponent=turnover.trend.exponent, eps.param.anc=eps.param.anc, eps.sigma.indep=eps.sigma.indep, eps.weight.anc.0=eps.weight.anc.0, eps.weight.anc.half=eps.weight.anc.half, eps.weight.logistic=eps.weight.logistic, eps.trend.exponent=eps.trend.exponent, split.times=split.times, turn.k=turn.k, eps.k=eps.k, turnover.splits=turnover.splits, eps.splits=eps.splits, t.edge=t.edge)*stop.time)-(SetDiversification(stop.time=0, turnover.param.anc=turnover.param.anc, turnover.sigma.indep=turnover.sigma.indep, turnover.weight.anc.0=turnover.weight.anc.0, turnover.weight.anc.half=turnover.weight.anc.half, turnover.weight.logistic=turnover.weight.logistic, turnover.trend.exponent=turnover.trend.exponent, eps.param.anc=eps.param.anc, eps.sigma.indep=eps.sigma.indep, eps.weight.anc.0=eps.weight.anc.0, eps.weight.anc.half=eps.weight.anc.half, eps.weight.logistic=eps.weight.logistic, eps.trend.exponent=eps.trend.exponent, split.times=split.times, turn.k=turn.k, eps.k=eps.k, turnover.splits=turnover.splits, eps.splits=eps.splits, t.edge=t.edge)*0)) / (1/f+IntegrateDiversificationOverTime.int.int(stop.time=0,start.time=stop.time, turnover.param.anc=turnover.param.anc, turnover.sigma.indep=turnover.sigma.indep, turnover.weight.anc.0=turnover.weight.anc.0, turnover.weight.anc.half=turnover.weight.anc.half, turnover.weight.logistic=turnover.weight.logistic, turnover.trend.exponent=turnover.trend.exponent, eps.param.anc=eps.param.anc, eps.sigma.indep=eps.sigma.indep, eps.weight.anc.0=eps.weight.anc.0, eps.weight.anc.half=eps.weight.anc.half, eps.weight.logistic=eps.weight.logistic, eps.trend.exponent=eps.trend.exponent, split.times=split.times, turn.k=turn.k, eps.k=eps.k, turnover.splits=turnover.splits, eps.splits=eps.splits, t.edge=t.edge)))
+	return(morlon.phi)	
+}
+
+PhiAll <- function(max.time, f, turnover.param.root, turnover.param.indep, turnover.sigma.indep, turnover.weight.anc.0, turnover.weight.anc.half, turnover.weight.logistic, turnover.trend.exponent, turnover.sigma.anc, eps.param.root, eps.param.indep, eps.sigma.indep, eps.weight.anc.0, eps.weight.anc.half, eps.weight.logistic, eps.trend.exponent, eps.sigma.anc, split.times, turn.k, eps.k, turnover.prob.kick, turnover.kick.value, eps.prob.kick, eps.kick.value, turnover.splits, eps.splits, t.edge, precision, sanity.cutoff=Inf) {
+	if (turnover.sigma.anc==0 && turnover.weight.anc.0==0 && turnover.weight.anc.half==0 && eps.sigma.anc==0 && eps.weight.anc.0==0 && eps.weight.anc.half==0){
+		return(PhiMorlon(stop.time=max.time, f=f, turnover.param.anc=turnover.param.root, turnover.sigma.indep=turnover.sigma.indep, turnover.weight.anc.0=turnover.weight.anc.0, turnover.weight.anc.half=turnover.weight.anc.half, turnover.weight.logistic=turnover.weight.logistic, turnover.trend.exponent=turnover.trend.exponent, eps.param.anc=eps.param.root, eps.sigma.indep=eps.sigma.indep, eps.weight.anc.0=eps.weight.anc.0, eps.weight.anc.half=eps.weight.anc.half, eps.weight.logistic=eps.weight.logistic, eps.trend.exponent=eps.trend.exponent, split.times=split.times, turn.k=turn.k, eps.k=eps.k, turnover.splits=turnover.splits, eps.splits=eps.splits, t.edge=t.edge))
+	} else {
+		return(PhiSim(max.time=max.time, f=f, turnover.param.anc=turnover.param.root, turnover.param.indep=turnover.param.indep, turnover.sigma.indep=turnover.sigma.indep, turnover.weight.anc.0=turnover.weight.anc.0, turnover.weight.anc.half=turnover.weight.anc.half, turnover.weight.logistic=turnover.weight.logistic, turnover.trend.exponent=turnover.trend.exponent, turnover.sigma.anc=turnover.sigma.anc, eps.param.anc=eps.param.root, eps.param.indep=eps.param.indep, eps.sigma.indep=eps.sigma.indep, eps.weight.anc.0=eps.weight.anc.0, eps.weight.anc.half=eps.weight.anc.half, eps.weight.logistic=eps.weight.logistic, eps.trend.exponent=eps.trend.exponent, eps.sigma.anc=eps.sigma.anc, split.times=split.times, turn.k=turn.k, eps.k=eps.k, turnover.prob.kick=turnover.prob.kick, turnover.kick.value=turnover.kick.value, eps.prob.kick=eps.prob.kick, eps.kick.value=eps.kick.value, turnover.splits=turnover.splits, eps.splits=eps.splits, precision=precision, sanity.cutoff=sanity.cutoff))
+	}
+}
+
+PhiSim <- function(max.time, f, turnover.param.anc, turnover.param.indep, turnover.sigma.indep, turnover.weight.anc.0, turnover.weight.anc.half, turnover.weight.logistic, turnover.trend.exponent, turnover.sigma.anc, eps.param.anc, eps.param.indep, eps.sigma.indep, eps.weight.anc.0, eps.weight.anc.half, eps.weight.logistic, eps.trend.exponent, eps.sigma.anc, split.times, turn.k, eps.k, turnover.prob.kick, turnover.kick.value, eps.prob.kick, eps.kick.value, turnover.splits, eps.splits, precision, sanity.cutoff) {
+	#many sims 
+	phi.morlon.estimate<-PhiMorlon(stop.time=max.time, f, turnover.param.anc=turnover.param.anc, turnover.sigma.indep=turnover.sigma.indep, turnover.weight.anc.0=turnover.weight.anc.0, turnover.weight.anc.half=turnover.weight.anc.half, turnover.weight.logistic=turnover.weight.logistic, turnover.trend.exponent=turnover.trend.exponent, eps.param.anc=eps.param.anc, eps.sigma.indep=eps.sigma.indep, eps.weight.anc.0=eps.weight.anc.0, eps.weight.anc.half=eps.weight.anc.half, eps.weight.logistic=eps.weight.logistic, eps.trend.exponent=eps.trend.exponent, split.times=split.times, turn.k=turn.k, eps.k=eps.k, turnover.splits=turnover.splits, eps.splits=eps.splits, t.edge=0)
+	if (is.na(phi.morlon.estimate)) {
+		phi.morlon.estimate<-1-.Machine$double.eps^.5
+	}
+	#binomial variance is np(1 − p). so 
+	#v = np(1-p)
+	#v/((p(1-p))) = n
+	n.sims<-ceiling(precision/(phi.morlon.estimate * (1 - phi.morlon.estimate)))
+	actual.phi<-sum(sapply(replicate(n.sims, DeepSim(max.time=max.time, f=f, turnover.param.anc=turnover.param.anc, turnover.param.indep=turnover.param.indep, turnover.sigma.indep=turnover.sigma.indep, turnover.weight.anc.0=turnover.weight.anc.0, turnover.weight.anc.half=turnover.weight.anc.half, turnover.weight.logistic=turnover.weight.logistic, turnover.trend.exponent=turnover.trend.exponent, turnover.sigma.anc=turnover.sigma.anc, eps.param.anc=eps.param.anc, eps.param.indep=eps.param.indep, eps.sigma.indep= eps.sigma.indep, eps.weight.anc.0=eps.weight.anc.0, eps.weight.anc.half=eps.weight.anc.half, eps.weight.logistic=eps.weight.logistic, eps.trend.exponent=eps.trend.exponent, eps.sigma.anc=eps.sigma.anc, turn.k=turn.k, eps.k=eps.k, turnover.prob.kick=turnover.prob.kick, turnover.kick.value=turnover.kick.value, eps.prob.kick=eps.prob.kick, eps.kick.value=eps.kick.value, sanity.cutoff=sanity.cutoff)), NtaxGreaterThan0))/n.sims
+	return(actual.phi)
+}
+
+NtaxGreaterThan0<-function(sim.phylo) {
+	if(ntax>0) {
+		return(TRUE)
+	}
 }
 
 ######################################################################################################################################
@@ -406,10 +446,10 @@ GetLikelihood <- function(phylo,tot_time,f, turnover.param.root, turnover.param.
 	#Modification of Eq. 1 from Morlon et al 2011 so the calculation is done in logspace:
 	data_lik <- sum(log(indLikelihood))+(nbtips_tot*log(f))
 	t.edge=0
-	Phi <- Phi(stop.time=tot_time,f=f, turnover.param.anc=turnover.param.anc, turnover.sigma.indep=turnover.sigma.indep, turnover.weight.anc.0=turnover.weight.anc.0, turnover.weight.anc.half=turnover.weight.anc.half,turnover.weight.logistic=turnover.weight.logistic, turnover.trend.exponent=turnover.trend.exponent, eps.param.anc=eps.param.anc, eps.sigma.indep=eps.sigma.indep, eps.weight.anc.0=eps.weight.anc.0, eps.weight.anc.half=eps.weight.anc.half, eps.weight.logistic=eps.weight.logistic, eps.trend.exponent=eps.trend.exponent, split.times=split.times, turn.k=turn.k, eps.k=eps.k, turnover.splits=turnover.splits, eps.splits=eps.splits, t.edge=t.edge)
-	final_lik <- data_lik - log(1-Phi)
+#	Phi.value <- PhiMorlon(stop.time=tot_time,f=f, turnover.param.anc=turnover.param.anc, turnover.sigma.indep=turnover.sigma.indep, turnover.weight.anc.0=turnover.weight.anc.0, turnover.weight.anc.half=turnover.weight.anc.half,turnover.weight.logistic=turnover.weight.logistic, turnover.trend.exponent=turnover.trend.exponent, eps.param.anc=eps.param.anc, eps.sigma.indep=eps.sigma.indep, eps.weight.anc.0=eps.weight.anc.0, eps.weight.anc.half=eps.weight.anc.half, eps.weight.logistic=eps.weight.logistic, eps.trend.exponent=eps.trend.exponent, split.times=split.times, turn.k=turn.k, eps.k=eps.k, turnover.splits=turnover.splits, eps.splits=eps.splits, t.edge=t.edge)
+#	final_lik <- data_lik - log(1-Phi.value)
 
-	return(final_lik)
+	return(data_lik)
 }
 
 #Print function
