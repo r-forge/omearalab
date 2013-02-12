@@ -146,18 +146,43 @@ for (i in 1:2^S) {
 colors.edges.gray<-colors.edges
 colors.edges.gray[which(colors.edges.gray=="darkorchid1")]<-"lightgray"
 
+colors.edges.grayscale<-colors.edges
+colors.edges.grayscale[which(colors.edges=="darkorchid1")]<-"lightgray"
+colors.edges.grayscale[which(colors.edges=="aquamarine4")]<-"darkgray"
+colors.edges.grayscale[which(colors.edges=="orange")]<-"black"
+
+
 size.focal<-rep(7, 2^S)
 size.focal[which(colors.focal=="orange")]<-15
 
-par(mfcol=c(3,3))
-plot(g, layout=layout.fruchterman.reingold(g, start=start, weights=weights), vertex.color=colors.focal, vertex.label=NA, edge.arrow.size=0, edge.color=colors.edges)
-plot(g, layout=layout.kamada.kawai(g, start=start),  vertex.color=colors.focal, vertex.label=NA, edge.arrow.size=0, edge.color=colors.edges)
-plot(g, layout=layout.fruchterman.reingold(g, start=start, weights=weights/weights), vertex.color="black", vertex.label=NA, edge.arrow.size=0, edge.color="darkgray")
-plot(g, layout=layout.circle(g),  vertex.color=colors.focal, vertex.label=NA, edge.arrow.size=0, edge.color=colors.edges)
-plot(g, layout=layout.fruchterman.reingold(g, start=start, weights=weights), vertex.color=colors.focal, vertex.label=NA, edge.arrow.size=0, edge.color=colors.edges.gray, vertex.size=7)
+colors.focal.bw<-colors.focal
+colors.focal.bw[which(colors.focal=="orange")]<-"white"
+colors.focal.bw[which(colors.focal!="orange")]<-"black"
+
+
+par(mfcol=c(1,2))
+plot(g, layout=layout.fruchterman.reingold(g, start=start, weights=weights), vertex.color=colors.focal, vertex.label=NA, edge.arrow.size=0, edge.color=colors.edges, vertex.size=7)
 plot(g, layout=layout.fruchterman.reingold(g, start=start, weights=weights), vertex.color=colors.focal, vertex.label=NA, edge.arrow.size=0, edge.color=colors.edges, vertex.size=15*comboProportions/max(comboProportions))
-plot(g, layout=layout.kamada.kawai(g, start=start),  vertex.color=colors.focal, vertex.label=NA, edge.arrow.size=0, edge.color=colors.edges, vertex.size=15*comboProportions/max(comboProportions))
-plot(g, layout=layout.kamada.kawai(g, start=start),  vertex.color=colors.rate, vertex.label=NA, edge.arrow.size=0, edge.color="darkgray", vertex.size=7)
-plot(g, layout=layout.kamada.kawai(g, start=start),  vertex.color=colors.rate, vertex.label=NA, edge.arrow.size=0, edge.color="darkgray", vertex.size=size.focal)
+
+#plot(g, layout=layout.fruchterman.reingold(g, start=start, weights=weights), vertex.color=colors.focal.bw, vertex.label=NA, edge.arrow.size=0, edge.color="darkgray", vertex.size=7)
+
+
+#plot(g, layout=layout.kamada.kawai(g, start=start),  vertex.color=colors.focal, vertex.label=NA, edge.arrow.size=0, edge.color=colors.edges, vertex.size=7)
+#plot(g, layout=layout.kamada.kawai(g, start=start),  vertex.color=colors.focal.bw, vertex.label=NA, edge.arrow.size=0, edge.color="darkgray", vertex.size=7)
+
+#plot(g, layout=layout.fruchterman.reingold(g, start=start, weights=weights), vertex.color=colors.focal, vertex.label=NA, edge.arrow.size=0, edge.color=colors.edges.grayscale, vertex.size=15*comboProportions/max(comboProportions))
+#plot(g, layout=layout.fruchterman.reingold(g, start=start, weights=weights), vertex.color=colors.focal.bw, vertex.label=NA, edge.arrow.size=0, edge.color="darkgray", vertex.size=15*comboProportions/max(comboProportions))
+
+#plot(g, layout=layout.fruchterman.reingold(g, start=start, weights=weights), vertex.color=colors.rate, vertex.label=NA, edge.arrow.size=0, edge.color=colors.edges.grayscale, vertex.size=7)
+#plot(g, layout=layout.fruchterman.reingold(g, start=start, weights=weights), vertex.color=colors.rate, vertex.label=NA, edge.arrow.size=0, edge.color="darkgray", vertex.size=15*comboProportions/max(comboProportions))
+
+
+#plot(g, layout=layout.fruchterman.reingold(g, start=start, weights=weights/weights), vertex.color="black", vertex.label=NA, edge.arrow.size=0, edge.color="darkgray")
+#plot(g, layout=layout.circle(g),  vertex.color=colors.focal, vertex.label=NA, edge.arrow.size=0, edge.color=colors.edges)
+#plot(g, layout=layout.fruchterman.reingold(g, start=start, weights=weights), vertex.color=colors.focal, vertex.label=NA, edge.arrow.size=0, edge.color=colors.edges.gray, vertex.size=7)
+#plot(g, layout=layout.fruchterman.reingold(g, start=start, weights=weights), vertex.color=colors.focal, vertex.label=NA, edge.arrow.size=0, edge.color=colors.edges, vertex.size=15*comboProportions/max(comboProportions))
+#plot(g, layout=layout.kamada.kawai(g, start=start),  vertex.color=colors.focal, vertex.label=NA, edge.arrow.size=0, edge.color=colors.edges, vertex.size=15*comboProportions/max(comboProportions))
+#plot(g, layout=layout.kamada.kawai(g, start=start),  vertex.color=colors.rate, vertex.label=NA, edge.arrow.size=0, edge.color="darkgray", vertex.size=7)
+#plot(g, layout=layout.kamada.kawai(g, start=start),  vertex.color=colors.rate, vertex.label=NA, edge.arrow.size=0, edge.color="darkgray", vertex.size=size.focal)
 
 

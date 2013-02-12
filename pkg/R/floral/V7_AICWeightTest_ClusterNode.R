@@ -1,4 +1,3 @@
-library(diversitree)
 source("V6_CommandsLocal.R")
 load(file="testing.model.subset.Rsave")
 library(foreach)
@@ -52,8 +51,26 @@ generating.models<-testing.model.subset[c(1, 2, 51, 51),]
 generating.models[dim(generating.models)[1], sapply(generating.models[1,], is.numeric)]<-colMeans(testing.model.subset[, sapply(generating.models[1,], is.numeric)])
 generating.models[dim(generating.models)[1], c(1, 2, 5, 7, 8, 9)]<-rep(NA, 6)
 generating.models[dim(generating.models)[1], 3]<-"average"
-nreps<-100
-doRunWithinForeach<-function(rep, generating.models, testing.model.subset) {
+nreps<-10
+
+
+doRunWithinForeachInner<-function(testing.model.index, phy, testing.model.subset, transitionModels, diversificationModels) {
+       final.matrix.all<-NULL
+      try(final.matrix.all<-doSingleModelFromSim(phy, F=vectorToString(convertFocalLabelToFocalVector(testing.model.subset$focal[testing.model.index], 6, "x")), T=testing.model.subset$T[testing.model.index], D=testing.model.subset$D[testing.model.index]))
+      if (!is.null(final.matrix.all)) {
+       qIndices<-grep("^q\\d",row.names(final.matrix.all),perl=TRUE)
+       lambdaIndices<-grep("^lambda\\d",row.names(final.matrix.all),perl=TRUE)
+        muIndices<-grep("^mu\\d",row.names(final.matrix.all),perl=TRUE)
+        T<-testing.model.subset$T[testing.model.index]
+        D<-testing.model.subset$D[testing.model.index]
+        tmp.dataframe<-data.frame(testing.model.subset$focal[testing.model.index],T,transitionModels[T,4],D,diversificationModels[D,5],final.matrix.all[which(row.names(final.matrix.all)=="lnLik"),1],final.matrix.all[which(row.names(final.matrix.all)=="AIC"),1],final.matrix.all[which(row.names(final.matrix.all)=="k_all"),1],final.matrix.all[which(row.names(final.matrix.all)=="k_q"),1],final.matrix.all[which(row.names(final.matrix.all)=="k_lambda"),1],final.matrix.all[which(row.names(final.matrix.all)=="k_mu"),1]) 
+        names(tmp.dataframe)<-c("focal","T","TransitionModel","D","DiversificationModel","lnLik","AIC","k_all","k_q","k_lambda","k_mu")	
+        tmp.dataframe<-cbind(tmp.dataframe,data.frame(matrix(final.matrix.all[qIndices,1],nrow=1,dimnames=list("",names(final.matrix.all[qIndices,1])))),data.frame(matrix(final.matrix.all[lambdaIndices,1],nrow=1,dimnames=list("",names(final.matrix.all[lambdaIndices,1])))),data.frame(matrix(final.matrix.all[muIndices,1],nrow=1,dimnames=list("",names(final.matrix.all[muIndices,1])))))
+        save(phy, rep, pars, final.matrix.all, tmp.dataframe, testing.model.index, model.index, file=paste("Run2.", system("hostname", intern=TRUE),"_","R",rep,"Generating",model.index,"Used",testing.model.index,"_",format(Sys.time(), "%H.%M.%S.%b%d.%Y"),".Rsave", sep=""), compress=TRUE)
+      }
+    }
+
+doRunWithinForeachOuter<-function(rep, generating.models, testing.model.subset) {
   lambda.columns<-which(grepl("lambda", names(generating.models)))[-1]
   mu.columns<-which(grepl("mu", names(generating.models)))[-1]
   q.columns<-which(grepl("q", names(generating.models)))[-1]
@@ -73,24 +90,11 @@ doRunWithinForeach<-function(rep, generating.models, testing.model.subset) {
     }
     #for (testing.model.index in sequence(1)) {
       
-    for (testing.model.index in sequence(dim(testing.model.subset)[1])) {
-      final.matrix.all<-NULL
-      try(final.matrix.all<-doSingleModelFromSim(phy, F=vectorToString(convertFocalLabelToFocalVector(testing.model.subset$focal[testing.model.index], 6, "x")), T=testing.model.subset$T[testing.model.index], D=testing.model.subset$D[testing.model.index]))
-      if (!is.null(final.matrix.all)) {
-       qIndices<-grep("^q\\d",row.names(final.matrix.all),perl=TRUE)
-       lambdaIndices<-grep("^lambda\\d",row.names(final.matrix.all),perl=TRUE)
-        muIndices<-grep("^mu\\d",row.names(final.matrix.all),perl=TRUE)
-        T<-testing.model.subset$T[testing.model.index]
-        D<-testing.model.subset$D[testing.model.index]
-        tmp.dataframe<-data.frame(testing.model.subset$focal[testing.model.index],T,transitionModels[T,4],D,diversificationModels[D,5],final.matrix.all[which(row.names(final.matrix.all)=="lnLik"),1],final.matrix.all[which(row.names(final.matrix.all)=="AIC"),1],final.matrix.all[which(row.names(final.matrix.all)=="k_all"),1],final.matrix.all[which(row.names(final.matrix.all)=="k_q"),1],final.matrix.all[which(row.names(final.matrix.all)=="k_lambda"),1],final.matrix.all[which(row.names(final.matrix.all)=="k_mu"),1]) 
-        names(tmp.dataframe)<-c("focal","T","TransitionModel","D","DiversificationModel","lnLik","AIC","k_all","k_q","k_lambda","k_mu")	
-        tmp.dataframe<-cbind(tmp.dataframe,data.frame(matrix(final.matrix.all[qIndices,1],nrow=1,dimnames=list("",names(final.matrix.all[qIndices,1])))),data.frame(matrix(final.matrix.all[lambdaIndices,1],nrow=1,dimnames=list("",names(final.matrix.all[lambdaIndices,1])))),data.frame(matrix(final.matrix.all[muIndices,1],nrow=1,dimnames=list("",names(final.matrix.all[muIndices,1])))))
-        save(phy, rep, pars, final.matrix.all, tmp.dataframe, testing.model.index, model.index, file=paste(system("hostname", intern=TRUE),"_","R",rep,"Generating",model.index,"Used",testing.model.index,"_",format(Sys.time(), "%H.%M.%S.%b%d.%Y"),".Rsave", sep=""), compress=TRUE)
-      }
-    }
+#    for (testing.model.index in sequence(dim(testing.model.subset)[1])) {
+    foreach (testing.model.index=sequence(dim(testing.model.subset)[1])) %dopar% try(doRunWithinForeachInner(testing.model.index, phy, testing.model.subset, transitionModels, diversificationModels))
     
   }
 }
 
-foreach  (rep=sequence(nreps)) %dopar% try(doRunWithinForeach(rep, generating.models, testing.model.subset))
+foreach  (rep=sequence(nreps)) %do% try(doRunWithinForeachOuter(rep, generating.models, testing.model.subset))
 

@@ -70,7 +70,7 @@ print("done combo decimal")
 
 colfunc <- colorRampPalette(c("blue", "red"))(100)
 
-
+par(mfcol=c(1,1))
 plot(c(-5,64), c(-.2*max(comboProportions), max(comboProportions)), bty="n", xlab="", ylab="", xaxt="n", yaxt="n", type="n")
 lines(x=c(-5,64), c(0,0), col="gray")
 state.names<-c("Perianth", "Fusion", "Symmetry", "Stamens", "Syncarpy", "Ovary")
