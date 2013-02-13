@@ -96,7 +96,7 @@ for (i in 1:64) {
 }
 
 par(las=1)
-axis(side=2, pos=0, at=seq(from=0,to=max(comboProportions), length.out=4), labels=c("",0.05, 0.10 ,0.15),cex=0.5, col="darkgray")
+axis(side=2, pos=0, at=seq(from=0,to=max(comboProportions), length.out=3), labels=c("","", 0.13 ),cex.axis=0.5, col="darkgray")
 
 #save(list=ls(), file="ComponentsForPlottingHistogram.RData", compress=TRUE)
 
