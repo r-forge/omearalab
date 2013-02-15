@@ -384,7 +384,8 @@ GetQuantiles<-function(phylo){
 ######################################################################################################################################
 
 GetNewAncParam<-function(stop.time, param.anc, sigma.indep, weight.anc.0, weight.anc.half, weight.logistic, trend.exponent, split.times, k, param.splits, param.sigma.anc, quantile.node, prob.kick, kick.value, t.edge){
-	result <- (1-prob.kick) * qlnorm(quantile.node,log(SetParameter(stop.time=stop.time, param.anc=param.anc, sigma.indep=sigma.indep, weight.anc.0=weight.anc.0, weight.anc.half=weight.anc.half, weight.logistic=weight.logistic, trend.exponent=trend.exponent, split.times=split.times, k=k, param.splits=param.splits, t.edge=t.edge)), param.sigma.anc) + prob.kick * kick.value
+	do.kick<-(prob.kick > runif(1,0,1))
+	result <- (1-do.kick) * qlnorm(quantile.node,log(SetParameter(stop.time=stop.time, param.anc=param.anc, sigma.indep=sigma.indep, weight.anc.0=weight.anc.0, weight.anc.half=weight.anc.half, weight.logistic=weight.logistic, trend.exponent=trend.exponent, split.times=split.times, k=k, param.splits=param.splits, t.edge=t.edge)), param.sigma.anc) + do.kick * kick.value
 	return(result)
 }
 
