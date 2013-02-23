@@ -1,7 +1,6 @@
-##General diversification simulation##
+##General diversification simulation for both building trees and estimating phi##
 
 library(ape)
-
 #our object while we are building up a tree is a data.frame
 #first two columns are an edge matrix
 #then edge length
@@ -14,7 +13,7 @@ library(ape)
 #at end, renumber so ape is happy, convert to phylo object
 #need to pass turnover 
 
-DeepSim<-function(max.time=2, max.ntax=Inf, max.wall.time=Inf, check.file=NULL, start.file=NULL, return.all.extinct=TRUE, verbose=FALSE, check.interval=1800, turnover.param.anc=0.50, turnover.param.indep=.50, turnover.sigma.indep=0, turnover.weight.anc.0=0, turnover.weight.anc.half=0, turnover.weight.logistic=0, turnover.trend.exponent=0, turn.k=Inf, turnover.sigma.anc=0, turnover.prob.kick=0, turnover.kick.value=0, eps.param.anc=1.0, eps.param.indep=1.0, eps.sigma.indep=0, eps.weight.anc.0=0, eps.weight.anc.half=0, eps.weight.logistic=0, eps.trend.exponent=0, eps.k=Inf, eps.sigma.anc=0, eps.prob.kick=0, eps.kick.value=0, warning.diversity=Inf,sanity.cutoff=Inf) {
+DeepSim<-function(max.time=20, max.ntax=Inf, max.wall.time=Inf, check.file=NULL, start.file=NULL, return.all.extinct=TRUE, verbose=FALSE, check.interval=1800, turnover.param.anc=0.50, turnover.param.indep=.50, turnover.sigma.indep=0, turnover.weight.anc.0=0, turnover.weight.anc.half=0, turnover.weight.logistic=0, turnover.trend.exponent=0, turn.k=Inf, turnover.sigma.anc=0, turnover.prob.kick=0, turnover.kick.value=0, eps.param.anc=1, eps.param.indep=1, eps.sigma.indep=0, eps.weight.anc.0=0, eps.weight.anc.half=0, eps.weight.logistic=0, eps.trend.exponent=0, eps.k=Inf, eps.sigma.anc=0, eps.prob.kick=0, eps.kick.value=0, warning.diversity=Inf,sanity.cutoff=NA) {
 
 	depth.time<-max.time
 	start.time<-Sys.time()
@@ -25,9 +24,9 @@ DeepSim<-function(max.time=2, max.ntax=Inf, max.wall.time=Inf, check.file=NULL, 
 	turnover.splits <- exp(rnorm(1, log(turnover.param.indep), turnover.sigma.indep))
 	eps.splits <- exp(rnorm(1, log(eps.param.indep), eps.sigma.indep))
 
-	birth<-SetDeath(stop.time=depth.time, turnover.param.anc=turnover.param.anc, turnover.sigma.indep=turnover.sigma.indep, turnover.weight.anc.0=turnover.weight.anc.0, turnover.weight.anc.half=turnover.weight.anc.half, turnover.weight.logistic=turnover.weight.logistic, turnover.trend.exponent=turnover.trend.exponent, eps.param.anc=eps.param.anc, eps.sigma.indep=eps.sigma.indep, eps.weight.anc.0=eps.weight.anc.0, eps.weight.anc.half=eps.weight.anc.half, eps.weight.logistic=eps.weight.logistic, eps.trend.exponent=eps.trend.exponent, split.times=c(0), turn.k=turn.k, eps.k=eps.k, turnover.splits=turnover.splits, eps.splits=eps.splits, t.edge=0)
+	birth<-SetBirth(stop.time=depth.time, turnover.param.anc=turnover.param.anc, turnover.sigma.indep=turnover.sigma.indep, turnover.weight.anc.0=turnover.weight.anc.0, turnover.weight.anc.half=turnover.weight.anc.half, turnover.weight.logistic=turnover.weight.logistic, turnover.trend.exponent=turnover.trend.exponent, eps.param.anc=eps.param.anc, eps.sigma.indep=eps.sigma.indep, eps.weight.anc.0=eps.weight.anc.0, eps.weight.anc.half=eps.weight.anc.half, eps.weight.logistic=eps.weight.logistic, eps.trend.exponent=eps.trend.exponent, split.times=c(0), turn.k=turn.k, eps.k=eps.k, turnover.splits=turnover.splits, eps.splits=eps.splits, t.edge=0)
 	death<-SetDeath(stop.time=depth.time, turnover.param.anc=turnover.param.anc, turnover.sigma.indep=turnover.sigma.indep, turnover.weight.anc.0=turnover.weight.anc.0, turnover.weight.anc.half=turnover.weight.anc.half, turnover.weight.logistic=turnover.weight.logistic, turnover.trend.exponent=turnover.trend.exponent, eps.param.anc=eps.param.anc, eps.sigma.indep=eps.sigma.indep, eps.weight.anc.0=eps.weight.anc.0, eps.weight.anc.half=eps.weight.anc.half, eps.weight.logistic=eps.weight.logistic, eps.trend.exponent=eps.trend.exponent, split.times=c(0), turn.k=turn.k, eps.k=eps.k, turnover.splits=turnover.splits, eps.splits=eps.splits, t.edge=0)
-	
+
 	#note that this is rough, as it does not take into account changing rates nor ascertainment bias
 	approx.expected.diversity=2*exp((birth-death)*max.time) 	
 	
@@ -45,7 +44,6 @@ DeepSim<-function(max.time=2, max.ntax=Inf, max.wall.time=Inf, check.file=NULL, 
 	phy<-sim2phylo(sim.object)
 	split.times<-branching.times(phy)+depth.time
 
-#	
 #	if(is.finite(max.time)){
 #		print(paste("approx.expected.diversity*(birth+death)",approx.expected.diversity*(birth+death),approx.expected.diversity,(birth+death)))
 #	}
@@ -56,17 +54,36 @@ DeepSim<-function(max.time=2, max.ntax=Inf, max.wall.time=Inf, check.file=NULL, 
 	
 	while(depth.time>0 & Ntip(phy)<=max.ntax & (Sys.time()-start.time)<max.wall.time) {
 		
+		if(!is.na(sanity.cutoff)){
+			compound.prob.extinct<-SanityCutoffCheck(sim.object, depth.time=depth.time, turnover.param.anc=turnover.param.anc, turnover.sigma.indep=turnover.sigma.indep, turnover.weight.anc.0=turnover.weight.anc.0, turnover.weight.anc.half=turnover.weight.anc.half, turnover.weight.logistic=turnover.weight.logistic, turnover.trend.exponent=turnover.trend.exponent, split.times=split.times, turn.k=turn.k, eps.k=eps.k, turnover.splits=turnover.splits, turnover.sigma.anc=turnover.sigma.anc, turnover.prob.kick=turnover.prob.kick, turnover.kick.value=turnover.kick.value, eps.param.anc=eps.param.anc, eps.sigma.indep=eps.sigma.indep, eps.weight.anc.0=eps.weight.anc.0, eps.weight.anc.half=eps.weight.anc.half, eps.weight.logistic=eps.weight.logistic, eps.trend.exponent=eps.trend.exponent, eps.splits=eps.splits, eps.sigma.anc=eps.sigma.anc, eps.prob.kick=eps.prob.kick, eps.kick.value=eps.kick.value)
+			if(compound.prob.extinct<.Machine$double.eps^.5){
+				root.node<-sim.object$from[which(!sim.object$from%in%sim.object$to)][1]
+				root.depth<-root.tracker[which(root.tracker[,1]==root.node),2]
+				phy <- sim2phylo(sim.object)
+				sim.object <- GrowSimObject(sim.object, root.depth-max(branching.times(phy)))
+				phy <- sim2phylo(sim.object)
+				###########################REMAINING ISSUE###########################
+				phy <- reorder(phy,"pruningwise")
+				phy <- reorder(phy,"cladewise")
+				#Given the way we build trees it will useful to remove the single nodes. Could be a user switch:
+				#phy<-collapse.singles(phy)
+				#####################################################################
+				return(phy)
+			}
+		}
+
 		alive<-Ntip(phy)
-		
+
 ########Check that the right param.ancs are being sent here:
-		birth<-SetDeath(stop.time=depth.time, turnover.param.anc=sim.object$turnover.present[which(sim.object$tip==TRUE)], turnover.sigma.indep=turnover.sigma.indep, turnover.weight.anc.0=turnover.weight.anc.0, turnover.weight.anc.half=turnover.weight.anc.half, turnover.weight.logistic=turnover.weight.logistic, turnover.trend.exponent=turnover.trend.exponent, eps.param.anc=sim.object$eps.present[which(sim.object$tip==TRUE)], eps.sigma.indep=eps.sigma.indep, eps.weight.anc.0=eps.weight.anc.0, eps.weight.anc.half=eps.weight.anc.half, eps.weight.logistic=eps.weight.logistic, eps.trend.exponent=eps.trend.exponent, split.times=split.times, turn.k=turn.k, eps.k=eps.k, turnover.splits=turnover.splits, eps.splits=eps.splits, t.edge=sim.object$time.last.split[which(sim.object$tip)])
+		birth<-SetBirth(stop.time=depth.time, turnover.param.anc=sim.object$turnover.present[which(sim.object$tip==TRUE)], turnover.sigma.indep=turnover.sigma.indep, turnover.weight.anc.0=turnover.weight.anc.0, turnover.weight.anc.half=turnover.weight.anc.half, turnover.weight.logistic=turnover.weight.logistic, turnover.trend.exponent=turnover.trend.exponent, eps.param.anc=sim.object$eps.present[which(sim.object$tip==TRUE)], eps.sigma.indep=eps.sigma.indep, eps.weight.anc.0=eps.weight.anc.0, eps.weight.anc.half=eps.weight.anc.half, eps.weight.logistic=eps.weight.logistic, eps.trend.exponent=eps.trend.exponent, split.times=split.times, turn.k=turn.k, eps.k=eps.k, turnover.splits=turnover.splits, eps.splits=eps.splits, t.edge=sim.object$time.last.split[which(sim.object$tip)])
 		death<-SetDeath(stop.time=depth.time, turnover.param.anc=sim.object$turnover.present[which(sim.object$tip==TRUE)], turnover.sigma.indep=turnover.sigma.indep, turnover.weight.anc.0=turnover.weight.anc.0, turnover.weight.anc.half=turnover.weight.anc.half, turnover.weight.logistic=turnover.weight.logistic, turnover.trend.exponent=turnover.trend.exponent, eps.param.anc=sim.object$eps.present[which(sim.object$tip==TRUE)], eps.sigma.indep=eps.sigma.indep, eps.weight.anc.0=eps.weight.anc.0, eps.weight.anc.half=eps.weight.anc.half, eps.weight.logistic=eps.weight.logistic, eps.trend.exponent=eps.trend.exponent, split.times=split.times, turn.k=turn.k, eps.k=eps.k, turnover.splits=turnover.splits, eps.splits=eps.splits, t.edge=sim.object$time.last.split[which(sim.object$tip)])		
 
 		interval.length<-rexp(1, sum(birth,death))
 
 		depth.time<-depth.time-interval.length
 		#Choose a tip using rmultinom with the first half of the prob vector corresponding to birth, and the second half corresponding to death.
-		if(is.finite(max.time) | alive > sanity.cutoff){
+		
+		if(is.finite(max.time)){
 			if (depth.time<0) {
 				root.node<-sim.object$from[which(!sim.object$from%in%sim.object$to)][1]
 				root.depth<-root.tracker[which(root.tracker[,1]==root.node),2]
@@ -76,6 +93,8 @@ DeepSim<-function(max.time=2, max.ntax=Inf, max.wall.time=Inf, check.file=NULL, 
 				###########################REMAINING ISSUE###########################
 				phy <- reorder(phy,"pruningwise")
 				phy <- reorder(phy,"cladewise")
+				#Given the way we build trees it will useful to remove the single nodes. Could be a user switch:
+				#phy<-collapse.singles(phy)
 				#####################################################################
 				return(phy)
 			}
@@ -87,6 +106,8 @@ DeepSim<-function(max.time=2, max.ntax=Inf, max.wall.time=Inf, check.file=NULL, 
 				###########################REMAINING ISSUE###########################
 				phy <- reorder(phy,"pruningwise")
 				phy <- reorder(phy,"cladewise")
+				#Given the way we build trees it will useful to remove the single nodes. Could be a user switch:
+				#phy<-collapse.singles(phy)
 				#####################################################################
 				sim.object<-sim.object
 				return(phy)
@@ -181,8 +202,8 @@ GrowSimObject<-function(sim.object, interval.length) {
 UpdateTerminalParams<-function(sim.object, stop.time, turnover.sigma.indep, turnover.weight.anc.0, turnover.weight.anc.half, turnover.weight.logistic, turnover.trend.exponent, split.times, turn.k, eps.k, turnover.splits, turnover.sigma.anc, eps.sigma.indep, eps.weight.anc.0, eps.weight.anc.half, eps.weight.logistic, eps.trend.exponent, eps.splits, eps.sigma.anc) {
 	for (descendant in sequence(dim(sim.object)[1])) {
 		if(sim.object$tip[descendant]==TRUE){
-			sim.object$turnover.present[descendant] <- SetParameterSim(stop.time, param.anc=sim.object$turnover.anc[descendant], sigma.indep=turnover.sigma.indep, weight.anc.0=turnover.weight.anc.0, weight.anc.half=turnover.weight.anc.half, weight.logistic=turnover.weight.logistic, trend.exponent=turnover.trend.exponent, split.times=split.times, k=turn.k, param.splits=turnover.splits, t.edge=sim.object$time.last.split[descendant])
-			sim.object$eps.present[descendant] <- SetParameterSim(stop.time, param.anc=sim.object$eps.anc[descendant], sigma.indep=eps.sigma.indep, weight.anc.0=eps.weight.anc.0, weight.anc.half=eps.weight.anc.half, weight.logistic=eps.weight.logistic, trend.exponent=eps.trend.exponent, split.times=split.times, k=eps.k, param.splits=eps.splits, t.edge=sim.object$time.last.split[descendant])
+			sim.object$turnover.present[descendant] <- SetParameter(stop.time, param.anc=sim.object$turnover.anc[descendant], sigma.indep=turnover.sigma.indep, weight.anc.0=turnover.weight.anc.0, weight.anc.half=turnover.weight.anc.half, weight.logistic=turnover.weight.logistic, trend.exponent=turnover.trend.exponent, split.times=split.times, k=turn.k, param.splits=turnover.splits, t.edge=sim.object$time.last.split[descendant])
+			sim.object$eps.present[descendant] <- SetParameter(stop.time, param.anc=sim.object$eps.anc[descendant], sigma.indep=eps.sigma.indep, weight.anc.0=eps.weight.anc.0, weight.anc.half=eps.weight.anc.half, weight.logistic=eps.weight.logistic, trend.exponent=eps.trend.exponent, split.times=split.times, k=eps.k, param.splits=eps.splits, t.edge=sim.object$time.last.split[descendant])
 		}
 	}
 	return(sim.object)
@@ -264,11 +285,21 @@ DeathSimObject<-function(sim.object, interval.length, stop.time, turnover.sigma.
 
 GetNewAncParamSim<-function(stop.time, param.anc, sigma.indep, weight.anc.0, weight.anc.half, weight.logistic, trend.exponent, split.times, k, param.splits, param.sigma.anc, quantile.node, prob.kick, kick.value, t.edge){
 	do.kick <- (prob.kick > runif(1,0,1))
-	result <- (1 - do.kick) * exp(rnorm(1, log(SetParameterSim(stop.time=stop.time, param.anc=param.anc, sigma.indep=sigma.indep, weight.anc.0=weight.anc.0, weight.anc.half=weight.anc.half, weight.logistic=weight.logistic, trend.exponent=trend.exponent, split.times=split.times, k=k, param.splits=param.splits, t.edge=t.edge)), param.sigma.anc)) + do.kick * kick.value
+	result <- (1 - do.kick) * exp(rnorm(1, log(SetParameter(stop.time=stop.time, param.anc=param.anc, sigma.indep=sigma.indep, weight.anc.0=weight.anc.0, weight.anc.half=weight.anc.half, weight.logistic=weight.logistic, trend.exponent=trend.exponent, split.times=split.times, k=k, param.splits=param.splits, t.edge=t.edge)), param.sigma.anc)) + do.kick * kick.value
 	return(result)
 }
 
-#SetParameterSim <- function(stop.time, param.anc, sigma.indep, weight.anc.0, weight.anc.half, weight.logistic, trend.exponent, split.times, k, param.splits, t.edge) {
+SanityCutoffCheck<-function(sim.object, depth.time, turnover.param.anc, turnover.sigma.indep, turnover.weight.anc.0, turnover.weight.anc.half, turnover.weight.logistic, turnover.trend.exponent, split.times, turn.k, eps.k, turnover.splits, turnover.sigma.anc, turnover.prob.kick, turnover.kick.value, eps.param.anc, eps.sigma.indep, eps.weight.anc.0, eps.weight.anc.half, eps.weight.logistic, eps.trend.exponent, eps.splits, eps.sigma.anc, eps.prob.kick, eps.kick.value){
+	new.prob<-c()
+	tips.in.sim.object<-which(sim.object$tip==TRUE)
+	for(i in tips.in.sim.object){
+		new.prob<-c(new.prob, PhiMorlon(stop.time=depth.time, f=1, turnover.param.anc=sim.object$turnover.present[i], turnover.sigma.indep=turnover.sigma.indep, turnover.weight.anc.0=turnover.weight.anc.0, turnover.weight.anc.half=turnover.weight.anc.half, turnover.weight.logistic=turnover.weight.logistic, turnover.trend.exponent=turnover.trend.exponent, eps.param.anc=sim.object$eps.present[i], eps.sigma.indep=eps.sigma.indep, eps.weight.anc.0=eps.weight.anc.0, eps.weight.anc.half=eps.weight.anc.half, eps.weight.logistic=eps.weight.logistic, eps.trend.exponent=eps.trend.exponent, split.times=split.times, turn.k=turn.k, eps.k=eps.k, turnover.splits=turnover.splits, eps.splits=eps.splits, t.edge=sim.object$time.last.split[i]))
+	}
+	sanity.cutoff<-prod(new.prob)
+	return(sanity.cutoff)
+}
+
+#SetParameter <- function(stop.time, param.anc, sigma.indep, weight.anc.0, weight.anc.half, weight.logistic, trend.exponent, split.times, k, param.splits, t.edge) {
 #	position <- max(which(split.times>=stop.time),1)
 #	n.taxa <- 1+length(which(split.times>=stop.time))
 #	param.indep <- param.splits[position]
@@ -281,8 +312,8 @@ GetNewAncParamSim<-function(stop.time, param.anc, sigma.indep, weight.anc.0, wei
 #}
 
 #SetDeathSim <- function(stop.time, turnover.param.anc, turnover.sigma.indep, turnover.weight.anc.0, turnover.weight.anc.half, turnover.weight.logistic, turnover.trend.exponent, eps.param.anc, eps.sigma.indep, eps.weight.anc.0, eps.weight.anc.half, eps.weight.logistic, eps.trend.exponent, split.times, turn.k, eps.k, turnover.splits, eps.splits, t.edge) {
-#	turnover <- SetParameterSim(stop.time=stop.time, param.anc=turnover.param.anc, sigma.indep=turnover.sigma.indep, weight.anc.0=turnover.weight.anc.0, weight.anc.half=turnover.weight.anc.half, weight.logistic=turnover.weight.logistic, trend.exponent=turnover.trend.exponent, split.times=split.times, k=turn.k, param.splits=turnover.splits, t.edge=t.edge)
-#	extinction.fraction <- SetParameterSim(stop.time=stop.time, param.anc=eps.param.anc, sigma.indep=eps.sigma.indep, weight.anc.0=eps.weight.anc.0, weight.anc.half=eps.weight.anc.half, weight.logistic=eps.weight.logistic, trend.exponent=eps.trend.exponent, split.times=split.times, k=eps.k, param.splits=eps.splits, t.edge=t.edge)
+#	turnover <- SetParameter(stop.time=stop.time, param.anc=turnover.param.anc, sigma.indep=turnover.sigma.indep, weight.anc.0=turnover.weight.anc.0, weight.anc.half=turnover.weight.anc.half, weight.logistic=turnover.weight.logistic, trend.exponent=turnover.trend.exponent, split.times=split.times, k=turn.k, param.splits=turnover.splits, t.edge=t.edge)
+#	extinction.fraction <- SetParameter(stop.time=stop.time, param.anc=eps.param.anc, sigma.indep=eps.sigma.indep, weight.anc.0=eps.weight.anc.0, weight.anc.half=eps.weight.anc.half, weight.logistic=eps.weight.logistic, trend.exponent=eps.trend.exponent, split.times=split.times, k=eps.k, param.splits=eps.splits, t.edge=t.edge)
 #	return(SetDeathGivenParametersSim(turnover, extinction.fraction))
 #}
 
@@ -292,8 +323,8 @@ GetNewAncParamSim<-function(stop.time, param.anc, sigma.indep, weight.anc.0, wei
 #}
 
 #SetDeath <- function(stop.time, turnover.param.anc, turnover.sigma.indep, turnover.weight.anc.0, turnover.weight.anc.half, turnover.weight.logistic, turnover.trend.exponent, eps.param.anc, eps.sigma.indep, eps.weight.anc.0, eps.weight.anc.half, eps.weight.logistic, eps.trend.exponent, split.times, turn.k, eps.k, turnover.splits, eps.splits, t.edge) {
-#	turnover<-SetParameterSim(stop.time=stop.time, param.anc=turnover.param.anc, sigma.indep=turnover.sigma.indep, weight.anc.0=turnover.weight.anc.0, weight.anc.half=turnover.weight.anc.half, weight.logistic=turnover.weight.logistic, trend.exponent=turnover.trend.exponent, split.times=split.times, k=turn.k, param.splits=turnover.splits, t.edge=t.edge)
-#	extinction.fraction<-SetParameterSim(stop.time=stop.time, param.anc=eps.param.anc, sigma.indep=eps.sigma.indep, weight.anc.0=eps.weight.anc.0, weight.anc.half=eps.weight.anc.half, weight.logistic=eps.weight.logistic, trend.exponent=eps.trend.exponent, split.times=split.times, k=eps.k, param.splits=eps.splits, t.edge=t.edge)
+#	turnover<-SetParameter(stop.time=stop.time, param.anc=turnover.param.anc, sigma.indep=turnover.sigma.indep, weight.anc.0=turnover.weight.anc.0, weight.anc.half=turnover.weight.anc.half, weight.logistic=turnover.weight.logistic, trend.exponent=turnover.trend.exponent, split.times=split.times, k=turn.k, param.splits=turnover.splits, t.edge=t.edge)
+#	extinction.fraction<-SetParameter(stop.time=stop.time, param.anc=eps.param.anc, sigma.indep=eps.sigma.indep, weight.anc.0=eps.weight.anc.0, weight.anc.half=eps.weight.anc.half, weight.logistic=eps.weight.logistic, trend.exponent=eps.trend.exponent, split.times=split.times, k=eps.k, param.splits=eps.splits, t.edge=t.edge)
 #	return(SetDeathGivenParametersSim(turnover, extinction.fraction))
 #}
 
