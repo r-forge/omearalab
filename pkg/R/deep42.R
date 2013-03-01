@@ -75,7 +75,6 @@ Deep<-function(phy, f=1, model=c("yule", "bd"), turnover.logistic=FALSE, eps.log
 	pars[pars==0]<-max(pars)+1
 	#Function used for optimizing parameters:
 	DevOptimize <- function(p, pars, phy, tot_time, f, turnover.inherit, turnover.weight.logistic, turnover.exp, turnover.ratch, eps.inherit, eps.weight.logistic, eps.exp, eps.ratch, split.times, quantile.set, sanity.cutoff, n.cores) {
-		
 		#Generates the final vector with the appropriate parameter estimates in the right place:
 		model.vec <- numeric(length(pars))
 		model.vec[] <- c(p, 0)[pars]

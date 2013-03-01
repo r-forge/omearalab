@@ -1,8 +1,8 @@
 library(Rmpfr)
 prec<-400
-t<-530 #units of millions of years
-min.N<-1000000
-max.N<-20000000
+t<-50 #units of millions of years
+min.N<-50
+max.N<-50
 
 r.conversion<-function(b, eps) {
   return(b*(1-eps)) 
@@ -19,7 +19,6 @@ beta<-function(r, eps, t) {
 alpha<-function(r, eps, t) {
   return(eps * beta(r, eps, t)) 
 }
-
 
 
 pN<-function(N, eps, r, t) {
@@ -58,3 +57,11 @@ contour(x=n.species.vector, y=b.vector, z=results,xlab="n.species",ylab="speciat
 axis(side=4, at=seq(from=min(b.vector), to=max(b.vector), length.out=5), labels=round(seq(from=min(b.vector), to=max(b.vector), length.out=5)/(log(max(n.species.vector))/t),2))
 
 dev.off()
+
+
+
+###Eq.6 Magallon and Sanderson 2001:
+n=50
+e=.75
+t=50
+rc<-(1/t)*(log(.5*n*(1-e^2)+2*e+.5*(1-e)*sqrt(n*(n*(e^2)-8*e+2*n*e+n)))-log(2))

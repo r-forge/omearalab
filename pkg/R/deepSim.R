@@ -1,17 +1,7 @@
 ##General diversification simulation for both building trees and estimating phi##
 
 library(ape)
-#our object while we are building up a tree is a data.frame
-#first two columns are an edge matrix
-#then edge length
-#then boolean: T if  a tip (so it can keep growing
-#then turnover in ancestor to that edge
-#then turnover at end of that edge (just before the next split)
-#then eps in ancestor to that edge
-#then eps at end of that edge (just before the next split)
-#as it grows, some taxa will go extinct. Those rows will be deleted
-#at end, renumber so ape is happy, convert to phylo object
-#need to pass turnover 
+source("deep42.R")
 
 DeepSim<-function(max.time=20, max.ntax=Inf, max.wall.time=Inf, check.file=NULL, start.file=NULL, return.all.extinct=TRUE, verbose=FALSE, check.interval=1800, turnover.param.anc=0.50, turnover.param.indep=.50, turnover.sigma.indep=0, turnover.weight.anc.0=0, turnover.weight.anc.half=0, turnover.weight.logistic=0, turnover.trend.exponent=0, turn.k=Inf, turnover.sigma.anc=0, turnover.prob.kick=0, turnover.kick.value=0, eps.param.anc=1, eps.param.indep=1, eps.sigma.indep=0, eps.weight.anc.0=0, eps.weight.anc.half=0, eps.weight.logistic=0, eps.trend.exponent=0, eps.k=Inf, eps.sigma.anc=0, eps.prob.kick=0, eps.kick.value=0, warning.diversity=Inf,sanity.cutoff=NA) {
 
@@ -27,9 +17,20 @@ DeepSim<-function(max.time=20, max.ntax=Inf, max.wall.time=Inf, check.file=NULL,
 	birth<-SetBirth(stop.time=depth.time, turnover.param.anc=turnover.param.anc, turnover.sigma.indep=turnover.sigma.indep, turnover.weight.anc.0=turnover.weight.anc.0, turnover.weight.anc.half=turnover.weight.anc.half, turnover.weight.logistic=turnover.weight.logistic, turnover.trend.exponent=turnover.trend.exponent, eps.param.anc=eps.param.anc, eps.sigma.indep=eps.sigma.indep, eps.weight.anc.0=eps.weight.anc.0, eps.weight.anc.half=eps.weight.anc.half, eps.weight.logistic=eps.weight.logistic, eps.trend.exponent=eps.trend.exponent, split.times=c(0), turn.k=turn.k, eps.k=eps.k, turnover.splits=turnover.splits, eps.splits=eps.splits, t.edge=0)
 	death<-SetDeath(stop.time=depth.time, turnover.param.anc=turnover.param.anc, turnover.sigma.indep=turnover.sigma.indep, turnover.weight.anc.0=turnover.weight.anc.0, turnover.weight.anc.half=turnover.weight.anc.half, turnover.weight.logistic=turnover.weight.logistic, turnover.trend.exponent=turnover.trend.exponent, eps.param.anc=eps.param.anc, eps.sigma.indep=eps.sigma.indep, eps.weight.anc.0=eps.weight.anc.0, eps.weight.anc.half=eps.weight.anc.half, eps.weight.logistic=eps.weight.logistic, eps.trend.exponent=eps.trend.exponent, split.times=c(0), turn.k=turn.k, eps.k=eps.k, turnover.splits=turnover.splits, eps.splits=eps.splits, t.edge=0)
 
-	#note that this is rough, as it does not take into account changing rates nor ascertainment bias
-	approx.expected.diversity=2*exp((birth-death)*max.time) 	
+	#To store in cases where we restart after total extinction:
+	birth.init<-birth
+	death.init<-death
 	
+	#Magallon and Sanderson 2001 Eq. 2a, 2b, and 5 -- will throw an error if eps=1:
+#	beta<-(exp((birth-death)*max.time)-1)/(exp((birth-death)*max.time)-eps.param.anc)
+#	alpha<-eps.param.anc*beta
+#	approx.expected.diversity=(2*exp((birth-death)*max.time))/(1-alpha^2)
+#	Extremely rough alternative:
+#	approx.expected.diversity=2*exp((birth-death)*max.time) 	
+#	if(verbose){
+#		print(paste("approx.expected.diversity", approx.expected.diversity))
+#	}
+
 	if(is.finite(max.time)){
 		if(approx.expected.diversity>warning.diversity) {
 			warning(paste("Expected diversity is very roughly", approx.expected.diversity))
@@ -39,24 +40,21 @@ DeepSim<-function(max.time=20, max.ntax=Inf, max.wall.time=Inf, check.file=NULL,
 		}
 	}
 	
-	sim.object<-InitializeSimObject(birth,death, turnover.param.anc, eps.param.anc)
+	sim.object<-InitializeSimObject(birth, death, turnover.param.anc, eps.param.anc)
 	max.tip.count<-max(sim.object$to)
 	phy<-sim2phylo(sim.object)
 	split.times<-branching.times(phy)+depth.time
-
-#	if(is.finite(max.time)){
-#		print(paste("approx.expected.diversity*(birth+death)",approx.expected.diversity*(birth+death),approx.expected.diversity,(birth+death)))
-#	}
 	
 	if(!is.null(start.file)) {
 		load(start.file)
 	}
 	
 	while(depth.time>0 & Ntip(phy)<=max.ntax & (Sys.time()-start.time)<max.wall.time) {
-		
+
+		#If sanity.cutoff !== NA then we check to see if we can stop sim early by seeing if the compound probability is less than our cutoff value: 
 		if(!is.na(sanity.cutoff)){
 			compound.prob.extinct<-SanityCutoffCheck(sim.object, depth.time=depth.time, turnover.param.anc=turnover.param.anc, turnover.sigma.indep=turnover.sigma.indep, turnover.weight.anc.0=turnover.weight.anc.0, turnover.weight.anc.half=turnover.weight.anc.half, turnover.weight.logistic=turnover.weight.logistic, turnover.trend.exponent=turnover.trend.exponent, split.times=split.times, turn.k=turn.k, eps.k=eps.k, turnover.splits=turnover.splits, turnover.sigma.anc=turnover.sigma.anc, turnover.prob.kick=turnover.prob.kick, turnover.kick.value=turnover.kick.value, eps.param.anc=eps.param.anc, eps.sigma.indep=eps.sigma.indep, eps.weight.anc.0=eps.weight.anc.0, eps.weight.anc.half=eps.weight.anc.half, eps.weight.logistic=eps.weight.logistic, eps.trend.exponent=eps.trend.exponent, eps.splits=eps.splits, eps.sigma.anc=eps.sigma.anc, eps.prob.kick=eps.prob.kick, eps.kick.value=eps.kick.value)
-			if(compound.prob.extinct<.Machine$double.eps^.5){
+			if(compound.prob.extinct<sanity.cutoff){
 				root.node<-sim.object$from[which(!sim.object$from%in%sim.object$to)][1]
 				root.depth<-root.tracker[which(root.tracker[,1]==root.node),2]
 				phy <- sim2phylo(sim.object)
@@ -65,8 +63,8 @@ DeepSim<-function(max.time=20, max.ntax=Inf, max.wall.time=Inf, check.file=NULL,
 				###########################REMAINING ISSUE###########################
 				phy <- reorder(phy,"pruningwise")
 				phy <- reorder(phy,"cladewise")
-				#Given the way we build trees it will useful to remove the single nodes. Could be a user switch:
-				#phy<-collapse.singles(phy)
+				#Given the way we build trees it will useful to remove the single nodes. Could be a user switch too eventually:
+#				phy<-collapse.singles(phy)
 				#####################################################################
 				return(phy)
 			}
@@ -81,7 +79,6 @@ DeepSim<-function(max.time=20, max.ntax=Inf, max.wall.time=Inf, check.file=NULL,
 		interval.length<-rexp(1, sum(birth,death))
 
 		depth.time<-depth.time-interval.length
-		#Choose a tip using rmultinom with the first half of the prob vector corresponding to birth, and the second half corresponding to death.
 		
 		if(is.finite(max.time)){
 			if (depth.time<0) {
@@ -118,7 +115,7 @@ DeepSim<-function(max.time=20, max.ntax=Inf, max.wall.time=Inf, check.file=NULL,
 		#gets refilled each interval, even though the last one is the only one used
 		turnover.splits <- rep(exp(rnorm(1, log(turnover.param.indep), turnover.sigma.indep)), length(split.times)) 
 		eps.splits <- rep(exp(rnorm(1, log(eps.param.indep), eps.sigma.indep)), length(split.times))
-		
+		#Choose a tip using rmultinom with the first half of the prob vector corresponding to birth, and the second half corresponding to death:
 		the.chosen.one<-which(rmultinom(1,1,prob=c(birth,death))==1)
 		#If the lucky.tip is less than or equal to the number of tips, then it is a birth event:
 		if(the.chosen.one <= alive){
@@ -148,7 +145,7 @@ DeepSim<-function(max.time=20, max.ntax=Inf, max.wall.time=Inf, check.file=NULL,
 				else {
 					depth.time<-max.time
 					root.tracker=matrix(c(1,depth.time),nrow=1,ncol=2)
-					sim.object<-InitializeSimObject(birth, death, turnover.param.indep, eps.param.indep)
+					sim.object<-InitializeSimObject(birth.init, death.init, turnover.anc=birth.init+death.init, eps.anc=death.init/birth.init)
 					phy <- sim2phylo(sim.object)
 				}
 			}
@@ -195,7 +192,6 @@ GrowSimObject<-function(sim.object, interval.length) {
 	sim.object$edge.length[which(sim.object$tip)]<-sim.object$edge.length[which(sim.object$tip)] + interval.length
 	#updates time since last splitting event for all terminals in tree -- different than edge.length:
 	sim.object$time.last.split[which(sim.object$tip)]<-sim.object$time.last.split[which(sim.object$tip)] + interval.length
-	#updates time since last jump event for all terminals in tree -- different than edge.length:
 	return(sim.object)
 }
 
@@ -298,40 +294,5 @@ SanityCutoffCheck<-function(sim.object, depth.time, turnover.param.anc, turnover
 	sanity.cutoff<-prod(new.prob)
 	return(sanity.cutoff)
 }
-
-#SetParameter <- function(stop.time, param.anc, sigma.indep, weight.anc.0, weight.anc.half, weight.logistic, trend.exponent, split.times, k, param.splits, t.edge) {
-#	position <- max(which(split.times>=stop.time),1)
-#	n.taxa <- 1+length(which(split.times>=stop.time))
-#	param.indep <- param.splits[position]
-#	weight.anc <- weight.anc.0 * exp(-t.edge * log(2) / weight.anc.half) #so if weight.anc.halflife = INF, is the same as our original weight.anc model
-#	weight.anc[is.na(weight.anc)==TRUE]=0
-#	param.starting <- (param.indep * (1 - weight.anc)) + (param.anc * weight.anc) #same as autoregressive model
-#	logistic.scaling <- 1 - (weight.logistic * (n.taxa / k))
-#	param.mean <- (param.starting * (n.taxa ^ trend.exponent)) * logistic.scaling
-#	return(param.mean)
-#}
-
-#SetDeathSim <- function(stop.time, turnover.param.anc, turnover.sigma.indep, turnover.weight.anc.0, turnover.weight.anc.half, turnover.weight.logistic, turnover.trend.exponent, eps.param.anc, eps.sigma.indep, eps.weight.anc.0, eps.weight.anc.half, eps.weight.logistic, eps.trend.exponent, split.times, turn.k, eps.k, turnover.splits, eps.splits, t.edge) {
-#	turnover <- SetParameter(stop.time=stop.time, param.anc=turnover.param.anc, sigma.indep=turnover.sigma.indep, weight.anc.0=turnover.weight.anc.0, weight.anc.half=turnover.weight.anc.half, weight.logistic=turnover.weight.logistic, trend.exponent=turnover.trend.exponent, split.times=split.times, k=turn.k, param.splits=turnover.splits, t.edge=t.edge)
-#	extinction.fraction <- SetParameter(stop.time=stop.time, param.anc=eps.param.anc, sigma.indep=eps.sigma.indep, weight.anc.0=eps.weight.anc.0, weight.anc.half=eps.weight.anc.half, weight.logistic=eps.weight.logistic, trend.exponent=eps.trend.exponent, split.times=split.times, k=eps.k, param.splits=eps.splits, t.edge=t.edge)
-#	return(SetDeathGivenParametersSim(turnover, extinction.fraction))
-#}
-
-#SetDeathGivenParametersSim <- function(turnover, extinction.fraction) {
-#	birth.expected <- turnover / (1 + extinction.fraction)
-#	return(birth.expected)
-#}
-
-#SetDeath <- function(stop.time, turnover.param.anc, turnover.sigma.indep, turnover.weight.anc.0, turnover.weight.anc.half, turnover.weight.logistic, turnover.trend.exponent, eps.param.anc, eps.sigma.indep, eps.weight.anc.0, eps.weight.anc.half, eps.weight.logistic, eps.trend.exponent, split.times, turn.k, eps.k, turnover.splits, eps.splits, t.edge) {
-#	turnover<-SetParameter(stop.time=stop.time, param.anc=turnover.param.anc, sigma.indep=turnover.sigma.indep, weight.anc.0=turnover.weight.anc.0, weight.anc.half=turnover.weight.anc.half, weight.logistic=turnover.weight.logistic, trend.exponent=turnover.trend.exponent, split.times=split.times, k=turn.k, param.splits=turnover.splits, t.edge=t.edge)
-#	extinction.fraction<-SetParameter(stop.time=stop.time, param.anc=eps.param.anc, sigma.indep=eps.sigma.indep, weight.anc.0=eps.weight.anc.0, weight.anc.half=eps.weight.anc.half, weight.logistic=eps.weight.logistic, trend.exponent=eps.trend.exponent, split.times=split.times, k=eps.k, param.splits=eps.splits, t.edge=t.edge)
-#	return(SetDeathGivenParametersSim(turnover, extinction.fraction))
-#}
-
-#SetDeathGivenParametersSim <- function(turnover, extinction.fraction) {
-#	death.expected<-(extinction.fraction * turnover) / (1 + extinction.fraction)
-#	return(death.expected)
-#}
-
 
 
