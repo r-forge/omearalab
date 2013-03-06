@@ -1,4 +1,3 @@
-require(nloptr)
 #uses inverse weighting
 #x.obs is the vector containing the coordinates of a point to interpolate at (to do a grid, lapply this function)
 #x is the sampled values (can be multivariate)
@@ -15,7 +14,7 @@ InverseInterpolateSingle <- function(x.obs, x.mat, y.mat, p, standardize=TRUE, d
 	    }
 	}
 	distances<-(apply(x.mat, 1, dist.mod, x.obs=x.obs, dist.method=dist.method))^p
-	return(weighted.mean(y.mat, w=distances)) 
+	return(weighted.mean(y.mat, w=1/distances)) 
 }
 
 InverseInterpolateMany <- function(x.obsmat, x.mat, y.mat, p, standardize=TRUE, dist.method="euclidean") {
@@ -31,12 +30,11 @@ InverseInterpolateMany <- function(x.obsmat, x.mat, y.mat, p, standardize=TRUE, 
 }
 
 dist.mod <- function(x.mat, x.obs, dist.method="euclidean") {
-	return(dist(rbind(x.mat,x.obs), dist.method=dist.method))
+	return(dist(rbind(x.mat,x.obs), method=dist.method))
 }
 
 FindP <- function(x.mat, y.mat, dist.method="euclidean") {
-  opt <- nloptr(x0=1, eval_f=LOOV, lb=0.000001, ub=100, opts = list("algorithm"="NLOPT_LN_NEWUOA_BOUND"))
-	return(opt$solution)
+  return(optimize(f=LOOV, interval=c(0.00001, 100), x.mat=x.mat, y.mat=y.mat, dist.method="euclidean")$minimum)
 }
 
 RMSE <- function(predictions, true) {
@@ -45,12 +43,14 @@ RMSE <- function(predictions, true) {
 
 #p first to make optimization easier
 LOOV <- function(p, x.mat, y.mat, dist.method="euclidean") {
-	predictions <- sapply(sequence(dim(x.mat)[1]), x.mat=x.mat, y.mat=y.mat, p=p, dist.method=dist.method)
-	return(RMSE(predictions, y.mat))
+	predictions <- sapply(sequence(dim(x.mat)[1]), DropOne, x.mat=x.mat, y.mat=y.mat, p=p, dist.method=dist.method)
+	return(RMSE(predictions, y.mat)) #jeremy made me do it this way
 }
 
 DropOne <- function(drop.index, x.mat, y.mat, p, dist.method="euclidean") {
-	x.obs <- x.mat[drop.index, ]
-	x.mat <- x.mat[-drop.index, ]
-	return(InverseInterpolateSingle(x.obs, x.mat, y.mat, p, standardize=FALSE, dist.method=dist.method))
+  ncolx <- dim(x.mat)[2]
+	x.obs <- matrix(x.mat[drop.index, ], ncol=ncolx)
+	x.mat <- matrix(x.mat[-drop.index, ], ncol=ncolx)
+  y.mat <- matrix(y.mat[-drop.index, ], ncol=dim(y.mat)[2])
+	return(InverseInterpolateSingle(x.obs=x.obs, x.mat=x.mat, y.mat=y.mat, p=p, standardize=FALSE, dist.method=dist.method))
 }
