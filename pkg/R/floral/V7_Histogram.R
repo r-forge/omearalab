@@ -70,10 +70,20 @@ print("done combo decimal")
 
 colfunc <- colorRampPalette(c("blue", "red"))(100)
 
+sim.values<-matrix(nrow=0, ncol=2^6)
+for (i in 1:10000) {
+  sim.values<-rbind(sim.values, sort(rmultinom(1, sum(comboCounts), rep(1, 2^6)), decreasing=TRUE)/sum(comboCounts))
+}
+
+
+
 par(mfcol=c(1,1))
 plot(c(-5,64), c(-.2*max(comboProportions), max(comboProportions)), bty="n", xlab="", ylab="", xaxt="n", yaxt="n", type="n")
+polygon(x=c(c(1:2^6), rev(c(1:2^6))), y=c(apply(sim.values, 2, quantile, probs=0.975), rev(apply(sim.values, 2, quantile, probs=0.025))), col="gray", border=NA)
+#lines(x=c(1:2^6), y=apply(sim.values, 2, quantile, probs=0.5), lty="dotted")
+
 lines(x=c(-5,64), c(0,0), col="gray")
-state.names<-c("Perianth", "Fusion", "Symmetry", "Stamens", "Syncarpy", "Ovary")
+state.names<-c("Corolla present", "Perianth unfused", "Radial symmetry", "Many stamens", "Carpel unfused", "Ovary superior")
 text(x=rep(0,6),y=seq(from=-1, to=-6, length.out=6)*.2*max(comboProportions)/6, labels=state.names, pos=2, cex=0.5)
 state.id<-c(1:64)
 state.id<-state.id[order(comboProportions,decreasing=TRUE)]
@@ -99,5 +109,6 @@ par(las=1)
 axis(side=2, pos=0, at=seq(from=0,to=max(comboProportions), length.out=3), labels=c("","", 0.13 ),cex.axis=0.5, col="darkgray")
 
 #save(list=ls(), file="ComponentsForPlottingHistogram.RData", compress=TRUE)
+
 
 
