@@ -2,12 +2,7 @@ source("PhyloWizard.R")
 
 library(geiger)
 
-#p is the fraction of shortest edges you want to delete. A value of 0.4 will leave the tree with 60% of its original internal nodes
-ShrinkByPercent<-function(phy, p) {
-   internal.edge.length<-phy$edge.length[which(phy$edge[,2]>Ntip(phy))]
-   cutoff<-quantile(internal.edge.length, probs=p)
-   return(di2multi(phy, cutoff))
-}
+
 
 fractions<-seq(from=0, to=1, length.out=6)
 ntax<-100

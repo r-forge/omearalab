@@ -1,4 +1,5 @@
 require(ape)
+require(phytools)
 
 
 #THIS IS INTENDED AS A SNARKY RESPONSE TO APPROACHES THAT ALLOW PEOPLE TO
@@ -18,6 +19,10 @@ require(ape)
 # trees<-PhyloWizard(constraint=phy, nrep=10) 
 # plot(trees[[1]]) #note that the resulting object is a list of phylo objects, not multiPhylo
 # plot(trees[[2]])
+
+CombineTaxonomyAndSubsampledTrees <- function(multiphy) {
+  return(mrp.supertree(multiphy))
+}
 
 PhyloWizard <- function( tips=NA, constraint=NA, nrep=100) {
   phy<-NULL
@@ -49,4 +54,25 @@ MakeUpBranchlengths <- function(phy) {
   phy$edge.length[which(phy$edge.length==0)]<-random.brlen 
   phy<-chronopl(phy, lambda=0, age.min=max(branching.times(phy)), age.max=max(branching.times(phy))) #makes the tree ultrametric, making as few changes as possible to the given brlen
    return(phy)
+}
+
+
+#subsample f, the fraction of taxa to save, in a tree. 
+#pd.weight=0 -> all taxa have equal chance of being sampled
+#pd.weight=1 -> taxa sampled based on pd; those with more pd have higher chance of being sampled
+#these weights can be varied: pd.weight=0.5, for example
+SubsampleTaxa <- function(phy, pd.weight=0, f=0.5) {
+  pd.vector <- phy$edge.length[which(phy$edge[,2]<=Ntip(phy))]
+  pd.vector <- pd.vector/sum(pd.vector)
+  pd.vector <- 1-pd.vector
+  tips.ordered <- phy$tip.label[phy$edge[which(phy$edge[,2]<=Ntip(phy)),2]]
+  tips.doomed <- sample(tips.ordered, size=round((1-f)*Ntip(phy)), replace=FALSE, prob=pd.vector*pd.weight+(1-pd.weight)*rep(1/Ntip(phy), Ntip(phy)))
+  return(drop.tip(phy, tips.doomed))
+}
+
+#p is the fraction of shortest edges you want to delete. A value of 0.4 will leave the tree with 60% of its original internal nodes
+ShrinkByPercent<-function(phy, p) {
+  internal.edge.length<-phy$edge.length[which(phy$edge[,2]>Ntip(phy))]
+  cutoff<-quantile(internal.edge.length, probs=p)
+  return(di2multi(phy, cutoff))
 }
