@@ -161,8 +161,10 @@ colors.focal.bw[which(colors.focal!="orange")]<-"black"
 
 
 par(mfcol=c(1,2))
+plot(g, layout=layout.kamada.kawai(g, start=start), vertex.color=colors.focal, vertex.label=NA, edge.arrow.size=0, edge.color=colors.edges, vertex.size=7)
 plot(g, layout=layout.fruchterman.reingold(g, start=start, weights=weights), vertex.color=colors.focal, vertex.label=NA, edge.arrow.size=0, edge.color=colors.edges, vertex.size=7)
-plot(g, layout=layout.fruchterman.reingold(g, start=start, weights=weights), vertex.color=colors.focal, vertex.label=NA, edge.arrow.size=0, edge.color=colors.edges, vertex.size=15*comboProportions/max(comboProportions))
+
+#plot(g, layout=layout.fruchterman.reingold(g, start=start, weights=weights), vertex.color=colors.focal, vertex.label=NA, edge.arrow.size=0, edge.color=colors.edges, vertex.size=15*comboProportions/max(comboProportions))
 
 #plot(g, layout=layout.fruchterman.reingold(g, start=start, weights=weights), vertex.color=colors.focal.bw, vertex.label=NA, edge.arrow.size=0, edge.color="darkgray", vertex.size=7)
 

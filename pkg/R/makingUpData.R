@@ -1,4 +1,4 @@
-source("PhyloWizard.R")
+#source("PhyloWizard.R")
 
 library(geiger)
 
