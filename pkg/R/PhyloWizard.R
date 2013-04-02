@@ -20,28 +20,97 @@ require(phytools)
 # plot(trees[[1]]) #note that the resulting object is a list of phylo objects, not multiPhylo
 # plot(trees[[2]])
 
-CombineTaxonomyAndSubsampledTrees <- function(multiphy) {
-  return(mrp.supertree(multiphy))
+#this comes from phytools.
+#modified to use a taxonomy tree with all taxa as a starting tree
+mrp.supertree.modified<-function (phy.full, phy.sub, n.best.observed=10) 
+{
+  phy<-c(phy.full, phy.sub)
+  if (!class(phy) == "multiPhylo") 
+    stop("phy must be object of class 'multiPhylo.'")
+  X <- list()
+  characters <- 0
+  for (i in 1:length(phy)) {
+    temp <- prop.part(phy[[i]])
+    X[[i]] <- matrix(0, nrow = length(phy[[i]]$tip), ncol = length(temp) - 
+                       1)
+    for (j in 1:ncol(X[[i]])) X[[i]][c(temp[[j + 1]]), j] <- 1
+    rownames(X[[i]]) <- attr(temp, "labels")
+    if (i == 1) 
+      species <- phy[[i]]$tip.label
+    else species <- union(species, phy[[i]]$tip.label)
+    characters <- characters + ncol(X[[i]])
+  }
+  XX <- matrix(data = "?", nrow = length(species), ncol = characters, 
+               dimnames = list(species))
+  j <- 1
+  for (i in 1:length(X)) {
+    XX[rownames(X[[i]]), c(j:((j - 1) + ncol(X[[i]])))] <- X[[i]][1:nrow(X[[i]]), 
+                                                                  1:ncol(X[[i]])]
+    j <- j + ncol(X[[i]])
+  }
+  contrast <- matrix(data = c(1, 0, 0, 1, 1, 1), 3, 2, dimnames = list(c("0", 
+                                                                         "1", "?"), c("0", "1")), byrow = TRUE)
+  XX <- phyDat(XX, type = "USER", contrast = contrast)
+  best.score <- parsimony(phy.full, data=XX)
+  best.tree <- multi2di(phy.full)
+  n.best.seen <- 0
+  while(n.best.seen < n.best.observed) { #keep searching until you get trees of the best observed score n.best.observed times
+    print("doing pratchet")
+    start.phy <- multi2di(phy.full)
+    if (runif(1, 0, 1)<0.5) {
+      start.phy <- best.tree 
+    }
+    supertree <- pratchet(XX, start=start.phy, trace = 0, all = FALSE)
+    if (best.score == attr(supertree, "pscore")) {
+      n.best.seen <- n.best.seen + 1
+    }
+    if (best.score > attr(supertree, "pscore")) {
+      n.best.seen <- 0
+      print(paste("replacing tree of score ", best.score, "with tree of score ", attr(supertree, "pscore")))
+      best.score <- attr(supertree, "pscore")
+      best.tree <- multi2di(di2multi(acctran(supertree, XX), 0.01)) 
+    }
+  }
+  return(best.tree)
 }
 
-PhyloWizard <- function( tips=NA, constraint=NA, nrep=100) {
+CombineTaxonomyAndSubsampledTrees <- function(taxonomy.phy, subtree.phy) {
+  
+  return(mrp.supertree.modified(taxonomy.phy, subtree.phy))
+}
+
+PhyloWizard <- function( tips=NA, constraint=NA, nrep=100, verbose=TRUE) {
   phy<-NULL
+  if (verbose) {
+    print("now making up branch lengths and trees") 
+  }
   if(!is.na(constraint[1])) {
-    return(replicate(nrep, DoSingleResolve(constraint), simplify=FALSE))
+    
+    return(replicate(nrep, DoSingleResolve(constraint, verbose), simplify=FALSE))
   }
   if (length(tips)>2) {
-    return(replicate(nrep, DoSingleResolve(stree(n=length(tips), type="star", tip.label=tips)), simplify=FALSE))
+    return(replicate(nrep, DoSingleResolve(stree(n=length(tips), type="star", tip.label=tips), verbose), simplify=FALSE))
   }
   stop("Cannot make up trees until you specify either taxon names or constraint trees") 
 }
 
-DoSingleResolve <- function(constraint) {
+DoSingleResolve <- function(constraint, verbose=TRUE) {
+  if(verbose) {
+    print("resolving tree")
+    flush.console()
+  }
   phy<-multi2di(constraint,  random=TRUE) #randomly resolves polytomies
-  return(MakeUpBranchlengths(phy))
+  if(verbose) {
+    print("making up branch lengths")
+    flush.console()
+  }
+  return(MakeUpBranchlengths(phy, verbose))
 }
 
-MakeUpBranchlengths <- function(phy) {
-  warning(paste("Responding to lack of information (in this case, lack of information about the phylogeny) by making it up is generally considered a bad thing"))
+MakeUpBranchlengths <- function(phy, verbose=TRUE) {
+  if(verbose) {
+    warning(paste("Responding to lack of information (in this case, lack of information about the phylogeny) by making it up is generally considered a bad thing"))
+  }
   tree.depth<-1
   if (is.null(phy$edge.length)) {
     phy<-compute.brlen(phy, method=0)
@@ -53,7 +122,7 @@ MakeUpBranchlengths <- function(phy) {
   random.brlen<-rexp(length(which(phy$edge.length==0)), expected.rate) #draws brlen from exponential wait times
   phy$edge.length[which(phy$edge.length==0)]<-random.brlen 
   phy<-chronopl(phy, lambda=0, age.min=max(branching.times(phy)), age.max=max(branching.times(phy))) #makes the tree ultrametric, making as few changes as possible to the given brlen
-   return(phy)
+  return(phy)
 }
 
 
