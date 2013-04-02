@@ -54,6 +54,10 @@ Analyze.BM <- function(phy, traits) {
   return(fitContinuous(phy, traits, model="BM")$Trait1$beta)
 }
 
+SimulateAndAnalyze.BM <- function(phy) {
+  return(Analyze.BM(phy, Simulate.BM(phy))) 
+}
+
 Analyze.Binary <- function(phy, traits) {
   return(fitDiscrete(phy, traits, model="ARD")$Trait1$q)
 }
@@ -84,3 +88,9 @@ RunAnalysis <- function(all.clouds, fn, ...) {
   }
   return(all.results)
 }
+
+PD.results<-RunAnalysis(all.clouds, Analyze.PD.Sample)
+save(list=ls(), file=paste("~/Dropbox/CollabBeaulieu/MakingUpData/PD.nrep", nrep, ".RData", sep=""))
+
+BM.results<-RunAnalysis(all.clouds, SimulateAndAnalyze.BM)
+save(list=ls(), file=paste("~/Dropbox/CollabBeaulieu/MakingUpData/PDandBM.nrep", nrep, ".RData", sep=""))

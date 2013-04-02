@@ -57,9 +57,16 @@ mrp.supertree.modified<-function (phy.full, phy.sub, n.best.observed=10)
   while(n.best.seen < n.best.observed) { #keep searching until you get trees of the best observed score n.best.observed times
     print("doing pratchet")
     start.phy <- multi2di(phy.full)
-    if (runif(1, 0, 1)<0.5) {
+    start.index <- runif(1,0,1)
+    if (start.index<0.4) {
       start.phy <- best.tree 
+      print("starting from best tree")
+    } 
+    if (start.index>0.4 & start.index < 0.8) {
+      start.phy <- random.addition(XX)
+      print("starting from random.addition tree")
     }
+    
     supertree <- pratchet(XX, start=start.phy, trace = 0, all = FALSE)
     if (best.score == attr(supertree, "pscore")) {
       n.best.seen <- n.best.seen + 1
