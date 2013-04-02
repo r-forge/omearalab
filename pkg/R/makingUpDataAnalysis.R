@@ -3,10 +3,11 @@ library(phytools)
 library(geiger)
 library(picante)
 library(parallel)
+source("~/Documents/MyDocuments/Active/OMearaLabR/pkg/R/PhyloWizard.R")
 
 true.phy <- read.tree("~/Dropbox/CollabBeaulieu/MakingUpData/Apiales_true.tre") #has about 1500 tips. 
 taxonomy.phy <- read.tree("~/Dropbox/CollabBeaulieu/MakingUpData/Apiales_taxonomyTOTAL.tre")
-nrep<-10
+nrep<-5
 true.cloud<-list(true.phy)
 taxonomy.cloud <- PhyloWizard(tips=taxonomy.phy$tips, constraint=taxonomy.phy, nrep=nrep)
 
@@ -38,6 +39,8 @@ for (i in sequence(length(sampling.vector))) {
   print(sampling.vector[i])
   all.clouds<-append(all.clouds,  list(replicate(nrep, DoSingleResolve(CombineTaxonomyAndSubsampledTrees(taxonomy.phy, SubsampleTaxa(true.phy, pd.weight=0, f=sampling.vector[i]))), simplify=FALSE)))
 }
+
+save(all.clouds, true.phy, taxonomy.phy, nrep, sampling.vector, file=paste("~/Dropbox/CollabBeaulieu/MakingUpData/nrep", nrep, ".RData", sep=""))
 
 Simulate.BM <- function(phy) {
   return(sim.char(phy, model.matrix=matrix(1), nsims=1, model="brownian", root.state=1)) 
