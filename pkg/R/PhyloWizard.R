@@ -129,6 +129,7 @@ MakeUpBranchlengths <- function(phy, verbose=TRUE) {
   random.brlen<-rexp(length(which(phy$edge.length==0)), expected.rate) #draws brlen from exponential wait times
   phy$edge.length[which(phy$edge.length==0)]<-random.brlen 
   phy<-chronopl(phy, lambda=0, age.min=max(branching.times(phy)), age.max=max(branching.times(phy))) #makes the tree ultrametric, making as few changes as possible to the given brlen
+  phy$edge.length <- phy$edge.length / max(branching.times(phy))
   return(phy)
 }
 
