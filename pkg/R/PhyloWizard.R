@@ -128,6 +128,7 @@ MakeUpBranchlengths <- function(phy, verbose=TRUE) {
   expected.rate<-log(Ntip(phy)/2)/tree.depth #expected speciation rate under a Yule
   random.brlen<-rexp(length(which(phy$edge.length==0)), expected.rate) #draws brlen from exponential wait times
   phy$edge.length[which(phy$edge.length==0)]<-random.brlen 
+  phy$edge.length[which(phy$edge.length==0)]<-0.1*min(phy$edge.length[which(phy$edge.length>0)]) #in case there are any ones that happen to be zero by chance
   phy<-chronopl(phy, lambda=0, age.min=max(branching.times(phy)), age.max=max(branching.times(phy))) #makes the tree ultrametric, making as few changes as possible to the given brlen
   phy$edge.length <- phy$edge.length / max(branching.times(phy))
   return(phy)
