@@ -1,4 +1,4 @@
-executable=myprogR
+executable=V7_myProgR_FullBD
 universe=vanilla
 arguments=Example.$(Cluster).$(Process) 5
 requirements = Memory >= 0
