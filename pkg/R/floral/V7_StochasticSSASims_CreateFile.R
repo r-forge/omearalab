@@ -63,6 +63,12 @@ for (focal.index.1 in sequence(length(key.focal.vector))) {
 }
 colnames(mu.values)<-mu.names
 
+diversification.values <- lambda.values - mu.values
+diversification.names <- c()
+for (focal.index.1 in sequence(length(key.focal.vector))) {
+  diversification.names<-append(diversification.names, paste("div",key.focal.vector[focal.index.1],sep=""))
+}
+colnames(diversification.values)<-diversification.names
 
 
 
@@ -72,11 +78,12 @@ colnames(mu.values)<-mu.names
 
 
 
-q.means <- apply(q.values, 2, weighted.mean, w=focal.dataframe$AICweight)
-lambda.means <- apply(lambda.values, 2, weighted.mean, w=focal.dataframe$AICweight)
-mu.means <- apply(mu.values, 2, weighted.mean, w=focal.dataframe$AICweight)
+q.means <- apply(q.values, 2, weightedHarmonicMeanZeroCorrection, w=focal.dataframe$AICweight)
+lambda.means <- apply(lambda.values, 2, weightedHarmonicMeanZeroCorrection, w=focal.dataframe$AICweight)
+mu.means <- apply(mu.values, 2, weightedHarmonicMeanZeroCorrection, w=focal.dataframe$AICweight)
+diversification.means <- apply(diversification.values, 2, weightedHarmonicMeanZeroCorrection, w=focal.dataframe$AICweight)
 
-all.values<-c(q.means, lambda.means,mu.means)
+all.values<-c(q.means, lambda.means, mu.means, diversification.means)
 print("all rates")
 print(all.values)
 
@@ -116,4 +123,4 @@ for (i in sequence(length(a))) {
 
 #now to get rid of the x, which the ssa fn does not like
 
-save(list=c("x0", "q.means", "lambda.means", "mu.means"), file="Rates.Rsave",compress=TRUE)
+save(list=c("x0", "q.means", "lambda.means", "mu.means", "diversification.means"), file="/Users/bomeara/Documents/MyDocuments/Active/FloralAssembly/RunsJan2012/Summaries/Rates.Rsave",compress=TRUE)
