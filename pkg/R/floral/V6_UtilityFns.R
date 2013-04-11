@@ -318,3 +318,25 @@ summarizeModelWeights<-function(summary.dataframe=summary.dataframe,S=S,transiti
 	print(round(modelWeights),digits=3)
 	return(modelWeights)
 }
+
+
+#this is based on the implementation in lmomco by William H. Asquith
+#His code incorporates the correction used by EPA for zero values
+#I have just added weights to it
+weightedHarmonicMeanZeroCorrection <- function(x, w=rep(1,length(x))) {
+	w <- w[!is.na(x)]
+	w <- w/sum(w)
+	x <- x[!is.na(x)]
+    n <- length(x)
+    x.nonzero <- x[x != 0]
+    w.nonzero <- w[x != 0]
+    w.zero <- w[x == 0]
+    n.zero <- n - length(x.nonzero)
+    HM <- weighted.mean(c(1/weighted.mean(1/x.nonzero, w.nonzero), 0), c(sum(w.nonzero), sum(w.zero)))
+    if(n.zero == n) {
+    	HM <- 0
+    }
+    return(HM)
+
+}
+
