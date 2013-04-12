@@ -11,8 +11,8 @@ highlevel.dataframe$AICweight<-exp( -0.5 * highlevel.dataframe$deltaAIC)
 highlevel.dataframe$AICweight <- highlevel.dataframe$AICweight/sum(highlevel.dataframe$AICweight)
 highlevel.dataframe<-highlevel.dataframe[order(highlevel.dataframe$AICweight, decreasing=TRUE),]
 
-source("V6_UtilityFns.R")
-source("V6_NewSimulator.R")
+source("V7_UtilityFns.R")
+source("V7_NewSimulator.R")
 
 key.focal.vector<-c("0x00xx","0x01xx","0x10xx","0x11xx","1x00xx","1x01xx","1x10xx","1x11xx")
 
@@ -20,7 +20,7 @@ key.focal.vector<-c("0x00xx","0x01xx","0x10xx","0x11xx","1x00xx","1x01xx","1x10x
 
 focal.dataframe<-highlevel.dataframe[,]
 print("dimensions")
-focal.dataframe<-focal.dataframe[which(focal.dataframe$T==1), ]
+#focal.dataframe<-focal.dataframe[which(focal.dataframe$T==1), ]
 print(dim(focal.dataframe))
 focal.dataframe$deltaAIC<-focal.dataframe$AIC-min(focal.dataframe$AIC)
 focal.dataframe$AICweight<-exp( -0.5 * focal.dataframe$deltaAIC)
@@ -123,4 +123,4 @@ for (i in sequence(length(a))) {
 
 #now to get rid of the x, which the ssa fn does not like
 
-save(list=c("x0", "q.means", "lambda.means", "mu.means", "diversification.means"), file="/Users/bomeara/Documents/MyDocuments/Active/FloralAssembly/RunsJan2012/Summaries/Rates.Rsave",compress=TRUE)
+save(list=c("x0", "q.means", "lambda.means", "mu.means", "diversification.means"), file="Rates.Rsave",compress=TRUE)
