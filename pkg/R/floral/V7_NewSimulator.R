@@ -165,3 +165,56 @@ probExtinction<-function(lambda, mu, t, N0=2) {
   alpha<-epsilon * beta
   return(alpha^N0)
 }
+
+
+probGreaterThanEqualToNTaxaGivenObserved<-function(lambda, mu, t, N0=2, N=250000) {
+  #after magallon and sanderson 2001, CORRECTED equation 11a
+  epsilon<-mu/lambda
+  r<-lambda-mu
+  beta<-(exp(r*t) - 1) / (exp(r*t) - epsilon)
+  alpha<-epsilon * beta
+  k<-N
+  result <- ((beta^(k-2)) / (1+alpha)) * ( k * (1 - alpha - beta + (alpha * beta) ) + alpha + 2*beta -1 )
+  return(result)
+}
+
+probExactlyNTaxaNotConditioningOnObserved<-function(lambda, mu, t, N0=2, N=250000) {
+  #after Raup 1985, equation A18, which is Bailey 1964, equation 8.47
+  epsilon<-mu/lambda
+  r<-lambda-mu
+  beta<-(exp(r*t) - 1) / (exp(r*t) - epsilon)
+  alpha<-epsilon * beta
+  k<-N
+  a<-N0
+  individual.term<-function(x, a, alpha, beta, N) {
+    return( choose(a, x) * choose(a+N-x-1, a-1) * (alpha^(a-x)) * (beta^(N-x)) * ((1 - alpha - beta)^x))
+  }
+  return(sum(sapply(c(0:min(a,N)), individual.term, a=a, alpha=alpha, beta=beta, N=N)))
+}
+
+probExactlyNTaxaGivenObserved<-function(lambda, mu, t, N0=2, N=250000) {
+  epsilon<-mu/lambda
+  r<-lambda-mu
+  beta<-(exp(r*t) - 1) / (exp(r*t) - epsilon)
+  alpha<-epsilon * beta
+  a<-N0
+  result<-probExactlyNTaxaNotConditioningOnObserved(lambda, mu, t, N0, N)/(1 - alpha^a)
+  if(is.na(result)) {
+    result<-0 
+  }
+  print(c(lambda, mu, result))
+  return(result)
+}
+
+likelihoodGivenScaling<-function(x, lambda, mu, t, N0=2, N=250000, multiplier=1) {
+	return(multiplier*probExactlyNTaxaGivenObserved(x*lambda, x*mu, t, N0, N))
+}
+
+getOptimalScaling<-function(lambda, mu, t, N0=2, N=250000) {
+  r<-lambda - mu
+  ideal.rate<-log(N)/t
+  scale.factor<-ideal.rate/r
+  result<-optim(par=scale.factor, fn=likelihoodGivenScaling, method="L-BFGS-B", lambda=lambda, mu=mu, t=t, N0=N0, N=N, multiplier=-1)
+  print(paste("Yule scaling = ", scale.factor))
+	return(result$par)
+}
