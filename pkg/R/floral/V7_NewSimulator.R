@@ -29,9 +29,11 @@ OMearaSSA<-function(x0, q.vector, lambda.vector, mu.vector, tf, maxWallTime, ver
   }
   
   if(!is.null(rescale.species)) {
-     average.diversification<-weighted.mean(x = lambda.vector - mu.vector, w = x0) #average net diversification rate for starting taxa
-     ideal.rate<- (log( rescale.species / sum(x0) )) / t.rescale #this rate will give the desired number of species over the desired time
-     scale.factor<-ideal.rate / average.diversification
+     #average.diversification<-weighted.mean(x = lambda.vector - mu.vector, w = x0) #average net diversification rate for starting taxa
+     #ideal.rate<- (log( rescale.species / sum(x0) )) / t.rescale #this rate will give the desired number of species over the desired time
+     #scale.factor<-ideal.rate / average.diversification
+    scale.factor<-getOptimalScaling(lambda=weighted.mean(x=lambda.vector, w=x0), mu=weighted.mean(x=mu.vector, w=x0), t=t.rescale, N0=sum(x0), N=rescale.species)
+    print(paste("scale.factor is ",scale.factor))
      lambda.vector<-scale.factor * lambda.vector
      mu.vector<-scale.factor * mu.vector
   }
@@ -202,7 +204,6 @@ probExactlyNTaxaGivenObserved<-function(lambda, mu, t, N0=2, N=250000) {
   if(is.na(result)) {
     result<-0 
   }
-  print(c(lambda, mu, result))
   return(result)
 }
 
@@ -215,6 +216,6 @@ getOptimalScaling<-function(lambda, mu, t, N0=2, N=250000) {
   ideal.rate<-log(N)/t
   scale.factor<-ideal.rate/r
   result<-optim(par=scale.factor, fn=likelihoodGivenScaling, method="L-BFGS-B", lambda=lambda, mu=mu, t=t, N0=N0, N=N, multiplier=-1)
-  print(paste("Yule scaling = ", scale.factor))
+  print(paste("Yule scale factor would be = ", scale.factor))
 	return(result$par)
 }
