@@ -37,12 +37,18 @@ OMearaSSA<-function(x0, q.vector, lambda.vector, mu.vector, tf, maxWallTime, ver
      }
     scale.factor<-getOptimalScaling(lambda=weightedHarmonicMeanZeroCorrection(x=lambda.vector, w=x0.rescale), mu=weightedHarmonicMeanZeroCorrection(x=mu.vector, w=x0.rescale), t=t.rescale, N0=sum(x0), N=rescale.species)
     print(paste("scale.factor is ",scale.factor))
+    print("x0.rescale is ")
+    print(x0.rescale)
+    print("lambda") 
+    print(cbind(lambda.vector, lambda.vector*scale.factor))
+    print("mu")
+    print(cbind(mu.vector, mu.vector*scale.factor))
      lambda.vector<-scale.factor * lambda.vector
      mu.vector<-scale.factor * mu.vector
   }
   
   if(verbose) {
-    print(paste("The probability of extinction is roughly",probExtinction(weighted.mean(lambda.vector, x0), weighted.mean(mu.vector, x0), tf, sum(x0)))) 
+    print(paste("The probability of extinction is roughly",probExtinction(weightedHarmonicMeanZeroCorrection(lambda.vector, x0), weightedHarmonicMeanZeroCorrection(mu.vector, x0), tf, sum(x0)))) 
   }
   
   names(lambda.vector)<-gsub("lambda","",names(lambda.vector))

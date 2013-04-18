@@ -158,7 +158,7 @@ CreateRatesFile <- function(constraint="full", net.div=FALSE, x0=NULL, x0.rescal
   
   #now to get rid of the x, which the ssa fn does not like
   
-  save(list=c("x0", "q.means", "lambda.means", "mu.means", "diversification.means", "nu", "a", "constraint", "net.div"), file="Rates.Rsave",compress=TRUE)
+  save(list=c("x0", "q.means", "lambda.means", "mu.means", "diversification.means", "nu", "a", "constraint", "net.div", "x0.rescale"), file="Rates.Rsave",compress=TRUE)
 }
 
 #constraint can be "full", "transonly", "divonly", "symmetry"
@@ -173,13 +173,13 @@ MakeRunFiles<-function(constraint="full", net.div=FALSE, x0=NULL, x0.rescale=NUL
     file.string<-paste(file.string, vectorToString(x0), sep="_")
   }
     if (!is.null(x0.rescale)) {
-    file.string<-paste(file.string, "rescale", vectorToString(x0), sep="_")
+    file.string<-paste(file.string, "rescale", sep="_")
   }
 
   system(paste("mkdir ",file.string))
   setwd(file.string)
   system("cp /Users/bomeara/Documents/MyDocuments/Active/OMearaLabR/pkg/R/floral/V7*.R .")
-  CreateRatesFile(constraint=constraint, net.div=net.div, x0=x0)
+  CreateRatesFile(constraint=constraint, net.div=net.div, x0=x0, x0.rescale=x0.rescale)
   
   cat('if(!require(gmp)) {
   install.packages("gmp",repos="http://cran.us.r-project.org", lib=tempdir())
