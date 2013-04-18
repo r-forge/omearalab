@@ -11,7 +11,7 @@ library(RColorBrewer)
 #    other values in between 
 
 #note history now has time elapsed
-OMearaSSA<-function(x0, q.vector, lambda.vector, mu.vector, tf, maxWallTime, verbose=TRUE, print.freq=100, full.history=TRUE, rescale.species=NULL, yule.scale=0, history.steps.to.save=seq(from=1,to=floor(tf),length.out=floor(tf)), t.rescale=tf) { #turn off full.history to save on memory
+OMearaSSA<-function(x0, q.vector, lambda.vector, mu.vector, tf, maxWallTime, verbose=TRUE, print.freq=100, full.history=TRUE, rescale.species=NULL, yule.scale=0, history.steps.to.save=seq(from=1,to=floor(tf),length.out=floor(tf)), t.rescale=tf, x0.rescale=NULL) { #turn off full.history to save on memory
   #make sure order of states is the same in all input objects
 
   lambda.vector<-lambda.vector-(yule.scale*mu.vector)
@@ -32,7 +32,10 @@ OMearaSSA<-function(x0, q.vector, lambda.vector, mu.vector, tf, maxWallTime, ver
      #average.diversification<-weighted.mean(x = lambda.vector - mu.vector, w = x0) #average net diversification rate for starting taxa
      #ideal.rate<- (log( rescale.species / sum(x0) )) / t.rescale #this rate will give the desired number of species over the desired time
      #scale.factor<-ideal.rate / average.diversification
-    scale.factor<-getOptimalScaling(lambda=weighted.mean(x=lambda.vector, w=x0), mu=weighted.mean(x=mu.vector, w=x0), t=t.rescale, N0=sum(x0), N=rescale.species)
+     if(is.null(x0.rescale)) {
+     	x0.rescale<-x0
+     }
+    scale.factor<-getOptimalScaling(lambda=weightedHarmonicMeanZeroCorrection(x=lambda.vector, w=x0.rescale), mu=weightedHarmonicMeanZeroCorrection(x=mu.vector, w=x0.rescale), t=t.rescale, N0=sum(x0), N=rescale.species)
     print(paste("scale.factor is ",scale.factor))
      lambda.vector<-scale.factor * lambda.vector
      mu.vector<-scale.factor * mu.vector
@@ -145,14 +148,14 @@ plot.histories<-function(histories) { #uses the final outcome, not the path alon
   barplot(t(t(transformed.history)/(apply(transformed.history, 2, sum)))[, order(apply(transformed.history, 2, sum))],col=mypalette,border=NA,main="proportion",space=0) 
 }
 
-doParallelSSA<-function(x0, q.means, lambda.means, mu.means, tf=136, maxWallTime=Inf, verbose=F, file.string="", full.history=FALSE, print.freq=100, rescale.species=NULL, yule.scale=0, t.rescale=136) {
+doParallelSSA<-function(x0, q.means, lambda.means, mu.means, tf=136, maxWallTime=Inf, verbose=F, file.string="", full.history=FALSE, print.freq=100, rescale.species=NULL, yule.scale=0, t.rescale=136, x0.rescale=NULL) {
   file.name<-paste("SSA_",file.string,"_",format(Sys.time(), "%b%d_%H_%M_%S"),"_",round(runif(1,1,1000000)),".RSave",sep="")
   survivors<-0
   history<-0
   attempts<-0
   while(survivors<=0) {
     attempts<-attempts+1
-    history<-OMearaSSA(x0, q.means, lambda.means, mu.means, tf=tf, maxWallTime=maxWallTime, verbose=verbose,full.history=full.history, print.freq=print.freq, rescale.species=rescale.species, yule.scale=yule.scale, t.rescale=t.rescale)
+    history<-OMearaSSA(x0, q.means, lambda.means, mu.means, tf=tf, maxWallTime=maxWallTime, verbose=verbose,full.history=full.history, print.freq=print.freq, rescale.species=rescale.species, yule.scale=yule.scale, t.rescale=t.rescale, x0.rescale=x0.rescale)
     survivors<-history[dim(history)[1],2]
     print(c(attempts,max(apply(history[,2:9],1,sum))))
   }

@@ -3,7 +3,7 @@ source("/Users/bomeara/Documents/MyDocuments/Active/OMearaLabR/pkg/R/floral/V7_U
 source("/Users/bomeara/Documents/MyDocuments/Active/OMearaLabR/pkg/R/floral/V7_NewSimulator.R")
 
 
-CreateRatesFile <- function(constraint="full", net.div=FALSE, x0=NULL) {
+CreateRatesFile <- function(constraint="full", net.div=FALSE, x0=NULL, x0.rescale=NULL) {
   load("/Users/bomeara/Documents/MyDocuments/Active/FloralAssembly/RunsJan2012/Summaries/all.results.cleaned.Rsave")
   names(highlevel.dataframe)[1:10]
   highlevel.dataframe$deltaAIC<-highlevel.dataframe$AIC-min(highlevel.dataframe$AIC)
@@ -126,6 +126,9 @@ CreateRatesFile <- function(constraint="full", net.div=FALSE, x0=NULL) {
     x0 <- c(2, 0, 0, 0, 0, 0, 0, 0) #start with two individuals in state 000000, or at least 0x00xx
     names(x0) <- key.focal.vector
   }
+  if(is.null(x0.rescale)) {
+  	x0.rescale<-x0
+  }
   
   parms<-c(q.means, lambda.means, mu.means)
   names(parms)
@@ -159,7 +162,7 @@ CreateRatesFile <- function(constraint="full", net.div=FALSE, x0=NULL) {
 }
 
 #constraint can be "full", "transonly", "divonly", "symmetry"
-MakeRunFiles<-function(constraint="full", net.div=FALSE, x0=NULL, tf=156, t.rescale=136, submit=FALSE, nrep=50) {
+MakeRunFiles<-function(constraint="full", net.div=FALSE, x0=NULL, x0.rescale=NULL, tf=156, t.rescale=136, submit=FALSE, nrep=50) {
   file.string<-constraint
   if (net.div) {
     file.string<-paste(file.string, "netdiv", sep="_") 
@@ -169,6 +172,10 @@ MakeRunFiles<-function(constraint="full", net.div=FALSE, x0=NULL, tf=156, t.resc
   if (!is.null(x0)) {
     file.string<-paste(file.string, vectorToString(x0), sep="_")
   }
+    if (!is.null(x0.rescale)) {
+    file.string<-paste(file.string, "rescale", vectorToString(x0), sep="_")
+  }
+
   system(paste("mkdir ",file.string))
   setwd(file.string)
   system("cp /Users/bomeara/Documents/MyDocuments/Active/OMearaLabR/pkg/R/floral/V7*.R .")
@@ -184,7 +191,7 @@ source("V7_StochasticSSASims_Functions.R")
 load("Rates.Rsave")
       
 ', file="ActualRun.R")
-  cat(paste("doParallelSSA(tf=",tf,", x0=x0, q.means=q.means, lambda.means=lambda.means, mu.means=mu.means, maxWallTime=Inf, file.string='", file.string, "', rescale.species=250000, yule.scale=0, full.history=FALSE,print.freq=10000, t.rescale=", t.rescale, ")", sep=""), file="ActualRun.R", append=TRUE)
+  cat(paste("doParallelSSA(tf=",tf,", x0=x0, q.means=q.means, lambda.means=lambda.means, mu.means=mu.means, maxWallTime=Inf, file.string='", file.string, "', rescale.species=250000, yule.scale=0, full.history=FALSE,print.freq=10000, t.rescale=", t.rescale, ", x0.rescale=", x0.rescale, ")", sep=""), file="ActualRun.R", append=TRUE)
   
   cat(paste('#! /bin/sh
 
