@@ -27,7 +27,7 @@ constraint.vector <- c("full", "transonly", "divonly", "symmetry")
 net.div.vector <- c(FALSE)
 for (i in sequence(length(net.div.vector))) {
   for (j in sequence(length(constraint.vector))) {
-    MakeRunFiles(constraint=constraint.vector[j], net.div=net.div.vector[i], x0=c(2, 0, 0, 0, 0, 0, 0, 0), x0.rescale=x0.rescale, submit=TRUE, nrep=25)
+    MakeRunFiles(constraint=constraint.vector[j], net.div=net.div.vector[i], tf=136, x0=c(2, 0, 0, 0, 0, 0, 0, 0), x0.rescale=x0.rescale, submit=TRUE, nrep=25)
   }
 }
 

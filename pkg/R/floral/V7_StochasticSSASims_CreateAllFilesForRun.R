@@ -191,7 +191,7 @@ source("V7_StochasticSSASims_Functions.R")
 load("Rates.Rsave")
       
 ', file="ActualRun.R")
-  cat(paste("doParallelSSA(tf=",tf,", x0=x0, q.means=q.means, lambda.means=lambda.means, mu.means=mu.means, maxWallTime=Inf, file.string='", file.string, "', rescale.species=250000, yule.scale=0, full.history=FALSE,print.freq=10000, t.rescale=", t.rescale, ", x0.rescale=", x0.rescale, ")", sep=""), file="ActualRun.R", append=TRUE)
+  cat(paste("doParallelSSA(tf=",tf,", x0=x0, q.means=q.means, lambda.means=lambda.means, mu.means=mu.means, maxWallTime=Inf, file.string='", file.string, "', rescale.species=250000, yule.scale=0, full.history=FALSE,print.freq=10000, t.rescale=", t.rescale, ", x0.rescale=x0.rescale)", sep=""), file="ActualRun.R", append=TRUE)
   
   cat(paste('#! /bin/sh
 
