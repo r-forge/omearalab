@@ -168,6 +168,23 @@ doParallelSSA<-function(x0, q.means, lambda.means, mu.means, tf=136, maxWallTime
   save(list=ls(), file=file.name)
 }
 
+appendParallelSSA<-function(x0, q.means, lambda.means, mu.means, prev.history, t.additional=1, maxWallTime=Inf, verbose=F, file.string="", full.history=FALSE, print.freq=100, rescale.species=NULL, yule.scale=0, t.rescale=136, x0.rescale=NULL) {
+  file.name<-paste("SSA_",file.string,"_",format(Sys.time(), "%b%d_%H_%M_%S"),"_",round(runif(1,1,1000000)),"append",t.additional,"total", t.additional+max(history[,1]), ".RSave",sep="")
+  survivors<-0
+  history<-0
+  attempts<-0
+  while(survivors<=0) {
+    attempts<-attempts+1
+    history<-OMearaSSA(x0=prev.history[dim(prev.history)[1],2:9], q.means, lambda.means, mu.means, tf=t.additional, maxWallTime=maxWallTime, verbose=verbose,full.history=full.history, print.freq=print.freq, rescale.species=rescale.species, yule.scale=yule.scale, t.rescale=t.rescale, x0.rescale=x0.rescale)
+    survivors<-history[dim(history)[1],2]
+    history<-cbind(prev.history,history[2:dim(history)[1],]) #the first row of the new history will be the same as the last of the old history
+    history[,1]<-c(0:(dim(history)[1]-1)) #now get the right dates. Note this assumes 1 my spacing
+    print(c(attempts,max(apply(history[,2:9],1,sum))))
+  }
+  save(list=ls(), file=file.name)
+}
+
+
 probExtinction<-function(lambda, mu, t, N0=2) {
   #after magallon and sanderson
   epsilon<-mu/lambda
