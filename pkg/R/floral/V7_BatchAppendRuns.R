@@ -79,5 +79,5 @@ queue 1
       setwd("..")
     }
   }
-  Sys.sleep(600)
+  Sys.sleep(120)
 }
