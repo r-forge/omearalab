@@ -169,7 +169,7 @@ doParallelSSA<-function(x0, q.means, lambda.means, mu.means, tf=136, maxWallTime
 }
 
 appendParallelSSA<-function(x0, q.means, lambda.means, mu.means, prev.history, t.additional=1, maxWallTime=Inf, verbose=F, file.string="", full.history=FALSE, print.freq=100, rescale.species=NULL, yule.scale=0, t.rescale=136, x0.rescale=NULL) {
-  file.name<-paste("SSA_",file.string,"_","app",t.additional,"total", t.additional+max(prev.history[,1]), ".RSave",sep="")
+  file.name<-paste(file.string,"_","app",t.additional,"total", t.additional+max(prev.history[,1]), ".RSave",sep="")
   survivors<-0
   history<-0
   attempts<-0
