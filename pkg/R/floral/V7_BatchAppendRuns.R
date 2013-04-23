@@ -27,7 +27,8 @@ while(1<2) { #keep looping
       file<-strsplit(files[i], "/")[[1]][2]
       setwd(dir)
       system("cp /Users/bomeara/Documents/MyDocuments/Active/OMearaLabR/pkg/R/floral/V7*R .")
-      file.root<-strsplit(file, "\\.")[[1]][1]
+      file.root<-strsplit(gsub("_app\\d+total\\d+","", file), "\\.")[[1]][1]
+      
       system(paste("svn mv ", file, " ", file, ".staged", sep=""))
       system("svn commit -m'staging'")
       
@@ -78,5 +79,5 @@ queue 1
       setwd("..")
     }
   }
-  sleep(600)
+  Sys.sleep(600)
 }

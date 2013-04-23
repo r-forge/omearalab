@@ -177,7 +177,7 @@ appendParallelSSA<-function(x0, q.means, lambda.means, mu.means, prev.history, t
     attempts<-attempts+1
     history<-OMearaSSA(x0=prev.history[dim(prev.history)[1],2:9], q.means, lambda.means, mu.means, tf=t.additional, maxWallTime=maxWallTime, verbose=verbose,full.history=full.history, print.freq=print.freq, rescale.species=rescale.species, yule.scale=yule.scale, t.rescale=t.rescale, x0.rescale=x0.rescale)
     survivors<-history[dim(history)[1],2]
-    history<-cbind(prev.history,history[2:dim(history)[1],]) #the first row of the new history will be the same as the last of the old history
+    history<-rbind(prev.history,history[2:dim(history)[1],]) #the first row of the new history will be the same as the last of the old history
     history[,1]<-c(0:(dim(history)[1]-1)) #now get the right dates. Note this assumes 1 my spacing
     print(c(attempts,max(apply(history[,2:9],1,sum))))
   }
