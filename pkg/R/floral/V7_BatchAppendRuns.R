@@ -1,5 +1,5 @@
 tf=136
-t.stop=156
+t.stop=136+15
 while(1<2) { #keep looping
   
   setwd("/Users/bomeara/Documents/MyDocuments/Active/FloralAssembly/SimsApril2013")
