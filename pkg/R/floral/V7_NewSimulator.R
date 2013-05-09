@@ -74,6 +74,7 @@ OMearaSSA<-function(x0, q.vector, lambda.vector, mu.vector, tf, maxWallTime, ver
     time.interval<-rexp(1, sum(rate.matrix))
     
     if ((time.elapsed+time.interval)>tf) {
+      print("done running")
       history<-rbind(history,c((tf),x)) #done running
       return(history)
     }
@@ -164,7 +165,8 @@ doParallelSSA<-function(x0, q.means, lambda.means, mu.means, tf=136, maxWallTime
   while(survivors<=0) {
     attempts<-attempts+1
     history<-OMearaSSA(x0, q.means, lambda.means, mu.means, tf=tf, maxWallTime=maxWallTime, verbose=verbose,full.history=full.history, print.freq=print.freq, rescale.species=rescale.species, yule.scale=yule.scale, t.rescale=t.rescale, x0.rescale=x0.rescale)
-    survivors<-history[dim(history)[1],2]
+    survivors<-sum(history[dim(history)[1],2:9])
+    print(paste("survivors =",survivors))
     print(c(attempts,max(apply(history[,2:9],1,sum))))
   }
   save(list=ls(), file=file.name)
@@ -178,7 +180,8 @@ appendParallelSSA<-function(x0, q.means, lambda.means, mu.means, prev.history, t
   while(survivors<=0) {
     attempts<-attempts+1
     history<-OMearaSSA(x0=prev.history[dim(prev.history)[1],2:9], q.means, lambda.means, mu.means, tf=t.additional, maxWallTime=maxWallTime, verbose=verbose,full.history=full.history, print.freq=print.freq, rescale.species=rescale.species, yule.scale=yule.scale, t.rescale=t.rescale, x0.rescale=x0.rescale)
-    survivors<-history[dim(history)[1],2]
+    survivors<-sum(history[dim(history)[1],2:9])
+    print(paste("survivors =",survivors))
     history<-rbind(prev.history,history[2:dim(history)[1],]) #the first row of the new history will be the same as the last of the old history
     history[,1]<-c(0:(dim(history)[1]-1)) #now get the right dates. Note this assumes 1 my spacing
     print(c(attempts,max(apply(history[,2:9],1,sum))))
