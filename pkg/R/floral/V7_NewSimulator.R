@@ -9,6 +9,8 @@ library(RColorBrewer)
 #    =0 means the input rates are used
 #    =1 means that lambda is set to lambda - mu and mu is set to zero
 #    other values in between 
+#x0.rescale lets you decide what character frequency to use for scaling. If the root state has a low diversification rate, and you expect to
+#    quickly move to a different set of states with higher div. rates, you may want to use these to rescale so you don't overshoot
 
 #note history now has time elapsed
 OMearaSSA<-function(x0, q.vector, lambda.vector, mu.vector, tf, maxWallTime, verbose=TRUE, print.freq=100, full.history=TRUE, rescale.species=NULL, yule.scale=0, history.steps.to.save=seq(from=1,to=floor(tf),length.out=floor(tf)), t.rescale=tf, x0.rescale=NULL) { #turn off full.history to save on memory

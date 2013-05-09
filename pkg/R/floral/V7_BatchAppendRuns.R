@@ -2,7 +2,7 @@ tf=136
 t.stop=136+15
 while(1<2) { #keep looping
   
-  setwd("/Users/bomeara/Documents/MyDocuments/Active/FloralAssembly/SimsApril2013")
+  setwd("/Users/bomeara/Documents/MyDocuments/Active/FloralAssembly/SimsMay2013")
   system("cp /Users/bomeara/Documents/MyDocuments/Active/OMearaLabR/pkg/R/floral/V7*R .")
   source("V7_NewSimulator.R")
   files<-system("ls */*RSave", intern=TRUE)

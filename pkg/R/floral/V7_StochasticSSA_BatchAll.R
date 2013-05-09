@@ -1,4 +1,4 @@
-setwd("/Users/bomeara/Documents/MyDocuments/Active/FloralAssembly/SimsApril2013")
+setwd("/Users/bomeara/Documents/MyDocuments/Active/FloralAssembly/SimsMay2013")
 system("cp /Users/bomeara/Documents/MyDocuments/Active/OMearaLabR/pkg/R/floral/V7*R .")
 source("V7_StochasticSSASims_CreateAllFilesForRun.R")
 
@@ -19,7 +19,7 @@ constraint.vector <- c("full", "transonly", "divonly", "symmetry")
 net.div.vector <- c(FALSE)
 for (i in sequence(length(net.div.vector))) {
 	for (j in sequence(length(constraint.vector))) {
-		MakeRunFiles(constraint=constraint.vector[j], net.div=net.div.vector[i], tf=136, submit=TRUE, nrep=25)
+		MakeRunFiles(constraint=constraint.vector[j], net.div=net.div.vector[i], tf=1, submit=TRUE, nrep=20)
 	}
 }
 
@@ -27,7 +27,7 @@ constraint.vector <- c("full", "transonly", "divonly", "symmetry")
 net.div.vector <- c(FALSE)
 for (i in sequence(length(net.div.vector))) {
   for (j in sequence(length(constraint.vector))) {
-    MakeRunFiles(constraint=constraint.vector[j], net.div=net.div.vector[i], tf=136, x0=c(2, 0, 0, 0, 0, 0, 0, 0), x0.rescale=x0.rescale, submit=TRUE, nrep=25)
+    MakeRunFiles(constraint=constraint.vector[j], net.div=net.div.vector[i], tf=1, x0=c(2, 0, 0, 0, 0, 0, 0, 0), x0.rescale=x0.rescale, submit=TRUE, nrep=20)
   }
 }
 
@@ -36,7 +36,7 @@ constraint.vector <- c("full")
 net.div.vector <- c(FALSE)
 for (i in sequence(length(net.div.vector))) {
   for (j in sequence(length(constraint.vector))) {
-    MakeRunFiles(constraint=constraint.vector[j], net.div=net.div.vector[i], tf=136, x0=c(0, 2, 0, 0, 0, 0, 0, 0), submit=TRUE, nrep=25)
+    MakeRunFiles(constraint=constraint.vector[j], net.div=net.div.vector[i], tf=1, x0=c(0, 2, 0, 0, 0, 0, 0, 0), submit=TRUE, nrep=20)
   }
 }
 
@@ -44,6 +44,6 @@ constraint.vector <- c("full")
 net.div.vector <- c(FALSE)
 for (i in sequence(length(net.div.vector))) {
   for (j in sequence(length(constraint.vector))) {
-    MakeRunFiles(constraint=constraint.vector[j], net.div=net.div.vector[i], tf=136, x0=c(0, 2, 0, 0, 0, 0, 0, 0), x0.rescale=x0.rescale, submit=TRUE, nrep=25)
+    MakeRunFiles(constraint=constraint.vector[j], net.div=net.div.vector[i], tf=1, x0=c(0, 2, 0, 0, 0, 0, 0, 0), x0.rescale=x0.rescale, submit=TRUE, nrep=20)
   }
 }
