@@ -340,3 +340,20 @@ weightedHarmonicMeanZeroCorrection <- function(x, w=rep(1,length(x))) {
 
 }
 
+
+
+getD.ef<-function(ef, turn) {
+  return(ef*turn/(1+ef)) 
+}
+
+getB.ef<-function(ef, turn) {
+  return(turn-getD(ef, turn))
+}
+
+getD.net<-function(net.div, turn) {
+  return((turn - net.div)/2)
+}
+
+getB.net<-function(net.div, turn) {
+  return(net.div + getD.net(net.div, turn)) 
+}

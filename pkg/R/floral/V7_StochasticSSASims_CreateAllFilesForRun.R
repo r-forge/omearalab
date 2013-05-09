@@ -3,7 +3,7 @@ source("/Users/bomeara/Documents/MyDocuments/Active/OMearaLabR/pkg/R/floral/V7_U
 source("/Users/bomeara/Documents/MyDocuments/Active/OMearaLabR/pkg/R/floral/V7_NewSimulator.R")
 
 
-CreateRatesFile <- function(constraint="full", net.div=FALSE, x0=NULL, x0.rescale=NULL) {
+CreateRatesFile <- function(constraint="full", net.div=FALSE, x0=NULL, x0.rescale=NULL, AIC.cutoff=20) {
   load("/Users/bomeara/Documents/MyDocuments/Active/FloralAssembly/RunsJan2012/Summaries/all.results.cleaned.Rsave")
   names(highlevel.dataframe)[1:10]
   highlevel.dataframe$deltaAIC<-highlevel.dataframe$AIC-min(highlevel.dataframe$AIC)
@@ -47,6 +47,11 @@ CreateRatesFile <- function(constraint="full", net.div=FALSE, x0=NULL, x0.rescal
   
   
   focal.dataframe$deltaAIC<-focal.dataframe$AIC-min(focal.dataframe$AIC)
+  print("dim focal.dataframe before AIC cutoff")
+  print(dim(focal.dataframe))
+  focal.dataframe<-focal.dataframe[which(focal.dataframe$deltaAIC<AIC.cutoff),]
+  print("dim focal.dataframe after AIC cutoff")
+  print(dim(focal.dataframe))
   focal.dataframe$AICweight<-exp( -0.5 * focal.dataframe$deltaAIC)
   focal.dataframe$AICweight <- focal.dataframe$AICweight/sum(focal.dataframe$AICweight)
   q.values<-matrix(nrow=dim(focal.dataframe)[1],ncol=24)
@@ -54,7 +59,7 @@ CreateRatesFile <- function(constraint="full", net.div=FALSE, x0=NULL, x0.rescal
   for (focal.index.1 in sequence(length(key.focal.vector))) {
     for (focal.index.2 in sequence(length(key.focal.vector))) {
       if (focal.index.1 != focal.index.2) {
-        print(c(focal.index.1,focal.index.2))
+        #print(c(focal.index.1,focal.index.2))
         if( vectorMismatch(unlist(strsplit(key.focal.vector[focal.index.1],split="")), unlist(strsplit(key.focal.vector[focal.index.2], split="")))==1) {
           q.names<-append(q.names,paste("q", key.focal.vector[focal.index.1], "_", key.focal.vector[focal.index.2], sep=""))
           #print(paste("q", key.focal.vector[focal.index.1], "_", key.focal.vector[focal.index.2], sep=""))
@@ -103,9 +108,25 @@ CreateRatesFile <- function(constraint="full", net.div=FALSE, x0=NULL, x0.rescal
   
   
   q.means <- apply(q.values, 2, weightedHarmonicMeanZeroCorrection, w=focal.dataframe$AICweight)
-  lambda.means <- apply(lambda.values, 2, weightedHarmonicMeanZeroCorrection, w=focal.dataframe$AICweight)
-  mu.means <- apply(mu.values, 2, weightedHarmonicMeanZeroCorrection, w=focal.dataframe$AICweight)
-  diversification.means <- apply(diversification.values, 2, weightedHarmonicMeanZeroCorrection, w=focal.dataframe$AICweight)
+  ef.means <- apply(mu.values/lambda.values, 2, weightedHarmonicMeanZeroCorrection, w=focal.dataframe$AICweight)
+  turnover.means <- apply(mu.values + lambda.values, 2, weightedHarmonicMeanZeroCorrection, w=focal.dataframe$AICweight)
+  netdiv.means <- apply(lambda.values - mu.values, 2, weightedHarmonicMeanZeroCorrection, w=focal.dataframe$AICweight)
+  #lambda.means <- apply(lambda.values, 2, weightedHarmonicMeanZeroCorrection, w=focal.dataframe$AICweight)
+  #mu.means <- apply(mu.values, 2, weightedHarmonicMeanZeroCorrection, w=focal.dataframe$AICweight)
+  lambda.means <- rep(NA, length(ef.means))
+  names(lambda.means)<-lambda.names
+  mu.means <- rep(NA, length(ef.means))
+  names(mu.means)<-mu.names
+  for (i in sequence(length(ef.means))) {
+   # lambda.means[i] <- getB.ef(ef=ef.means[i], turn=turnover.means[i])
+  #  mu.means[i] <- getD.ef(ef=ef.means[i], turn=turnover.means[i])
+    lambda.means[i] <- getB.net(net.div=netdiv.means[i], turn=turnover.means[i])
+    mu.means[i] <- getD.net(net.div=netdiv.means[i], turn=turnover.means[i])
+    
+  }
+  #diversification.means <- apply(diversification.values, 2, weightedHarmonicMeanZeroCorrection, w=focal.dataframe$AICweight)
+  diversification.means <- lambda.means - mu.means
+  names(diversification.means) <- diversification.names
   
   all.values<-c(q.means, lambda.means, mu.means, diversification.means)
   print("all rates")
