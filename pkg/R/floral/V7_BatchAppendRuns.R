@@ -1,3 +1,5 @@
+library(compiler)
+enableJIT(3)
 tf=136
 t.stop=136+15
 while(1<2) { #keep looping

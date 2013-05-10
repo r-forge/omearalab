@@ -1,4 +1,6 @@
 library(RColorBrewer)
+library(compiler)
+enableJIT(3)
 
 #tf = duration of the simulation. 
 #full.history=TRUE stores the history of number of species in each category, but this can get HUGE with long sims. If turned off, just returns the final vector
