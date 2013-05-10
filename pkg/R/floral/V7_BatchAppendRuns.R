@@ -20,11 +20,11 @@ while(1<2) { #keep looping
     files<-files[which(files.total<t.stop)] #don't want to keep running forever.
     files.total<-files.total[which(files.total<t.stop)]
     files<-files[order(files.total)] #do the ones that have run the least amount of time first
+    files.total<-files[order(files.total)]
     print(cbind(files, files.total[order(files.total)]))
-    Sys.sleep(60) #give time to finish transferring any files
+    Sys.sleep(30) #give time to finish transferring any files
     for (i in sequence(length(files))) {
       system(paste("svn add ", files[i]))
-      system("svn commit -m'more runs'")
       dir<-strsplit(files[i], "/")[[1]][1]
       file<-strsplit(files[i], "/")[[1]][2]
       setwd(dir)
@@ -33,13 +33,20 @@ while(1<2) { #keep looping
       
       system(paste("svn mv ", file, " ", file, ".staged", sep=""))
       system("svn commit -m'staging'")
+      t.additional<-1
+      if(files.total[i]<100) {
+        t.additional<-5
+      }
       
+      if(files.total[i]<80) {
+        t.additional<-10 
+      }
       
       cat(paste('source("V7_UtilityFns.R")
 load("',file,'.staged")
 source("V7_NewSimulator.R")
 source("V7_StochasticSSASims_Functions.R")
-appendParallelSSA(x0=x0, q.means=q.means, lambda.means=lambda.means, mu.means=mu.means, prev.history=history, t.additional=1, maxWallTime=Inf, verbose=F, file.string="', file.root, '", print.freq=100, rescale.species=rescale.species, yule.scale=0, t.rescale=t.rescale, x0.rescale=x0.rescale)
+appendParallelSSA(x0=x0, q.means=q.means, lambda.means=lambda.means, mu.means=mu.means, prev.history=history, t.additional=', t.additional, ', maxWallTime=Inf, verbose=F, file.string="', file.root, '", print.freq=100, rescale.species=rescale.species, yule.scale=0, t.rescale=t.rescale, x0.rescale=x0.rescale)
 ', sep=""), file=paste(file.root, ".append.R", sep=""), append=FALSE)
       
       
@@ -80,6 +87,7 @@ queue 1
       
       setwd("..")
     }
+    system("svn commit -m'more runs'")
   }
-  Sys.sleep(120)
+  Sys.sleep(10)
 }

@@ -3,7 +3,7 @@ source("/Users/bomeara/Documents/MyDocuments/Active/OMearaLabR/pkg/R/floral/V7_U
 source("/Users/bomeara/Documents/MyDocuments/Active/OMearaLabR/pkg/R/floral/V7_NewSimulator.R")
 
 
-CreateRatesFile <- function(constraint="full", net.div=FALSE, x0=NULL, x0.rescale=NULL, AIC.cutoff=20) {
+CreateRatesFile <- function(constraint="full", net.div=FALSE, x0=NULL, x0.rescale=NULL, AIC.cutoff=20, q.rescale=1, best.only=FALSE) {
   load("/Users/bomeara/Documents/MyDocuments/Active/FloralAssembly/RunsJan2012/Summaries/all.results.cleaned.Rsave")
   names(highlevel.dataframe)[1:10]
   highlevel.dataframe$deltaAIC<-highlevel.dataframe$AIC-min(highlevel.dataframe$AIC)
@@ -35,7 +35,6 @@ CreateRatesFile <- function(constraint="full", net.div=FALSE, x0=NULL, x0.rescal
   
   
   
-  
   print("dimensions post filter")
   print(dim(focal.dataframe))
   print("table T")
@@ -50,6 +49,12 @@ CreateRatesFile <- function(constraint="full", net.div=FALSE, x0=NULL, x0.rescal
   print("dim focal.dataframe before AIC cutoff")
   print(dim(focal.dataframe))
   focal.dataframe<-focal.dataframe[which(focal.dataframe$deltaAIC<AIC.cutoff),]
+  if(best.only) {
+    focal.dataframe<-focal.dataframe[which(focal.dataframe$deltaAIC<=0) ,]
+    if(dim(focal.dataframe)[1]!=1) {
+      stop("dimension of focal.dataframe not correct for using best model") 
+    }
+  }
   print("dim focal.dataframe after AIC cutoff")
   print(dim(focal.dataframe))
   focal.dataframe$AICweight<-exp( -0.5 * focal.dataframe$deltaAIC)
@@ -107,7 +112,7 @@ CreateRatesFile <- function(constraint="full", net.div=FALSE, x0=NULL, x0.rescal
   
   
   
-  q.means <- apply(q.values, 2, weightedHarmonicMeanZeroCorrection, w=focal.dataframe$AICweight)
+  q.means <- q.rescale*apply(q.values, 2, weightedHarmonicMeanZeroCorrection, w=focal.dataframe$AICweight)
   ef.means <- apply(mu.values/lambda.values, 2, weightedHarmonicMeanZeroCorrection, w=focal.dataframe$AICweight)
   turnover.means <- apply(mu.values + lambda.values, 2, weightedHarmonicMeanZeroCorrection, w=focal.dataframe$AICweight)
   netdiv.means <- apply(lambda.values - mu.values, 2, weightedHarmonicMeanZeroCorrection, w=focal.dataframe$AICweight)
@@ -118,8 +123,8 @@ CreateRatesFile <- function(constraint="full", net.div=FALSE, x0=NULL, x0.rescal
   mu.means <- rep(NA, length(ef.means))
   names(mu.means)<-mu.names
   for (i in sequence(length(ef.means))) {
-   # lambda.means[i] <- getB.ef(ef=ef.means[i], turn=turnover.means[i])
-  #  mu.means[i] <- getD.ef(ef=ef.means[i], turn=turnover.means[i])
+    # lambda.means[i] <- getB.ef(ef=ef.means[i], turn=turnover.means[i])
+    #  mu.means[i] <- getD.ef(ef=ef.means[i], turn=turnover.means[i])
     lambda.means[i] <- getB.net(net.div=netdiv.means[i], turn=turnover.means[i])
     mu.means[i] <- getD.net(net.div=netdiv.means[i], turn=turnover.means[i])
     
@@ -148,7 +153,7 @@ CreateRatesFile <- function(constraint="full", net.div=FALSE, x0=NULL, x0.rescal
     names(x0) <- key.focal.vector
   }
   if(is.null(x0.rescale)) {
-  	x0.rescale<-x0
+    x0.rescale<-x0
   }
   
   parms<-c(q.means, lambda.means, mu.means)
@@ -193,10 +198,16 @@ MakeRunFiles<-function(constraint="full", net.div=FALSE, x0=NULL, x0.rescale=NUL
   if (!is.null(x0)) {
     file.string<-paste(file.string, vectorToString(x0), sep="_")
   }
-    if (!is.null(x0.rescale)) {
+  if (!is.null(x0.rescale)) {
     file.string<-paste(file.string, "rescale", sep="_")
   }
-
+  if (best.only) {
+    file.string<-paste(file.string, "best", sep="_") 
+  }
+  if (q.rescale!=1) {
+    files.string<-paste(file.string, "q.rescale", q.rescale, sep="_") 
+  }
+  
   system(paste("mkdir ",file.string))
   setwd(file.string)
   system("cp /Users/bomeara/Documents/MyDocuments/Active/OMearaLabR/pkg/R/floral/V7*.R .")

@@ -7,6 +7,7 @@ original.data<-read.csv("/Users/bomeara/Documents/MyDocuments/Active/FloralAssem
 
 combo.names<-c("0x00xx","0x01xx","0x10xx","0x11xx","1x00xx","1x01xx","1x10xx","1x11xx")
 
+#use tip state freq to figure out 
 x0.rescale<-rep(0, 8)
 for (i in sequence(8)) {
     chars<-strsplit(combo.names[i],"")[[1]]
@@ -16,35 +17,43 @@ for (i in sequence(8)) {
     x0.rescale[i]<-dim(small.dataset)[1]/dim(original.data)[1]
 }
 
-constraint.vector <- c("full", "transonly", "divonly", "symmetry")
+
+constraint.vector <- c("full", "transonly", "divonly")
 net.div.vector <- c(FALSE)
+best.vector <- c(TRUE, FALSE)
 for (i in sequence(length(net.div.vector))) {
 	for (j in sequence(length(constraint.vector))) {
-		MakeRunFiles(constraint=constraint.vector[j], net.div=net.div.vector[i], tf=80, submit=TRUE, nrep=20)
+    for (k in sequence(length(best.vector)))
+		MakeRunFiles(constraint=constraint.vector[j], net.div=net.div.vector[i], tf=65, submit=TRUE, nrep=20, best.only=best.vector[k], x0.rescale=x0.rescale, x0=c(2, 0, 0, 0, 0, 0, 0, 0))
 	}
 }
 
-constraint.vector <- c("full", "transonly", "divonly", "symmetry")
-net.div.vector <- c(FALSE)
-for (i in sequence(length(net.div.vector))) {
-  for (j in sequence(length(constraint.vector))) {
-    MakeRunFiles(constraint=constraint.vector[j], net.div=net.div.vector[i], tf=80, x0=c(2, 0, 0, 0, 0, 0, 0, 0), x0.rescale=x0.rescale, submit=TRUE, nrep=20)
-  }
-}
+MakeRunFiles(constraint="full", net.div=FALSE, tf=65, submit=TRUE, nrep=20, best.only=TRUE, x0.rescale=x0.rescale, x0=c(2, 0, 0, 0, 0, 0, 0, 0), q.rescale=10)
+MakeRunFiles(constraint="full", net.div=FALSE, tf=65, submit=TRUE, nrep=20, best.only=FALSE, x0.rescale=x0.rescale, x0=c(2, 0, 0, 0, 0, 0, 0, 0), q.rescale=10)
 
 
-constraint.vector <- c("full")
-net.div.vector <- c(FALSE)
-for (i in sequence(length(net.div.vector))) {
-  for (j in sequence(length(constraint.vector))) {
-    MakeRunFiles(constraint=constraint.vector[j], net.div=net.div.vector[i], tf=80, x0=c(0, 2, 0, 0, 0, 0, 0, 0), submit=TRUE, nrep=20)
-  }
-}
 
-constraint.vector <- c("full")
-net.div.vector <- c(FALSE)
-for (i in sequence(length(net.div.vector))) {
-  for (j in sequence(length(constraint.vector))) {
-    MakeRunFiles(constraint=constraint.vector[j], net.div=net.div.vector[i], tf=80, x0=c(0, 2, 0, 0, 0, 0, 0, 0), x0.rescale=x0.rescale, submit=TRUE, nrep=20)
-  }
-}
+#constraint.vector <- c("full", "transonly", "divonly", "symmetry")
+#net.div.vector <- c(FALSE)
+#for (i in sequence(length(net.div.vector))) {
+#  for (j in sequence(length(constraint.vector))) {
+#    MakeRunFiles(constraint=constraint.vector[j], net.div=net.div.vector[i], tf=80, x0=c(2, 0, 0, 0, 0, 0, 0, 0), #x0.rescale=x0.rescale, submit=TRUE, nrep=20)
+#  }
+#}
+
+
+#constraint.vector <- c("full")
+#net.div.vector <- c(FALSE)
+#for (i in sequence(length(net.div.vector))) {
+#  for (j in sequence(length(constraint.vector))) {
+#    MakeRunFiles(constraint=constraint.vector[j], net.div=net.div.vector[i], tf=80, x0=c(0, 2, 0, 0, 0, 0, 0, 0), #submit=TRUE, nrep=20)
+#  }
+#}
+
+#constraint.vector <- c("full")
+#net.div.vector <- c(FALSE)
+#for (i in sequence(length(net.div.vector))) {
+#  for (j in sequence(length(constraint.vector))) {
+#    MakeRunFiles(constraint=constraint.vector[j], net.div=net.div.vector[i], tf=80, x0=c(0, 2, 0, 0, 0, 0, 0, 0), x0.rescale=x0.rescale, submit=TRUE, nrep=20)
+#  }
+#}
