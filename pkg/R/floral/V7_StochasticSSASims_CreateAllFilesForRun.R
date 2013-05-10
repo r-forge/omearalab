@@ -205,7 +205,7 @@ MakeRunFiles<-function(constraint="full", net.div=FALSE, x0=NULL, x0.rescale=NUL
     file.string<-paste(file.string, "best", sep="_") 
   }
   if (q.rescale!=1) {
-    files.string<-paste(file.string, "q.rescale", q.rescale, sep="_") 
+    file.string<-paste(file.string, "q.rescale", q.rescale, sep="_") 
   }
   
   system(paste("mkdir ",file.string))
