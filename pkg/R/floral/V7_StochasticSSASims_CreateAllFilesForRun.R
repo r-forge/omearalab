@@ -188,7 +188,7 @@ CreateRatesFile <- function(constraint="full", net.div=FALSE, x0=NULL, x0.rescal
 }
 
 #constraint can be "full", "transonly", "divonly", "symmetry"
-MakeRunFiles<-function(constraint="full", net.div=FALSE, x0=NULL, x0.rescale=NULL, tf=156, t.rescale=136, submit=FALSE, nrep=50) {
+MakeRunFiles<-function(constraint="full", net.div=FALSE, x0=NULL, x0.rescale=NULL, tf=156, t.rescale=136, submit=FALSE, nrep=50, q.rescale=1, best.only=FALSE) {
   file.string<-constraint
   if (net.div) {
     file.string<-paste(file.string, "netdiv", sep="_") 
@@ -211,7 +211,7 @@ MakeRunFiles<-function(constraint="full", net.div=FALSE, x0=NULL, x0.rescale=NUL
   system(paste("mkdir ",file.string))
   setwd(file.string)
   system("cp /Users/bomeara/Documents/MyDocuments/Active/OMearaLabR/pkg/R/floral/V7*.R .")
-  CreateRatesFile(constraint=constraint, net.div=net.div, x0=x0, x0.rescale=x0.rescale)
+  CreateRatesFile(constraint=constraint, net.div=net.div, x0=x0, x0.rescale=x0.rescale, q.rescale=q.rescale, best.only=best.only)
   
   cat('if(!require(gmp)) {
   install.packages("gmp",repos="http://cran.us.r-project.org", lib=tempdir())
