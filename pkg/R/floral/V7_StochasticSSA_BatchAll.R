@@ -17,6 +17,9 @@ for (i in sequence(8)) {
     x0.rescale[i]<-dim(small.dataset)[1]/dim(original.data)[1]
 }
 
+x0<-c(2, 0, 0, 0, 0, 0, 0, 0)
+names(x0)<-combo.names
+names(x0.rescale)<-combo.names
 
 constraint.vector <- c("full", "transonly", "divonly")
 net.div.vector <- c(FALSE)
@@ -24,12 +27,12 @@ best.vector <- c(TRUE, FALSE)
 for (i in sequence(length(net.div.vector))) {
 	for (j in sequence(length(constraint.vector))) {
     for (k in sequence(length(best.vector)))
-		MakeRunFiles(constraint=constraint.vector[j], net.div=net.div.vector[i], tf=65, submit=TRUE, nrep=20, best.only=best.vector[k], x0.rescale=x0.rescale, x0=c(2, 0, 0, 0, 0, 0, 0, 0))
+		MakeRunFiles(constraint=constraint.vector[j], net.div=net.div.vector[i], tf=65, submit=TRUE, nrep=20, best.only=best.vector[k], x0.rescale=x0.rescale, x0=x0)
 	}
 }
 
-MakeRunFiles(constraint="full", net.div=FALSE, tf=65, submit=TRUE, nrep=20, best.only=TRUE, x0.rescale=x0.rescale, x0=c(2, 0, 0, 0, 0, 0, 0, 0), q.rescale=10)
-MakeRunFiles(constraint="full", net.div=FALSE, tf=65, submit=TRUE, nrep=20, best.only=FALSE, x0.rescale=x0.rescale, x0=c(2, 0, 0, 0, 0, 0, 0, 0), q.rescale=10)
+MakeRunFiles(constraint="full", net.div=FALSE, tf=65, submit=TRUE, nrep=20, best.only=TRUE, x0.rescale=x0.rescale, x0=x0, q.rescale=10)
+MakeRunFiles(constraint="full", net.div=FALSE, tf=65, submit=TRUE, nrep=20, best.only=FALSE, x0.rescale=x0.rescale, x0=x0, q.rescale=10)
 
 
 

@@ -1,13 +1,14 @@
 library(RColorBrewer)
-setwd("/Users/bomeara/Documents/MyDocuments/Active/FloralAssembly/SimsAug2012")
-source("/Users/bomeara/Documents/MyDocuments/Active/OMearaLabR/pkg/R/floral/V6_NewSimulator.R")
+setwd("/Users/bomeara/Documents/MyDocuments/Active/FloralAssembly/SimsMay2013")
+source("/Users/bomeara/Documents/MyDocuments/Active/OMearaLabR/pkg/R/floral/V7_NewSimulator.R")
 dirs<-system("ls -1 | grep -v RData | grep -v .R | grep -iv pdf",intern=TRUE)
 #mypalette<-brewer.pal(8,"Dark2")
 mypalette<-heat.colors(12,alpha=0.3)
 original.data<-read.csv("/Users/bomeara/Documents/MyDocuments/Active/FloralAssembly/RunsJan2012/SourceData/Stebbins_prunenoper25i2012BCO.csv",stringsAsFactors=FALSE)
 observed.ntax<-dim(original.data)[1]
 all.histories.list<-list()
-combo.names<-c()
+combo.names<-c("0x00xx","0x01xx","0x10xx","0x11xx","1x00xx","1x01xx","1x10xx","1x11xx")
+
 system("rm *.pdf")
 
 subsample.proportion<-function(p,observed.ntax) {
@@ -17,10 +18,11 @@ subsample.proportion<-function(p,observed.ntax) {
 for (dir.index in sequence(length(dirs))) {
   print(dirs[dir.index])
   setwd(dirs[dir.index])
-  file.list<-system("ls -1 | grep RSave",intern=TRUE)
+  file.list<-system("ls -1 | grep total151.RSave",intern=TRUE)
   for (i in sequence(length(file.list))) {
     load(file.list[i])
-    print(tail(history))
+    #print(tail(history))
+    print(file.list[i])
     proportional.history<-history
     for (row.index in sequence(dim(history)[1])) {
       proportional.history[row.index, 2:9]<-history[row.index, 2:9]/sum( history[row.index, 2:9])
@@ -36,6 +38,7 @@ for (dir.index in sequence(length(dirs))) {
         all.histories.list[[j-1]]<-cbind( all.histories.list[[j-1]], proportional.history[,j])
       }
     }
+    print(proportional.history)
     rm(history)
     rm(proportional.history)
   }
@@ -52,21 +55,23 @@ for (dir.index in sequence(length(dirs))) {
     for (j in 2:dim(all.histories.list[[i]])[2]) {
       lines(x=current[,1],y=current[,j],col=mypalette[i])
     }
-    lines(x=current[,1],y=apply(current[,-1],1,quantile,probs=0.975), col="black",lty="dotted")
-    lines(x=current[,1],y=apply(current[,-1],1,quantile,probs=0.025), col="black",lty="dotted")
-    lines(x=current[,1],y=apply(current[,-1],1,quantile,probs=0.5), col="black")
-
-    densitylines<-density(current[dim(current)[1],2:dim(current)[2]],from=0, to=1)
-    densitylines.subsample<-density(sapply(current[dim(current)[1],2:dim(current)[2]], subsample.proportion, observed.ntax=observed.ntax) ,from=0, to=1)
-    polygon(x=10+max(all.histories.list[[i]][,1])+c(0,(10*densitylines$y/max(densitylines$y))), y=c(densitylines$x,0),col=mypalette[i],border=mypalette[i])
-    polygon(x=30+max(all.histories.list[[i]][,1])+c(0,(10*densitylines.subsample$y/max(densitylines.subsample$y))), y=c(densitylines.subsample$x,0),col=mypalette[i],border=mypalette[i])
-    chars<-strsplit(combo.names[i],"")[[1]]
-    small.dataset<-original.data[which(original.data[,1+1]==chars[1]),] #look at the relevant chars
-    small.dataset<-small.dataset[which(small.dataset[,3+1]==chars[3]),]
-    small.dataset<-small.dataset[which(small.dataset[,4+1]==chars[4]),]
-    lines(x=10+max(all.histories.list[[i]][,1])+c(0,11), y=rep(dim(small.dataset)[1]/dim(original.data)[1],2),col="black",lwd=2)
-    lines(x=30+max(all.histories.list[[i]][,1])+c(0,11), y=rep(dim(small.dataset)[1]/dim(original.data)[1],2),col="black",lwd=2)
-    
+    print(dim(current))
+    if (dim(current)[2]==9) {
+      try(lines(x=current[,1],y=apply(current[,-1],1,quantile,probs=0.975), col="black",lty="dotted"))
+      try(lines(x=current[,1],y=apply(current[,-1],1,quantile,probs=0.025), col="black",lty="dotted"))
+      try(lines(x=current[,1],y=apply(current[,-1],1,quantile,probs=0.5), col="black"))
+      
+      densitylines<-density(current[dim(current)[1],2:dim(current)[2]],from=0, to=1)
+      densitylines.subsample<-density(sapply(current[dim(current)[1],2:dim(current)[2]], subsample.proportion, observed.ntax=observed.ntax) ,from=0, to=1)
+      polygon(x=10+max(all.histories.list[[i]][,1])+c(0,(10*densitylines$y/max(densitylines$y))), y=c(densitylines$x,0),col=mypalette[i],border=mypalette[i])
+      polygon(x=30+max(all.histories.list[[i]][,1])+c(0,(10*densitylines.subsample$y/max(densitylines.subsample$y))), y=c(densitylines.subsample$x,0),col=mypalette[i],border=mypalette[i])
+      chars<-strsplit(combo.names[i],"")[[1]]
+      small.dataset<-original.data[which(original.data[,1+1]==chars[1]),] #look at the relevant chars
+      small.dataset<-small.dataset[which(small.dataset[,3+1]==chars[3]),]
+      small.dataset<-small.dataset[which(small.dataset[,4+1]==chars[4]),]
+      lines(x=10+max(all.histories.list[[i]][,1])+c(0,11), y=rep(dim(small.dataset)[1]/dim(original.data)[1],2),col="black",lwd=2)
+      lines(x=30+max(all.histories.list[[i]][,1])+c(0,11), y=rep(dim(small.dataset)[1]/dim(original.data)[1],2),col="black",lwd=2)
+    }
   }
   dev.off()
 }
