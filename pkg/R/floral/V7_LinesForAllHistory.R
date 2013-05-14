@@ -12,17 +12,18 @@ combo.names<-c("0x00xx","0x01xx","0x10xx","0x11xx","1x00xx","1x01xx","1x10xx","1
 system("rm *.pdf")
 
 subsample.proportion<-function(p,observed.ntax) {
-   recovered.p<-rbinom(1,observed.ntax,p)/observed.ntax
-   return(recovered.p)
+  recovered.p<-rbinom(1,observed.ntax,p)/observed.ntax
+  return(recovered.p)
 }
 for (dir.index in sequence(length(dirs))) {
-  print(dirs[dir.index])
+  #print(dirs[dir.index])
   setwd(dirs[dir.index])
+  ntax.vector<-c()
   file.list<-system("ls -1 | grep total151.RSave",intern=TRUE)
   for (i in sequence(length(file.list))) {
     load(file.list[i])
     #print(tail(history))
-    print(file.list[i])
+  #  print(file.list[i])
     proportional.history<-history
     for (row.index in sequence(dim(history)[1])) {
       proportional.history[row.index, 2:9]<-history[row.index, 2:9]/sum( history[row.index, 2:9])
@@ -30,7 +31,7 @@ for (dir.index in sequence(length(dirs))) {
     if (i==1) {
       combo.names<-colnames(history)[2:9]
       for (j in 2:9) {
-       all.histories.list[[j-1]]<-proportional.history[,c(1,j)] 
+        all.histories.list[[j-1]]<-proportional.history[,c(1,j)] 
       }
     }
     else {
@@ -38,42 +39,50 @@ for (dir.index in sequence(length(dirs))) {
         all.histories.list[[j-1]]<-cbind( all.histories.list[[j-1]], proportional.history[,j])
       }
     }
-    print(proportional.history)
+    #print(proportional.history)
+   # print(paste("ntax present = ",sum(history[137,2:9])))
+    ntax.vector<-append(ntax.vector, sum(history[137,2:9]))
     rm(history)
     rm(proportional.history)
   }
   setwd("..")
-  pdf(file=paste(dirs[dir.index],".pdf",sep=""),height=4)
-  par(mfcol=c(2,4))
-  for (i in sequence(8)) {
-    current<-all.histories.list[[i]]
-    plot(x=c(min(current[,1]),1.3*max(current[,1])),y=c(0,1),type="n",bty="n",xaxt="n",yaxt="n", xlab="MY from root",ylab="Proportion",main=paste(combo.names[i],"\n",dirs[dir.index],sep=""))
-    axis(side=1,at=c(0,136),tick=FALSE)
-    axis(side=1,at=seq(from=0,to=136,length.out=5),labels=FALSE)
-    axis(side=2,at=c(0,1),tick=FALSE)
-    axis(side=2,at=seq(from=0,to=1,length.out=5),labels=FALSE)
-    for (j in 2:dim(all.histories.list[[i]])[2]) {
-      lines(x=current[,1],y=current[,j],col=mypalette[i])
-    }
-    print(dim(current))
-    if (dim(current)[2]==9) {
-      try(lines(x=current[,1],y=apply(current[,-1],1,quantile,probs=0.975), col="black",lty="dotted"))
-      try(lines(x=current[,1],y=apply(current[,-1],1,quantile,probs=0.025), col="black",lty="dotted"))
-      try(lines(x=current[,1],y=apply(current[,-1],1,quantile,probs=0.5), col="black"))
-      
-      densitylines<-density(current[dim(current)[1],2:dim(current)[2]],from=0, to=1)
-      densitylines.subsample<-density(sapply(current[dim(current)[1],2:dim(current)[2]], subsample.proportion, observed.ntax=observed.ntax) ,from=0, to=1)
-      polygon(x=10+max(all.histories.list[[i]][,1])+c(0,(10*densitylines$y/max(densitylines$y))), y=c(densitylines$x,0),col=mypalette[i],border=mypalette[i])
-      polygon(x=30+max(all.histories.list[[i]][,1])+c(0,(10*densitylines.subsample$y/max(densitylines.subsample$y))), y=c(densitylines.subsample$x,0),col=mypalette[i],border=mypalette[i])
-      chars<-strsplit(combo.names[i],"")[[1]]
-      small.dataset<-original.data[which(original.data[,1+1]==chars[1]),] #look at the relevant chars
-      small.dataset<-small.dataset[which(small.dataset[,3+1]==chars[3]),]
-      small.dataset<-small.dataset[which(small.dataset[,4+1]==chars[4]),]
-      lines(x=10+max(all.histories.list[[i]][,1])+c(0,11), y=rep(dim(small.dataset)[1]/dim(original.data)[1],2),col="black",lwd=2)
-      lines(x=30+max(all.histories.list[[i]][,1])+c(0,11), y=rep(dim(small.dataset)[1]/dim(original.data)[1],2),col="black",lwd=2)
-    }
+  print(dirs[dir.index])
+  print(paste("number of completed runs=", length(file.list)))
+  print(round(quantile(ntax.vector)))
+  if (length(file.list)>0) {
+    pdf(file=paste(dirs[dir.index],".pdf",sep=""),height=4)
+    par(mfcol=c(2,4))
+    for (i in sequence(8)) {
+      current<-all.histories.list[[i]]
+      plot(x=c(min(current[,1]),1.3*max(current[,1])),y=c(0,1),type="n",bty="n",xaxt="n",yaxt="n", xlab="MY from root",ylab="Proportion",main=paste(combo.names[i],"\n",sub("_bd_20000000_rescale", "", dirs[dir.index]),sep=""))
+      polygon(x=c(136, 136+15, 136+15, 136), y=c(0, 0, 1, 1), border=NA, col="gray")
+      axis(side=1,at=c(0,136),tick=FALSE)
+      axis(side=1,at=seq(from=0,to=136,length.out=5),labels=FALSE)
+      axis(side=2,at=c(0,1),tick=FALSE)
+      axis(side=2,at=seq(from=0,to=1,length.out=5),labels=FALSE)
+      for (j in 2:dim(all.histories.list[[i]])[2]) {
+        lines(x=current[,1],y=current[,j],col=mypalette[i])
+      }
+     # print(dim(current))
+     # if (dim(current)[2]==9) {
+        try(lines(x=current[,1],y=apply(current[,-1],1,quantile,probs=0.975), col="black",lty="dotted"))
+        try(lines(x=current[,1],y=apply(current[,-1],1,quantile,probs=0.025), col="black",lty="dotted"))
+        try(lines(x=current[,1],y=apply(current[,-1],1,quantile,probs=0.5), col="black"))
+        
+        densitylines<-density(current[dim(current)[1],2:dim(current)[2]],from=0, to=1)
+        densitylines.subsample<-density(sapply(current[dim(current)[1],2:dim(current)[2]], subsample.proportion, observed.ntax=observed.ntax) ,from=0, to=1)
+        polygon(x=10+max(all.histories.list[[i]][,1])+c(0,(10*densitylines$y/max(densitylines$y))), y=c(densitylines$x,0),col=mypalette[i],border=mypalette[i])
+        polygon(x=30+max(all.histories.list[[i]][,1])+c(0,(10*densitylines.subsample$y/max(densitylines.subsample$y))), y=c(densitylines.subsample$x,0),col=mypalette[i],border=mypalette[i])
+        chars<-strsplit(combo.names[i],"")[[1]]
+        small.dataset<-original.data[which(original.data[,1+1]==chars[1]),] #look at the relevant chars
+        small.dataset<-small.dataset[which(small.dataset[,3+1]==chars[3]),]
+        small.dataset<-small.dataset[which(small.dataset[,4+1]==chars[4]),]
+        lines(x=10+max(all.histories.list[[i]][,1])+c(0,11), y=rep(dim(small.dataset)[1]/dim(original.data)[1],2),col="black",lwd=2)
+        lines(x=30+max(all.histories.list[[i]][,1])+c(0,11), y=rep(dim(small.dataset)[1]/dim(original.data)[1],2),col="black",lwd=2)
+      }
+    #}
+    dev.off()
   }
-  dev.off()
 }
 system('/System/Library/Automator/Combine\\ PDF\\ Pages.action/Contents/Resources/join.py -o ~/Desktop/Sims.pdf *.pdf')
 system("mv ~/Desktop/Sims.pdf All.PDF")
