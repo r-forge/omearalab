@@ -32,7 +32,11 @@ CreateRatesFile <- function(constraint="full", net.div=FALSE, x0=NULL, x0.rescal
     focal.dataframe1<-focal.dataframe[which(focal.dataframe$focal=="xx1xxx"),]
     focal.dataframe<-rbind(focal.dataframe0, focal.dataframe1)
   }
-  
+  if(constraint=="staceyfull") {
+  	focal.dataframe<-focal.dataframe[which(focal.dataframe$D!=1),]
+  	focal.dataframe<-focal.dataframe[which(focal.dataframe$D!=3),]
+    focal.dataframe<-focal.dataframe[which(focal.dataframe$T!=1), ]
+  }
   
   
   print("dimensions post filter")
