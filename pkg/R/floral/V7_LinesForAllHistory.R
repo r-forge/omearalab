@@ -1,6 +1,7 @@
 library(RColorBrewer)
 setwd("/Users/bomeara/Documents/MyDocuments/Active/FloralAssembly/SimsMay2013")
 source("/Users/bomeara/Documents/MyDocuments/Active/OMearaLabR/pkg/R/floral/V7_NewSimulator.R")
+source("/Users/bomeara/Documents/MyDocuments/Active/OMearaLabR/pkg/R/floral/V7_UtilityFns.R")
 dirs<-system("ls -1 | grep -v RData | grep -v .R | grep -iv pdf",intern=TRUE)
 #mypalette<-brewer.pal(8,"Dark2")
 mypalette<-heat.colors(12,alpha=0.3)
@@ -19,7 +20,24 @@ for (dir.index in sequence(length(dirs))) {
   #print(dirs[dir.index])
   setwd(dirs[dir.index])
   ntax.vector<-c()
-  file.list<-system("ls -1 | grep total151.RSave",intern=TRUE)
+#  file.list<-system("ls -1 | grep total151.RSave",intern=TRUE)
+  file.list<-system("ls -1 | grep total137.RSave",intern=TRUE)
+  if (length(file.list)>0) {
+    file.list<-paste("/Users/bomeara/Documents/MyDocuments/Active/FloralAssembly/SimsMay2013/", dirs[dir.index], "/", file.list, sep="")
+  }
+  if(!grepl("stacey", dirs[dir.index])) {
+    setwd("/Users/bomeara/Documents/MyDocuments/Active/FloralAssembly/SimsMay2013Additional")
+    setwd(dirs[dir.index])
+    file.list2<-system("ls -1 | grep total137.RSave",intern=TRUE)
+    if (length(file.list2)>0) {
+      file.list2<-paste("/Users/bomeara/Documents/MyDocuments/Active/FloralAssembly/SimsMay2013Additional/", dirs[dir.index], "/", file.list2, sep="")
+    }
+    file.list<-c(file.list, file.list2)
+  }
+ # print(file.list)
+  setwd("/Users/bomeara/Documents/MyDocuments/Active/FloralAssembly/SimsMay2013")
+  setwd(dirs[dir.index])
+  
   for (i in sequence(length(file.list))) {
     load(file.list[i])
     #print(tail(history))
@@ -49,7 +67,7 @@ for (dir.index in sequence(length(dirs))) {
   print(dirs[dir.index])
   print(paste("number of completed runs=", length(file.list)))
   print(round(quantile(ntax.vector)))
-  if (length(file.list)>0) {
+  if (length(file.list)>1) {
     pdf(file=paste(dirs[dir.index],".pdf",sep=""),height=4)
     par(mfcol=c(2,4))
     for (i in sequence(8)) {

@@ -37,7 +37,12 @@ CreateRatesFile <- function(constraint="full", net.div=FALSE, x0=NULL, x0.rescal
   	focal.dataframe<-focal.dataframe[which(focal.dataframe$D!=3),]
     focal.dataframe<-focal.dataframe[which(focal.dataframe$T!=1), ]
   }
-  
+  if(constraint=="transonlyRedo") {
+    focal.dataframe1<-focal.dataframe[which(focal.dataframe$D==1),]
+    focal.dataframe3<-focal.dataframe[which(focal.dataframe$D==3),]
+    focal.dataframe<-rbind(focal.dataframe1, focal.dataframe3)
+  }
+
   
   print("dimensions post filter")
   print(dim(focal.dataframe))
