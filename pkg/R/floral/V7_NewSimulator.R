@@ -248,7 +248,9 @@ getOptimalScaling<-function(lambda, mu, t, N0=2, N=250000) {
   r<-lambda - mu
   ideal.rate<-log(N)/t
   scale.factor<-ideal.rate/r
-  result<-optim(par=scale.factor, fn=likelihoodGivenScaling, method="L-BFGS-B", lambda=lambda, mu=mu, t=t, N0=N0, N=N, multiplier=-1)
+  result<-optim(par=scale.factor, fn=likelihoodGivenScaling, method="Brent", lambda=lambda, mu=mu, t=t, N0=N0, N=N, multiplier=-1,lower=0.001, upper=5)
   print(paste("Yule scale factor would be = ", scale.factor))
+  print(paste("Actual scale factor would be = ", result$par))
+  
 	return(result$par)
 }

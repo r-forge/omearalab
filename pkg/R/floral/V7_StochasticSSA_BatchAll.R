@@ -21,42 +21,15 @@ x0<-c(2, 0, 0, 0, 0, 0, 0, 0)
 names(x0)<-combo.names
 names(x0.rescale)<-combo.names
 
-constraint.vector <- c("full", "transonly", "divonly")
+constraint.vector <- c("full", "transonly", "divonly", "staceyfull")
 net.div.vector <- c(FALSE)
 best.vector <- c(TRUE, FALSE)
 for (i in sequence(length(net.div.vector))) {
 	for (j in sequence(length(constraint.vector))) {
     for (k in sequence(length(best.vector)))
-		MakeRunFiles(constraint=constraint.vector[j], net.div=net.div.vector[i], tf=65, submit=TRUE, nrep=20, best.only=best.vector[k], x0.rescale=x0.rescale, x0=x0)
+		MakeRunFiles(constraint=constraint.vector[j], net.div=net.div.vector[i], tf=65, submit=TRUE, nrep=25, best.only=best.vector[k], x0.rescale=x0.rescale, x0=x0)
 	}
 }
 
-MakeRunFiles(constraint="full", net.div=FALSE, tf=65, submit=TRUE, nrep=20, best.only=TRUE, x0.rescale=x0.rescale, x0=x0, q.rescale=10)
-MakeRunFiles(constraint="full", net.div=FALSE, tf=65, submit=TRUE, nrep=20, best.only=FALSE, x0.rescale=x0.rescale, x0=x0, q.rescale=10)
-
-
-
-#constraint.vector <- c("full", "transonly", "divonly", "symmetry")
-#net.div.vector <- c(FALSE)
-#for (i in sequence(length(net.div.vector))) {
-#  for (j in sequence(length(constraint.vector))) {
-#    MakeRunFiles(constraint=constraint.vector[j], net.div=net.div.vector[i], tf=80, x0=c(2, 0, 0, 0, 0, 0, 0, 0), #x0.rescale=x0.rescale, submit=TRUE, nrep=20)
-#  }
-#}
-
-
-#constraint.vector <- c("full")
-#net.div.vector <- c(FALSE)
-#for (i in sequence(length(net.div.vector))) {
-#  for (j in sequence(length(constraint.vector))) {
-#    MakeRunFiles(constraint=constraint.vector[j], net.div=net.div.vector[i], tf=80, x0=c(0, 2, 0, 0, 0, 0, 0, 0), #submit=TRUE, nrep=20)
-#  }
-#}
-
-#constraint.vector <- c("full")
-#net.div.vector <- c(FALSE)
-#for (i in sequence(length(net.div.vector))) {
-#  for (j in sequence(length(constraint.vector))) {
-#    MakeRunFiles(constraint=constraint.vector[j], net.div=net.div.vector[i], tf=80, x0=c(0, 2, 0, 0, 0, 0, 0, 0), x0.rescale=x0.rescale, submit=TRUE, nrep=20)
-#  }
-#}
+MakeRunFiles(constraint="full", net.div=FALSE, tf=65, submit=TRUE, nrep=25, best.only=TRUE, x0.rescale=x0.rescale, x0=x0, q.rescale=10)
+MakeRunFiles(constraint="full", net.div=FALSE, tf=65, submit=TRUE, nrep=25, best.only=FALSE, x0.rescale=x0.rescale, x0=x0, q.rescale=10)
