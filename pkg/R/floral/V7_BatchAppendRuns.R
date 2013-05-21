@@ -2,7 +2,9 @@ library(compiler)
 enableJIT(3)
 tf=136
 t.stop=136+15
-MayDirs<-c("/Users/bomeara/Documents/MyDocuments/Active/FloralAssembly/SimsMay2013", "/Users/bomeara/Documents/MyDocuments/Active/FloralAssembly/SimsMay2013Additional")
+#MayDirs<-c("/Users/bomeara/Documents/MyDocuments/Active/FloralAssembly/SimsMay2013", "/Users/bomeara/Documents/MyDocuments/Active/FloralAssembly/SimsMay2013Additional")
+MayDirs<-c("/Users/bomeara/Documents/MyDocuments/Active/FloralAssembly/SimsMay2013")
+
 while(1<2) { #keep looping
   for (may.dir.index in sequence(length(MayDirs))) {
     setwd(MayDirs[may.dir.index])
