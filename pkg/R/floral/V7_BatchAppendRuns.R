@@ -25,15 +25,15 @@ while(1<2) { #keep looping
       print(cbind(files, files.total[order(files.total)]))
       Sys.sleep(30) #give time to finish transferring any files
       for (i in sequence(length(files))) {
-        system(paste("svn add ", files[i]))
+        #system(paste("svn add ", files[i]))
         dir<-strsplit(files[i], "/")[[1]][1]
         file<-strsplit(files[i], "/")[[1]][2]
         setwd(dir)
         system("cp /Users/bomeara/Documents/MyDocuments/Active/OMearaLabR/pkg/R/floral/V7*R .")
         file.root<-strsplit(gsub("_app\\d+total\\d+","", file), "\\.")[[1]][1]
         
-        system(paste("svn mv ", file, " ", file, ".staged", sep=""))
-        system("svn commit -m'staging'")
+        system(paste("mv ", file, " ", file, ".staged", sep=""))
+        #system("svn commit -m'staging'")
         t.additional<-1
         if(files.total[i]<100) {
           t.additional<-5
@@ -89,7 +89,7 @@ queue 1
         setwd("..")
       }
     }
-    system("svn commit -m'more runs'")
+    #system("svn commit -m'more runs'")
   }
   Sys.sleep(10)
 }

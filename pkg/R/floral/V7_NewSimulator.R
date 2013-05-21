@@ -39,7 +39,9 @@ OMearaSSA<-function(x0, q.vector, lambda.vector, mu.vector, tf, maxWallTime, ver
      if(is.null(x0.rescale)) {
      	x0.rescale<-x0
      }
-    scale.factor<-getOptimalScaling(lambda=weightedHarmonicMeanZeroCorrection(x=lambda.vector, w=x0.rescale), mu=weightedHarmonicMeanZeroCorrection(x=mu.vector, w=x0.rescale), t=t.rescale, N0=sum(x0), N=rescale.species)
+    scale.factor<-getOptimalScaling(lambda=weightedHarmonicMeanZeroCorrection(x=lambda.vector, w=x0.rescale), mu=weightedHarmonicMeanZeroCorrection(x=mu.vector, w=x0.rescale), t=t.rescale, N0=2, N=rescale.species)
+     scale.tries<-seq(from=0.001, to=10, length.out=100)
+     try(print(cbind(scale.tries, sapply(scale.tries, likelihoodGivenScaling, lambda=weightedHarmonicMeanZeroCorrection(x=lambda.vector, w=x0.rescale), weightedHarmonicMeanZeroCorrection(x=mu.vector, w=x0.rescale), t=t.rescale, N0=2, N=rescale.species))))
     print(paste("scale.factor is ",scale.factor))
     print("x0.rescale is ")
     print(x0.rescale)
