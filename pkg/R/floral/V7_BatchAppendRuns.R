@@ -23,7 +23,7 @@ while(1<2) { #keep looping
       files<-files[which(files.total<t.stop)] #don't want to keep running forever.
       files.total<-files.total[which(files.total<t.stop)]
       files<-files[order(files.total)] #do the ones that have run the least amount of time first
-      files.total<-files[order(files.total)]
+      files.total<-files.total[order(files.total)]
       print(cbind(files, files.total[order(files.total)]))
       Sys.sleep(30) #give time to finish transferring any files
       for (i in sequence(length(files))) {
@@ -37,12 +37,16 @@ while(1<2) { #keep looping
         system(paste("mv ", file, " ", file, ".staged", sep=""))
         #system("svn commit -m'staging'")
         t.additional<-1
-        if(files.total[i]<100) {
+        if(files.total[i]<131) {
           t.additional<-5
         }
         
         if(files.total[i]<80) {
           t.additional<-10 
+        }
+        
+        if(files.total[i]==0) {
+          t.additional<-1
         }
         print(paste("t.additional is ", t.additional))
         cat(paste('source("V7_UtilityFns.R")
