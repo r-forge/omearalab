@@ -33,7 +33,7 @@ while(1<2) { #keep looping
         setwd(dir)
         system("cp /Users/bomeara/Documents/MyDocuments/Active/OMearaLabR/pkg/R/floral/V7*R .")
         file.root<-strsplit(gsub("_app\\d+total\\d+","", file), "\\.")[[1]][1]
-        
+        print(files.total[i])
         system(paste("mv ", file, " ", file, ".staged", sep=""))
         #system("svn commit -m'staging'")
         t.additional<-1
@@ -44,7 +44,7 @@ while(1<2) { #keep looping
         if(files.total[i]<80) {
           t.additional<-10 
         }
-        
+        print(paste("t.additional is ", t.additional))
         cat(paste('source("V7_UtilityFns.R")
 load("',file,'.staged")
 source("V7_NewSimulator.R")
