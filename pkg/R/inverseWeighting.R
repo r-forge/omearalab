@@ -29,7 +29,15 @@ InverseInterpolateMany <- function(x.obsmat, x.mat, y.mat, p, standardize=TRUE, 
 	return(apply(x.obsmat, 1, InverseInterpolateSingle, x.mat=x.mat, y.mat=y.mat, p=p, standardize=FALSE, dist.method=dist.method))
 }
 
-dist.mod <- function(x.mat, x.obs, dist.method="euclidean") {
+dist.mod <- function(x.mat, x.obs, dist.method="euclidean", standardize=FALSE) {
+	if(standardize) {
+	    x.mat.means <- colMeans(x.mat)
+	    x.mat.sds <- apply(x.mat, 2, sd)
+	    for (i in sequence(dim(x.mat)[2])) {
+			x.mat[,i] <- (x.mat[,i] - x.mat.means[i]) / x.mat.sds[i]	    
+			x.obs[i] <- (x.obs[i] - x.mat.means[i]) / x.mat.sds[i]
+	    }
+	}
 	return(dist(rbind(x.mat,x.obs), method=dist.method))
 }
 
