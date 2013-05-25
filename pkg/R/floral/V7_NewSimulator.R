@@ -15,7 +15,7 @@ enableJIT(3)
 #    quickly move to a different set of states with higher div. rates, you may want to use these to rescale so you don't overshoot
 
 #note history now has time elapsed
-OMearaSSA<-function(x0, q.vector, lambda.vector, mu.vector, tf, maxWallTime, verbose=TRUE, print.freq=100, full.history=TRUE, rescale.species=NULL, yule.scale=0, history.steps.to.save=seq(from=1,to=floor(tf),length.out=floor(tf)), t.rescale=tf, x0.rescale=NULL) { #turn off full.history to save on memory
+OMearaSSA<-function(x0, q.vector, lambda.vector, mu.vector, tf, maxWallTime, verbose=TRUE, print.freq=100, full.history=TRUE, rescale.species=NULL, yule.scale=0, history.steps.to.save=seq(from=1,to=floor(tf),length.out=floor(tf)), t.rescale=tf, x0.rescale=NULL, ntax.old.scale=NA) { #turn off full.history to save on memory
   #make sure order of states is the same in all input objects
 
   lambda.vector<-lambda.vector-(yule.scale*mu.vector)
@@ -43,6 +43,13 @@ OMearaSSA<-function(x0, q.vector, lambda.vector, mu.vector, tf, maxWallTime, ver
      scale.tries<-seq(from=0.001, to=10, length.out=100)
      try(print(cbind(scale.tries, sapply(scale.tries, likelihoodGivenScaling, lambda=weightedHarmonicMeanZeroCorrection(x=lambda.vector, w=x0.rescale), weightedHarmonicMeanZeroCorrection(x=mu.vector, w=x0.rescale), t=t.rescale, N0=2, N=rescale.species))))
     print(paste("scale.factor is ",scale.factor))
+    if(!is.na(ntax.old.scale)) {
+    	#exp(r_actual * t) = ntax.old.scale
+    	r.actual <- log(ntax.old.scale)/t.rescale
+    	r.wanted <- log(rescale.species)/t.rescale
+    	print(paste("rescaleing the scale factor itself by ", r.wanted/r.actual))
+    	scale.factor <- scale.factor * r.wanted / r.actual
+    }
     print("x0.rescale is ")
     print(x0.rescale)
     print("lambda") 
@@ -62,6 +69,7 @@ OMearaSSA<-function(x0, q.vector, lambda.vector, mu.vector, tf, maxWallTime, ver
   #print(q.matrix)
   all.matrix<-cbind(q.matrix,matrix(lambda.vector,ncol=1),matrix(mu.vector,ncol=1))
   if(verbose) {
+  	print("post.scaling matrix")
     print(all.matrix)
   }
   start.time<-Sys.time()
@@ -161,14 +169,14 @@ plot.histories<-function(histories) { #uses the final outcome, not the path alon
   barplot(t(t(transformed.history)/(apply(transformed.history, 2, sum)))[, order(apply(transformed.history, 2, sum))],col=mypalette,border=NA,main="proportion",space=0) 
 }
 
-doParallelSSA<-function(x0, q.means, lambda.means, mu.means, tf=136, maxWallTime=Inf, verbose=F, file.string="", full.history=FALSE, print.freq=100, rescale.species=NULL, yule.scale=0, t.rescale=136, x0.rescale=NULL) {
+doParallelSSA<-function(x0, q.means, lambda.means, mu.means, tf=136, maxWallTime=Inf, verbose=TRUE, file.string="", full.history=FALSE, print.freq=100, rescale.species=NULL, yule.scale=0, t.rescale=136, x0.rescale=NULL, ntax.old.scale=NA) {
   file.name<-paste("SSA_",file.string,"_",format(Sys.time(), "%b%d_%H_%M_%S"),"_",round(runif(1,1,1000000)),".RSave",sep="")
   survivors<-0
   history<-0
   attempts<-0
   while(survivors<=0) {
     attempts<-attempts+1
-    history<-OMearaSSA(x0, q.means, lambda.means, mu.means, tf=tf, maxWallTime=maxWallTime, verbose=verbose,full.history=full.history, print.freq=print.freq, rescale.species=rescale.species, yule.scale=yule.scale, t.rescale=t.rescale, x0.rescale=x0.rescale)
+    history<-OMearaSSA(x0, q.means, lambda.means, mu.means, tf=tf, maxWallTime=maxWallTime, verbose=verbose,full.history=full.history, print.freq=print.freq, rescale.species=rescale.species, yule.scale=yule.scale, t.rescale=t.rescale, x0.rescale=x0.rescale, ntax.old.scale=ntax.old.scale)
     survivors<-sum(history[dim(history)[1],2:9])
     print(paste("survivors =",survivors))
     print(c(attempts,max(apply(history[,2:9],1,sum))))
@@ -176,14 +184,14 @@ doParallelSSA<-function(x0, q.means, lambda.means, mu.means, tf=136, maxWallTime
   save(list=ls(), file=file.name)
 }
 
-appendParallelSSA<-function(x0, q.means, lambda.means, mu.means, prev.history, t.additional=1, maxWallTime=Inf, verbose=F, file.string="", full.history=FALSE, print.freq=100, rescale.species=NULL, yule.scale=0, t.rescale=136, x0.rescale=NULL) {
+appendParallelSSA<-function(x0, q.means, lambda.means, mu.means, prev.history, t.additional=1, maxWallTime=Inf, verbose=F, file.string="", full.history=FALSE, print.freq=100, rescale.species=NULL, yule.scale=0, t.rescale=136, x0.rescale=NULL, ntax.old.scale=NA) {
   file.name<-paste(file.string,"_","app",t.additional,"total", t.additional+max(prev.history[,1]), ".RSave",sep="")
   survivors<-0
   history<-0
   attempts<-0
   while(survivors<=0) {
     attempts<-attempts+1
-    history<-OMearaSSA(x0=prev.history[dim(prev.history)[1],2:9], q.means, lambda.means, mu.means, tf=t.additional, maxWallTime=maxWallTime, verbose=verbose,full.history=full.history, print.freq=print.freq, rescale.species=rescale.species, yule.scale=yule.scale, t.rescale=t.rescale, x0.rescale=x0.rescale)
+    history<-OMearaSSA(x0=prev.history[dim(prev.history)[1],2:9], q.means, lambda.means, mu.means, tf=t.additional, maxWallTime=maxWallTime, verbose=verbose,full.history=full.history, print.freq=print.freq, rescale.species=rescale.species, yule.scale=yule.scale, t.rescale=t.rescale, x0.rescale=x0.rescale, ntax.old.scale=ntax.old.scale)
     survivors<-sum(history[dim(history)[1],2:9])
     print(paste("survivors =",survivors))
     history<-rbind(prev.history,history[2:dim(history)[1],]) #the first row of the new history will be the same as the last of the old history

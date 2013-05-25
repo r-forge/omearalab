@@ -197,7 +197,7 @@ CreateRatesFile <- function(constraint="full", net.div=FALSE, x0=NULL, x0.rescal
 }
 
 #constraint can be "full", "transonly", "divonly", "symmetry"
-MakeRunFiles<-function(constraint="full", net.div=FALSE, x0=NULL, x0.rescale=NULL, tf=156, t.rescale=136, submit=FALSE, nrep=50, q.rescale=1, best.only=FALSE) {
+MakeRunFiles<-function(constraint="full", net.div=FALSE, x0=NULL, x0.rescale=NULL, tf=156, t.rescale=136, submit=FALSE, nrep=50, q.rescale=1, best.only=FALSE, ntax.old.scale=NA) {
   file.string<-constraint
   if (net.div) {
     file.string<-paste(file.string, "netdiv", sep="_") 
@@ -216,6 +216,9 @@ MakeRunFiles<-function(constraint="full", net.div=FALSE, x0=NULL, x0.rescale=NUL
   if (q.rescale!=1) {
     file.string<-paste(file.string, "q_rescaleRedo", q.rescale, sep="_") 
   }
+  if (!is.na(ntax.old.scale)) {
+  	file.string<-paste(file.string, "_ntax.old.scale_", ntax.old.scale, sep="")
+  }
   
   system(paste("mkdir ",file.string))
   setwd(file.string)
@@ -232,7 +235,7 @@ source("V7_StochasticSSASims_Functions.R")
 load("Rates.Rsave")
       
 ', file="ActualRun.R")
-  cat(paste("doParallelSSA(tf=",tf,", x0=x0, q.means=q.means, lambda.means=lambda.means, mu.means=mu.means, maxWallTime=Inf, file.string='", file.string, "', rescale.species=250000, yule.scale=0, full.history=FALSE,print.freq=10000, t.rescale=", t.rescale, ", x0.rescale=x0.rescale)", sep=""), file="ActualRun.R", append=TRUE)
+  cat(paste("doParallelSSA(tf=",tf,", x0=x0, q.means=q.means, lambda.means=lambda.means, mu.means=mu.means, maxWallTime=Inf, file.string='", file.string, "', rescale.species=250000, yule.scale=0, full.history=FALSE,print.freq=10000, t.rescale=", t.rescale, ", x0.rescale=x0.rescale, ntax.old.scale=",ntax.old.scale,")", sep=""), file="ActualRun.R", append=TRUE)
   
   cat(paste('#! /bin/sh
 
