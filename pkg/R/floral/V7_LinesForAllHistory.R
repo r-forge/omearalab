@@ -21,7 +21,7 @@ for (i in sequence(length(combo.names))) {
 }
 names(observed.proportions)<-combo.names
 
-summary.df<-cbind(data.frame(dir="empirical", nrun=1, ntax.025=250000, ntax.med=250000, ntax.975=250000, dist.025=0, dist.med=0, dist.975=0), data.frame(t(round(observed.proportions, 2))))
+summary.df<-cbind(data.frame(model="empirical", nrun=1, ntax.025=250000, ntax.med=250000, ntax.975=250000, dist.025=0, dist.med=0, dist.975=0), data.frame(t(round(observed.proportions, 2))))
 
 system("rm *.pdf")
 
@@ -33,8 +33,11 @@ for (dir.index in sequence(length(dirs))) {
   #print(dirs[dir.index])
   setwd(dirs[dir.index])
   ntax.vector<-c()
-  #  file.list<-system("ls -1 | grep total151.RSave",intern=TRUE)
+#    file.list<-system("ls -1 | grep total151.RSave",intern=TRUE)
   file.list<-system("ls -1 | grep total137.RSave",intern=TRUE)
+  if(grepl("old", dirs[dir.index])) {
+	file.list<-system("ls -1 | grep RSave", intern=TRUE)
+}
   if (length(file.list)>0) {
     file.list<-paste("/Users/bomeara/Documents/MyDocuments/Active/FloralAssembly/SimsMay2013/", dirs[dir.index], "/", file.list, sep="")
   }
@@ -59,7 +62,7 @@ for (dir.index in sequence(length(dirs))) {
     for (row.index in sequence(dim(history)[1])) {
       proportional.history[row.index, 2:9]<-history[row.index, 2:9]/sum( history[row.index, 2:9])
     }
-    distances<-append(distances, dist(as.matrix(rbind(observed.proportions, proportional.history[137, 2:9])))[1])
+    distances<-append(distances, dist(as.matrix(rbind(observed.proportions, proportional.history[137, 2:9])))[1]/sqrt(2)) #sqrt(2) is the max distance
     #mat.for.dist<<-as.matrix(rbind(observed.proportions, proportional.history[137, 2:9]))
     #dput(as.matrix(rbind(observed.proportions, proportional.history[137, 2:9])))
     #print(dist(as.matrix(rbind(observed.proportions, proportional.history[137, 2:9])))[1])
@@ -122,13 +125,15 @@ for (dir.index in sequence(length(dirs))) {
       proportions.mean[i]<-mean(current[137, -1])
     }
     names(proportions.mean)<-combo.names
-    summary.df<-rbind(summary.df, cbind(data.frame(dir=dirs[dir.index], nrun=length(file.list), ntax.025=round(quantile(ntax.vector,.025)), ntax.med=round(quantile(ntax.vector,.5)), ntax.975=round(quantile(ntax.vector,.975)), dist.025=round(quantile(distances, 0.025), 2), dist.med=round(quantile(distances, 0.5), 2), dist.975=round(quantile(distances, 0.975), 2)), data.frame(t(round(proportions.mean, 2)))))
+    summary.df<-rbind(summary.df, cbind(data.frame(model=dirs[dir.index], nrun=length(file.list), ntax.025=round(quantile(ntax.vector,.025)), ntax.med=round(quantile(ntax.vector,.5)), ntax.975=round(quantile(ntax.vector,.975)), dist.025=round(quantile(distances, 0.025), 2), dist.med=round(quantile(distances, 0.5), 2), dist.975=round(quantile(distances, 0.975), 2)), data.frame(t(round(proportions.mean, 2)))))
     
     #}
     dev.off()
   }
 }
 system('/System/Library/Automator/Combine\\ PDF\\ Pages.action/Contents/Resources/join.py -o ~/Desktop/Sims.pdf *.pdf')
-system("mv ~/Desktop/Sims.pdf All.PDF")
-system("open All.PDF")
+system("mv ~/Desktop/Sims.pdf ~/Dropbox/All.PDF")
+#system("open All.PDF")
+row.names(summary.df)<-NULL
 print(summary.df)
+write.csv(summary.df, file="~/Dropbox/summary.csv")
