@@ -220,7 +220,7 @@ MakeRunFiles<-function(constraint="full", net.div=FALSE, x0=NULL, x0.rescale=NUL
   	file.string<-paste(file.string, "_ntax.old.scale_", ntax.old.scale, sep="")
   }
   
-  system(paste("mkdir ",file.string))
+  try(system(paste("mkdir ",file.string)))
   setwd(file.string)
   system("cp /Users/bomeara/Documents/MyDocuments/Active/OMearaLabR/pkg/R/floral/V7*.R .")
   CreateRatesFile(constraint=constraint, net.div=net.div, x0=x0, x0.rescale=x0.rescale, q.rescale=q.rescale, best.only=best.only)
