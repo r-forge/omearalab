@@ -15,7 +15,7 @@ GetFirstAppearance<-function(counts) {
   return(age)
 }
 
-in.progress<-read.csv("ResultsPeekPruned.csv")
+in.progress<-read.csv("~/Dropbox/ResultsPeekPruned.csv")
 in.progress$ntax.rescale<-as.numeric(str_extract(str_extract(in.progress$file, "scale_\\d+e*\\+*\\d*"), "\\d+e*\\+*\\d*"))
 in.progress$rate.est<-log(in.progress$ntax/2)/in.progress$time
 in.progress$ntax.predicted<-2*exp(136*in.progress$rate.est)
@@ -119,10 +119,16 @@ for (filter.index in sequence(length(filter.v))) {
           all.histories.list[[j-1]]<-cbind( all.histories.list[[j-1]], proportional.history[,j])
         }
       }
-      ages.appearance<-apply(history[,2:9], 2, GetFirstAppearance)
+      ages.appearance<-rep(NA,8)
+      try(ages.appearance<-apply(history[,2:9], 2, GetFirstAppearance))
       names(ages.appearance)<-paste("age.first_",combo.names,sep="")
+      print(ages.appearance)
+      if(!is.na(ages.appearance[1])) {
       ages.df<-rbind(ages.df, ages.appearance)
-      
+      } else {
+	print("problem with ages.appearance")
+	print(ages.appearance)
+      }
       #print(proportional.history)
       # print(paste("ntax present = ",sum(history[137,2:9])))
       ntax.vector<-append(ntax.vector, sum(history[137,2:9]))
@@ -136,8 +142,12 @@ for (filter.index in sequence(length(filter.v))) {
       names(proportional.average)<-paste("proport", combo.names, sep="_")
      # ntax.vector<-unique(ntax.vector)
       ntax.include.predictions.vector<-c(ntax.vector, in.progress$ntax.predicted[which(in.progress$ntax.rescale==ntax.rescale)])
-      ages.leave.root<-apply(ages.df[,2:8], 1, min)
-      results.df<-rbind(results.df, data.frame(model=filter, dir=dirs[dir.index], ntax.rescale=ntax.rescale, ntax.actual=median(ntax.vector), ntax.actual.025=quantile(ntax.vector, 0.025), ntax.actual.975=quantile(ntax.vector, 0.975), ntax.vector.string=paste(ntax.vector, collapse="_"), ntax.predicted=median(ntax.include.predictions.vector), ntax.predicted.025=quantile(ntax.include.predictions.vector, 0.025), ntax.predicted.975=quantile(ntax.include.predictions.vector, 0.975), nruns=length(ntax.vector), nruns.with.predictions=length(ntax.include.predictions.vector), state1.ages<-paste(ages.df[,1], collapse="_"), state2.ages<-paste(ages.df[,2], collapse="_"), state3.ages<-paste(ages.df[,3], collapse="_"), state4.ages<-paste(ages.df[,4], collapse="_"), state5.ages<-paste(ages.df[,5], collapse="_"), state6.ages<-paste(ages.df[,6], collapse="_"), state7.ages<-paste(ages.df[,7], collapse="_"), state8.ages<-paste(ages.df[,8], collapse="_"),  leave.root.ages=paste(ages.leave.root, collapse="_"), t(c(div.actual, proportional.average, lambda.actual, mu.actual, turnover.actual, q.actual))))
+      ntax.include.partials.vector<-c(ntax.vector, in.progress$ntax[which(in.progress$ntax.rescale==ntax.rescale)])
+      ages.leave.root<-NA
+	if(dim(ages.df)[1]>0) {
+      		try(ages.leave.root<-apply(ages.df[,2:8], 1, min))
+	}
+      results.df<-rbind(results.df, data.frame(model=filter, dir=dirs[dir.index], ntax.rescale=ntax.rescale, ntax.actual=median(ntax.vector), ntax.actual.025=quantile(ntax.vector, 0.025), ntax.actual.975=quantile(ntax.vector, 0.975), ntax.vector.string=paste(ntax.vector, collapse="_"), ntax.predicted=median(ntax.include.predictions.vector), ntax.predicted.025=quantile(ntax.include.predictions.vector, 0.025), ntax.predicted.975=quantile(ntax.include.predictions.vector, 0.975), ntax.partials=median(ntax.include.partials.vector), ntax.partials.025=quantile(ntax.include.partials.vector, 0.025), ntax.partials.975=quantile(ntax.include.partials.vector, 0.975), nruns=length(ntax.vector), nruns.with.predictions=length(ntax.include.predictions.vector), state1.ages<-paste(ages.df[,1], collapse="_"), state2.ages<-paste(ages.df[,2], collapse="_"), state3.ages<-paste(ages.df[,3], collapse="_"), state4.ages<-paste(ages.df[,4], collapse="_"), state5.ages<-paste(ages.df[,5], collapse="_"), state6.ages<-paste(ages.df[,6], collapse="_"), state7.ages<-paste(ages.df[,7], collapse="_"), state8.ages<-paste(ages.df[,8], collapse="_"),  leave.root.ages=paste(ages.leave.root, collapse="_"), t(c(div.actual, proportional.average, lambda.actual, mu.actual, turnover.actual, q.actual))))
       #print(c(dirs[dir.index], ntax.rescale, median(ntax.vector)))
     }
     setwd("..")
@@ -165,17 +175,17 @@ for (i in sequence(dim(results.df)[1])) {
   lines(x=rep(results.df$ntax.rescale[i], 2), y=c(results.df$ntax.predicted.025[i], results.df$ntax.predicted.975[i]), col=colors[i]) 
 }
 abline(h=ntax.ideal, lty="dotted")
-abline(v=158500)
+#abline(v=158500)
 y<-log(results.df$ntax.predicted)
 x<-log(results.df$ntax.rescale)
 regression1<-lm(y~x)
 lines(results.df$ntax.rescale, exp(predict(regression1, data.frame(x=log(results.df$ntax.rescale)))), pch=16)
 #plot(x,y, ylim=c(0,25))
-abline(lm(y~x))
 regression2<-lm(x~y)
 prediction2<-predict(regression2, data.frame(y=log(250000)))
+lines(y=results.df$ntax.predicted, x=predict(regression2, data.frame(y=results.df$ntax.predicted)), lwd=3)
 #exp(prediction2)
-#abline(v=exp(prediction2))
+abline(v=exp(prediction2), lwd=4)
 
 dev.off()
 

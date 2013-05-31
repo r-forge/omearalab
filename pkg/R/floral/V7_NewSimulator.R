@@ -15,7 +15,7 @@ enableJIT(3)
 #    quickly move to a different set of states with higher div. rates, you may want to use these to rescale so you don't overshoot
 
 #note history now has time elapsed
-OMearaSSA<-function(x0, q.vector, lambda.vector, mu.vector, tf, maxWallTime, verbose=TRUE, print.freq=100, full.history=TRUE, rescale.species=NULL, yule.scale=0, history.steps.to.save=seq(from=1,to=floor(tf),length.out=floor(tf)), t.rescale=tf, x0.rescale=NULL, ntax.old.scale=NA) { #turn off full.history to save on memory
+OMearaSSA<-function(x0, q.vector, lambda.vector, mu.vector, tf, maxWallTime, verbose=TRUE, print.freq=100000, full.history=TRUE, rescale.species=NULL, yule.scale=0, history.steps.to.save=seq(from=1,to=floor(tf),length.out=floor(tf)), t.rescale=tf, x0.rescale=NULL, ntax.old.scale=NA) { #turn off full.history to save on memory
   #make sure order of states is the same in all input objects
 
   lambda.vector<-lambda.vector-(yule.scale*mu.vector)
@@ -169,7 +169,7 @@ plot.histories<-function(histories) { #uses the final outcome, not the path alon
   barplot(t(t(transformed.history)/(apply(transformed.history, 2, sum)))[, order(apply(transformed.history, 2, sum))],col=mypalette,border=NA,main="proportion",space=0) 
 }
 
-doParallelSSA<-function(x0, q.means, lambda.means, mu.means, tf=136, maxWallTime=Inf, verbose=TRUE, file.string="", full.history=FALSE, print.freq=100, rescale.species=NULL, yule.scale=0, t.rescale=136, x0.rescale=NULL, ntax.old.scale=NA) {
+doParallelSSA<-function(x0, q.means, lambda.means, mu.means, tf=136, maxWallTime=Inf, verbose=TRUE, file.string="", full.history=FALSE, print.freq=100000, rescale.species=NULL, yule.scale=0, t.rescale=136, x0.rescale=NULL, ntax.old.scale=NA) {
   file.name<-paste("SSA_",file.string,"_",format(Sys.time(), "%b%d_%H_%M_%S"),"_",round(runif(1,1,1000000)),".RSave",sep="")
   survivors<-0
   history<-0
@@ -184,7 +184,7 @@ doParallelSSA<-function(x0, q.means, lambda.means, mu.means, tf=136, maxWallTime
   save(list=ls(), file=file.name)
 }
 
-appendParallelSSA<-function(x0, q.means, lambda.means, mu.means, prev.history, t.additional=1, maxWallTime=Inf, verbose=F, file.string="", full.history=FALSE, print.freq=100, rescale.species=NULL, yule.scale=0, t.rescale=136, x0.rescale=NULL, ntax.old.scale=NA) {
+appendParallelSSA<-function(x0, q.means, lambda.means, mu.means, prev.history, t.additional=1, maxWallTime=Inf, verbose=F, file.string="", full.history=FALSE, print.freq=1000000, rescale.species=NULL, yule.scale=0, t.rescale=136, x0.rescale=NULL, ntax.old.scale=NA) {
   file.name<-paste(file.string,"_","app",t.additional,"total", t.additional+max(prev.history[,1]), ".RSave",sep="")
   survivors<-0
   history<-0

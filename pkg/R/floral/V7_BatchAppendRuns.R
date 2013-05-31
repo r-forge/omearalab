@@ -3,7 +3,7 @@ enableJIT(3)
 tf=136
 t.stop=136+15
 #MayDirs<-c("/Users/bomeara/Documents/MyDocuments/Active/FloralAssembly/SimsMay2013", "/Users/bomeara/Documents/MyDocuments/Active/FloralAssembly/SimsMay2013Additional")
-MayDirs<-c("/Users/bomeara/Documents/MyDocuments/Active/FloralAssembly/SimsMay2013")
+MayDirs<-c("/Users/bomeara/Documents/MyDocuments/Active/FloralAssembly/SimsMay2013FINAL")
 
 while(1<2) { #keep looping
   for (may.dir.index in sequence(length(MayDirs))) {
@@ -53,7 +53,7 @@ while(1<2) { #keep looping
 load("',file,'.staged")
 source("V7_NewSimulator.R")
 source("V7_StochasticSSASims_Functions.R")
-appendParallelSSA(x0=x0, q.means=q.means, lambda.means=lambda.means, mu.means=mu.means, prev.history=history, t.additional=', t.additional, ', maxWallTime=Inf, verbose=F, file.string="', file.root, '", print.freq=100, rescale.species=rescale.species, yule.scale=0, t.rescale=t.rescale, x0.rescale=x0.rescale)
+appendParallelSSA(x0=x0, q.means=q.means, lambda.means=lambda.means, mu.means=mu.means, prev.history=history, t.additional=', t.additional, ', maxWallTime=Inf, verbose=F, file.string="', file.root, '", print.freq=100000, rescale.species=rescale.species, yule.scale=0, t.rescale=t.rescale, x0.rescale=x0.rescale)
 ', sep=""), file=paste(file.root, ".append.R", sep=""), append=FALSE)
         
         
