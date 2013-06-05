@@ -21,7 +21,7 @@ x0<-c(2, 0, 0, 0, 0, 0, 0, 0)
 names(x0)<-combo.names
 names(x0.rescale)<-combo.names
 
-MakeRunFiles(constraint="full", net.div=FALSE, tf=65, submit=TRUE, nrep=50, best.only=FALSE, x0.rescale=x0.rescale, x0=x0, ntax.old.scale=1067)
-MakeRunFiles(constraint="full", net.div=FALSE, tf=65, submit=TRUE, nrep=50, best.only=FALSE, x0.rescale=x0.rescale, x0=x0, ntax.old.scale=11043)
-MakeRunFiles(constraint="full", net.div=FALSE, tf=65, submit=TRUE, nrep=50, best.only=FALSE, x0.rescale=x0.rescale, x0=x0, ntax.old.scale=4486)
+MakeRunFiles(constraint="full", net.div=FALSE, tf=136, submit=TRUE, nrep=50, best.only=FALSE, x0.rescale=x0.rescale, x0=x0, ntax.old.scale=1067)
+MakeRunFiles(constraint="full", net.div=FALSE, tf=136, submit=TRUE, nrep=50, best.only=FALSE, x0.rescale=x0.rescale, x0=x0, ntax.old.scale=4486)
+MakeRunFiles(constraint="full", net.div=FALSE, tf=136, submit=TRUE, nrep=50, best.only=FALSE, x0.rescale=x0.rescale, x0=x0, ntax.old.scale=11043)
 

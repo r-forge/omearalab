@@ -1,6 +1,6 @@
 library(RColorBrewer)
 library(stringr)
-setwd("/Users/bomeara/Documents/MyDocuments/Active/FloralAssembly/SimsMay2013")
+setwd("/Users/bomeara/Documents/MyDocuments/Active/FloralAssembly/SimsMay2013FINAL")
 source("/Users/bomeara/Documents/MyDocuments/Active/OMearaLabR/pkg/R/floral/V7_NewSimulator.R")
 source("/Users/bomeara/Documents/MyDocuments/Active/OMearaLabR/pkg/R/floral/V7_StochasticSSASims_Functions.R")
 source("/Users/bomeara/Documents/MyDocuments/Active/OMearaLabR/pkg/R/floral/V7_UtilityFns.R")
@@ -74,12 +74,12 @@ for (filter.index in sequence(length(filter.v))) {
     names(q.actual)<-q.actual.names
     #    file.list<-system("ls -1 | grep total151.RSave",intern=TRUE)
     #print(round(all.matrix, 2))
-    file.list<-system("ls -1 | grep total137.RSave",intern=TRUE)
+    file.list<-system("ls -1 | grep RSave",intern=TRUE)
     if(grepl("old", dirs[dir.index])) {
       file.list<-system("ls -1 | grep RSave | grep -v app1", intern=TRUE)
     }
     if (length(file.list)>0) {
-      file.list<-paste("/Users/bomeara/Documents/MyDocuments/Active/FloralAssembly/SimsMay2013/", dirs[dir.index], "/", file.list, sep="")
+      file.list<-paste("/Users/bomeara/Documents/MyDocuments/Active/FloralAssembly/SimsMay2013FINAL/", dirs[dir.index], "/", file.list, sep="")
     }
     #  if(!grepl("stacey", dirs[dir.index])) {
     #    setwd("/Users/bomeara/Documents/MyDocuments/Active/FloralAssembly/SimsMay2013Additional")
@@ -91,7 +91,7 @@ for (filter.index in sequence(length(filter.v))) {
     #    file.list<-c(file.list, file.list2)
     #  }
     #print(file.list)
-    setwd("/Users/bomeara/Documents/MyDocuments/Active/FloralAssembly/SimsMay2013")
+    setwd("/Users/bomeara/Documents/MyDocuments/Active/FloralAssembly/SimsMay2013FINAL")
     setwd(dirs[dir.index])
     distances<-c()
     for (i in sequence(length(file.list))) {
@@ -122,7 +122,7 @@ for (filter.index in sequence(length(filter.v))) {
       ages.appearance<-rep(NA,8)
       try(ages.appearance<-apply(history[,2:9], 2, GetFirstAppearance))
       names(ages.appearance)<-paste("age.first_",combo.names,sep="")
-      print(ages.appearance)
+      #print(ages.appearance)
       if(!is.na(ages.appearance[1])) {
       ages.df<-rbind(ages.df, ages.appearance)
       } else {
@@ -147,7 +147,7 @@ for (filter.index in sequence(length(filter.v))) {
 	if(dim(ages.df)[1]>0) {
       		try(ages.leave.root<-apply(ages.df[,2:8], 1, min))
 	}
-      results.df<-rbind(results.df, data.frame(model=filter, dir=dirs[dir.index], ntax.rescale=ntax.rescale, ntax.actual=median(ntax.vector), ntax.actual.025=quantile(ntax.vector, 0.025), ntax.actual.975=quantile(ntax.vector, 0.975), ntax.vector.string=paste(ntax.vector, collapse="_"), ntax.predicted=median(ntax.include.predictions.vector), ntax.predicted.025=quantile(ntax.include.predictions.vector, 0.025), ntax.predicted.975=quantile(ntax.include.predictions.vector, 0.975), ntax.partials=median(ntax.include.partials.vector), ntax.partials.025=quantile(ntax.include.partials.vector, 0.025), ntax.partials.975=quantile(ntax.include.partials.vector, 0.975), nruns=length(ntax.vector), nruns.with.predictions=length(ntax.include.predictions.vector), state1.ages<-paste(ages.df[,1], collapse="_"), state2.ages<-paste(ages.df[,2], collapse="_"), state3.ages<-paste(ages.df[,3], collapse="_"), state4.ages<-paste(ages.df[,4], collapse="_"), state5.ages<-paste(ages.df[,5], collapse="_"), state6.ages<-paste(ages.df[,6], collapse="_"), state7.ages<-paste(ages.df[,7], collapse="_"), state8.ages<-paste(ages.df[,8], collapse="_"),  leave.root.ages=paste(ages.leave.root, collapse="_"), t(c(div.actual, proportional.average, lambda.actual, mu.actual, turnover.actual, q.actual))))
+      results.df<-rbind(results.df, data.frame(model=filter, dir=dirs[dir.index], ntax.rescale=ntax.rescale, ntax.actual=median(ntax.vector), ntax.actual.025=quantile(ntax.vector, 0.025), ntax.actual.975=quantile(ntax.vector, 0.975), ntax.vector.string=paste(ntax.vector, collapse="_"), ntax.predicted=median(ntax.include.predictions.vector), ntax.predicted.025=quantile(ntax.include.predictions.vector, 0.025), ntax.predicted.975=quantile(ntax.include.predictions.vector, 0.975), ntax.partials=median(ntax.include.partials.vector), ntax.partials.025=quantile(ntax.include.partials.vector, 0.025), ntax.partials.975=quantile(ntax.include.partials.vector, 0.975), nruns=length(ntax.vector), nruns.with.predictions=length(ntax.include.predictions.vector), state1.ages=paste(ages.df[,1], collapse="_"), state2.ages=paste(ages.df[,2], collapse="_"), state3.ages=paste(ages.df[,3], collapse="_"), state4.ages=paste(ages.df[,4], collapse="_"), state5.ages=paste(ages.df[,5], collapse="_"), state6.ages=paste(ages.df[,6], collapse="_"), state7.ages=paste(ages.df[,7], collapse="_"), state8.ages=paste(ages.df[,8], collapse="_"),  leave.root.ages=paste(ages.leave.root, collapse="_"), t(c(div.actual, proportional.average, lambda.actual, mu.actual, turnover.actual, q.actual))))
       #print(c(dirs[dir.index], ntax.rescale, median(ntax.vector)))
     }
     setwd("..")
@@ -188,6 +188,61 @@ lines(y=results.df$ntax.predicted, x=predict(regression2, data.frame(y=results.d
 abline(v=exp(prediction2), lwd=4)
 
 dev.off()
+
+best.results.df<-results.df[which(results.df$ntax.rescale==11043),]
+wait.times<-data.frame(cbind( state2=as.numeric(strsplit(as.character(best.results.df$state2.ages), "_")[[1]]), state3=as.numeric(strsplit(as.character(best.results.df$state3.ages), "_")[[1]]), state4=as.numeric(strsplit(as.character(best.results.df$state4.ages), "_")[[1]]), state5=as.numeric(strsplit(as.character(best.results.df$state5.ages), "_")[[1]]), state6=as.numeric(strsplit(as.character(best.results.df$state6.ages), "_")[[1]]), state7=as.numeric(strsplit(as.character(best.results.df$state7.ages), "_")[[1]]), state8=as.numeric(strsplit(as.character(best.results.df$state8.ages), "_")[[1]])))
+wait.times<-cbind(wait.times, first.leavings=apply(wait.times, 1, min))
+wait.times<-cbind(wait.times, ntax=as.numeric(strsplit(as.character(best.results.df$ntax.vector.string), "_")[[1]]))
+wait.times<-cbind(wait.times, ntax.dev=wait.times$ntax/250000)
+wait.times$ntax.dev[which(wait.times$ntax.dev>1)]<-1/wait.times$ntax.dev[which(wait.times$ntax.dev>1)]
+
+library(RColorBrewer)
+mypalette<-brewer.pal(8,"Dark2")
+par(mfcol=c(2,1))
+combo.namesNot1<-combo.names[-1]
+
+plot(x=c(-20,136),y=c(0,8),type="n", xlab="MY from root", yaxt="n", xaxt="n",ylab="", bty="n", main="unweighted")
+axis(side=1, at=c(0, 30, 60, 90, 120, 136))
+scaling<-10
+for (i in 1:7) {
+	density.val<-density(wait.times[,i], from=0, to=136, adjust=.7)
+	lines(density.val$x, i+scaling*density.val$y, col=mypalette[i])
+	lines(density.val$x, i-scaling*density.val$y, col=mypalette[i])
+	focus<-quantile(wait.times[,i], 0.5)
+	lines(rep(focus,2), i+c(-1, 1) * approx(density.val$x, y = scaling*density.val$y, xout=focus)$y, lwd=3)
+	focus<-quantile(wait.times[,i], 0.025)
+	lines(rep(focus,2), i+c(-1, 1) * approx(density.val$x, y = scaling*density.val$y, xout=focus)$y, lwd=2)
+	focus<-quantile(wait.times[,i], 0.975)
+	lines(rep(focus,2), i+c(-1, 1) * approx(density.val$x, y = scaling*density.val$y, xout=focus)$y, lwd=2)
+
+	points(wait.times[,i],rep(i,length(wait.times[,i])), col=mypalette[i], pch=".")
+	text(x=-10, y=i, combo.namesNot1[i], col=mypalette[i])
+}
+
+
+plot(x=c(-20,136),y=c(0,8),type="n", xlab="MY from root", yaxt="n", xaxt="n",ylab="", bty="n", main="weighted")
+axis(side=1, at=c(0, 30, 60, 90, 120, 136))
+scaling<-10
+for (i in 1:7) {
+	samples<-apply(rmultinom(1000, size=length(wait.times[,i]), prob=wait.times$ntax.dev),1, sum)
+	sampled.times<-c()
+	for (run in sequence(length(samples))) {
+		sampled.times<-c(sampled.times, rep(wait.times[run,i], samples[run]))	
+	}
+	density.val<-density(sampled.times, from=0, to=136)
+	lines(density.val$x, i+scaling*density.val$y, col=mypalette[i])
+	lines(density.val$x, i-scaling*density.val$y, col=mypalette[i])
+	focus<-quantile(sampled.times, 0.5)
+	lines(rep(focus,2), i+c(-1, 1) * approx(density.val$x, y = scaling*density.val$y, xout=focus)$y, lwd=3)
+	focus<-quantile(sampled.times, 0.025)
+	lines(rep(focus,2), i+c(-1, 1) * approx(density.val$x, y = scaling*density.val$y, xout=focus)$y, lwd=2)
+	focus<-quantile(sampled.times, 0.975)
+	lines(rep(focus,2), i+c(-1, 1) * approx(density.val$x, y = scaling*density.val$y, xout=focus)$y, lwd=2)
+
+	symbols(wait.times[,i],rep(i,length(wait.times[,i])), circles=samples/(max(samples)), bg=mypalette[i], fg=NA, add=TRUE, inches=FALSE)
+	text(x=-10, y=i, combo.namesNot1[i], col=mypalette[i])
+}
+
 
 # par(mfrow=c(2,2))
 # plot(x=range(c(results.df$ntax.rescale, results.df$ntax.actual)), y=c(0,1), type="n", bty="n", ylab="proportion 0x00xx", xlab="ntax actual", log="x")

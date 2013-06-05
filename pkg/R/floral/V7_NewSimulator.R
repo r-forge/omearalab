@@ -71,6 +71,8 @@ OMearaSSA<-function(x0, q.vector, lambda.vector, mu.vector, tf, maxWallTime, ver
   if(verbose) {
   	print("post.scaling matrix")
     print(all.matrix)
+	save(all.matrix, file="all.matrix.RDATA")
+	write.csv(all.matrix, file="all.matrix.csv")
   }
   start.time<-Sys.time()
   x<-x0
@@ -129,7 +131,7 @@ OMearaSSA<-function(x0, q.vector, lambda.vector, mu.vector, tf, maxWallTime, ver
    if(full.history) {
       history<-rbind(history,c(time.elapsed,x))
    }
-    if(verbose || ((step.number %% print.freq) ==0)) {
+    if(((step.number %% print.freq) ==0)) {
      print(paste(sum(x),paste(x,sep=" ",collapse=" "),time.interval, time.elapsed, move, sep=" "))
     }
     if(sum(x)==0) {
