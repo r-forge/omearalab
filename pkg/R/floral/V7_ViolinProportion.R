@@ -10,6 +10,7 @@ original.data<-read.csv("/Users/bomeara/Documents/MyDocuments/Active/FloralAssem
 observed.ntax<-dim(original.data)[1]
 all.histories.list<-list()
 combo.names<-c("0x00xx","0x01xx","0x10xx","0x11xx","1x00xx","1x01xx","1x10xx","1x11xx")
+equilibria <- c(0.0024326401, 0.0370846124, 0.0269083723, 0.9005043615, 0.0002350799, 0.0025138161, 0.0014501831, 0.0288709346)
 
 GetFirstAppearance<-function(counts) {
   age<-NA
@@ -52,7 +53,7 @@ subsample.proportion<-function(p,observed.ntax) {
   return(recovered.p)
 }
 par(mfcol=c(1,1))
-plot(x=c(-10,150), y=c(0,9), yaxt="n", xlab="MY from present", bty="n", type="n",ylab="",xaxt="n")
+plot(x=c(-10,150), y=c(-3,9), yaxt="n", xlab="MY from present", bty="n", type="n",ylab="",xaxt="n")
 axis(side=1, at=c(0, 65, 136, 151), labels=c(-136, -65, 0, "+15"))
 for (dir.index in sequence(length(dirs))) {
   #print(dirs[dir.index])
@@ -147,24 +148,26 @@ for (dir.index in sequence(length(dirs))) {
 #	  polygon(times, offset-combo.index - 0.5 + c(ci.0.75.proportions, 0*rev(ci.0.75.proportions)), col= fill.color, border="NA")
 #	  polygon(times, offset-combo.index - 0.5 + c(median.proportions, 0*rev(median.proportions)), col=fill.color, border="NA")
 	#  polygon(times, offset-combo.index - 0.5 + c(ci.0.025.proportions, 0*rev(ci.0.025.proportions)), col="pink", border="NA")
-		polygon(times, offset-combo.index - 0.5 + c(ci.1.proportions, rev(ci.0.proportions)), col= fill.color, border="NA")
+		polygon(times, offset-1.3*combo.index - 0.5 + c(ci.1.proportions, rev(ci.0.proportions)), col= fill.color, border="NA")
 
-		polygon(times, offset-combo.index - 0.5 + c(ci.0.975.proportions, rev(ci.0.025.proportions)), col= fill.color, border="NA")
-		polygon(times, offset-combo.index - 0.5 + c(ci.0.75.proportions, rev(ci.0.25.proportions)), col= fill.color, border="NA")
-		lines(current[,1],offset-combo.index - 0.5 + median.proportions, col="red")
+		polygon(times, offset-1.3*combo.index - 0.5 + c(ci.0.975.proportions, rev(ci.0.025.proportions)), col= fill.color, border="NA")
+		polygon(times, offset-1.3*combo.index - 0.5 + c(ci.0.75.proportions, rev(ci.0.25.proportions)), col= fill.color, border="NA")
+		lines(current[,1],offset-1.3*combo.index - 0.5 + median.proportions, col="red")
 
 
 	  #lines(current[,1], offset - combo.index + 0.5*median.proportions)
 	  #lines(current[,1], offset - combo.index - 0.5*median.proportions)
-	  lines(current[,1], rep(offset - combo.index - 0.5, length(current[,1])))
-	  lines(current[,1], rep(offset - combo.index + 0.5, length(current[,1])))
 
-	  text(x=0, y=offset-combo.index, labels=combo.names[combo.index], pos=2)
+	  text(x=0, y=offset-1.3*combo.index, labels=gsub("x","",combo.names[combo.index]), pos=2)
 	  #lines(x=rep(quantile(ages.of.first,0.025),2), y=offset-combo.index+c(-.3,.3))
 	  #  lines(x=rep(quantile(ages.of.first,.5),2), y=offset-combo.index+c(-.3,.3),lwd=2)
 
 	  #lines(x=rep(quantile(ages.of.first,.975),2), y=offset-combo.index+c(-.3,.3))	
-	  lines(x=rep(136,2), y=c(offset-combo.index +0.5, offset - combo.index -0.5), col="white")
-	  points(136, offset-combo.index -0.5 + observed.proportions[combo.index],pch=16, col='red')
+	  lines(x=rep(136,2), y=c(offset-1.3*combo.index +0.5, offset - 1.3*combo.index -0.5), col="white")
+	  	  lines(range(current[,1], max(current[,1])+3), rep(offset - 1.3*combo.index - 0.5, 2))
+	  lines(range(current[,1], max(current[,1])+3), rep(offset - 1.3*combo.index + 0.5, 2))
+
+	  points(136, offset-1.3*combo.index -0.5 + observed.proportions[combo.index],pch=18, col='red')
+	  points(136+17, offset-1.3*combo.index - 0.5 + equilibria[combo.index], pch="-", col='blue',cex=2)
  	}
 }
