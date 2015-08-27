@@ -53,6 +53,7 @@ summary.dataframe <- data.frame()
 for (file.index in sequence(length(files))) {
 	for(T.index in sequence(length(T.vector))) {
 		for (D.index in sequence(length(D.vector))) {
+			print(paste(file.index, T.index, D.index))
 			for(F.index in sequence(length(focal.labels))) {
 				Fstring=vectorToString(convertFocalLabelToFocalVector(focal.labels[F.index], S=6, uncertainty="x"))
 				file.to.load <- paste(files[file.index],"_T",T.index, "_D",D.index, "_F_", Fstring, "Condor.Rsave", sep="")
@@ -71,12 +72,15 @@ for (file.index in sequence(length(files))) {
 					tmp.dataframe<-cbind(tmp.dataframe,data.frame(matrix(final.matrix.all[qIndices,1],nrow=1,dimnames=list("",names(final.matrix.all[qIndices,1])))),data.frame(matrix(final.matrix.all[lambdaIndices,1],nrow=1,dimnames=list("",names(final.matrix.all[lambdaIndices,1])))),data.frame(matrix(final.matrix.all[muIndices,1],nrow=1,dimnames=list("",names(final.matrix.all[muIndices,1])))))
 					tmp.dataframe <- cbind(tmp.dataframe, data.frame(file=files[file.index], stringsAsFactors=FALSE))
 					summary.dataframe<-rbind(summary.dataframe,tmp.dataframe)
-							
+					
 					
 					
 					
 				}
 			}
+			save(summary.dataframe, file="~/Dropbox/SummaryRaw.RSave")
+			write.csv(summary.dataframe, file="~/Dropbox/SummaryRaw.csv")
+
 		}
 	}
 }
