@@ -30,9 +30,10 @@ for (file.index in sequence(length(files))) {
 				Fstring=vectorToString(convertFocalLabelToFocalVector(focal.labels[F.index], S=6, uncertainty="x"))
 				file.to.load <- paste(files[file.index],"_T",T.index, "_D",D.index, "_F_", Fstring, "Condor.Rsave", sep="")
 				result <- NULL
-				try(load(file.to.load))
+				try(load(file.to.load), silent=TRUE)
 				if (!is.null(result)) {
 					result.df <- rbind(result.df, data.frame(file=files[file.index], T=transitionModels$description[T.index], D=diversificationModels$description[D.index], F=focal.labels[F.index], AIC=result["AIC",1], stringsAsFactors=FALSE))
+					print(tail(result.df, 1))
 				}
 			}
 		}
