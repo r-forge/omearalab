@@ -45,5 +45,5 @@ for (file.index in sequence(length(files))) {
 	result.df <- rbind(result.df, result.df.local)
 }
 
-save(result.df, file="ConcatenatedResult.RSave")
-write.csv(result.df, file="ConcatenatedResult.csv")
+save(result.df, file="~/Dropbox/ConcatenatedResult.RSave")
+write.csv(result.df, file="~/Dropbox/ConcatenatedResult.csv")
