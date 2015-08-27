@@ -47,3 +47,62 @@ for (file.index in sequence(length(files))) {
 
 save(result.df, file="~/Dropbox/ConcatenatedResult.RSave")
 write.csv(result.df, file="~/Dropbox/ConcatenatedResult.csv")
+
+
+summary.dataframe <- data.frame()
+for (file.index in sequence(length(files))) {
+	for(T.index in sequence(length(T.vector))) {
+		for (D.index in sequence(length(D.vector))) {
+			for(F.index in sequence(length(focal.labels))) {
+				Fstring=vectorToString(convertFocalLabelToFocalVector(focal.labels[F.index], S=6, uncertainty="x"))
+				file.to.load <- paste(files[file.index],"_T",T.index, "_D",D.index, "_F_", Fstring, "Condor.Rsave", sep="")
+				result <- NULL
+				try(load(file.to.load), silent=TRUE)
+				if (!is.null(result)) {
+					final.matrix.all <- result
+					focalVector <- convertFocalLabelToFocalVector(focal.labels[F.index], S=6, uncertainty="x")
+					qIndices<-grep("^q\\d",row.names(final.matrix.all),perl=TRUE)
+					lambdaIndices<-grep("^lambda\\d",row.names(final.matrix.all),perl=TRUE)
+					muIndices<-grep("^mu\\d",row.names(final.matrix.all),perl=TRUE)
+					transitionModelIndex <- T.index
+					diversificationModelIndex <- D.index
+					tmp.dataframe<-data.frame(paste(getFocalSummaryLabel(focalVector,S=S,any="x"),sep="",collapse=""),transitionModelIndex,transitionModels[transitionModelIndex,4],diversificationModelIndex,diversificationModels[diversificationModelIndex,5],final.matrix.all[which(row.names(final.matrix.all)=="lnLik"),1],final.matrix.all[which(row.names(final.matrix.all)=="AIC"),1],final.matrix.all[which(row.names(final.matrix.all)=="k_all"),1],final.matrix.all[which(row.names(final.matrix.all)=="k_q"),1],final.matrix.all[which(row.names(final.matrix.all)=="k_lambda"),1],final.matrix.all[which(row.names(final.matrix.all)=="k_mu"),1]) 
+					names(tmp.dataframe)<-c("focal","T","TransitionModel","D","DiversificationModel","lnLik","AIC","k_all","k_q","k_lambda","k_mu")	
+					tmp.dataframe<-cbind(tmp.dataframe,data.frame(matrix(final.matrix.all[qIndices,1],nrow=1,dimnames=list("",names(final.matrix.all[qIndices,1])))),data.frame(matrix(final.matrix.all[lambdaIndices,1],nrow=1,dimnames=list("",names(final.matrix.all[lambdaIndices,1])))),data.frame(matrix(final.matrix.all[muIndices,1],nrow=1,dimnames=list("",names(final.matrix.all[muIndices,1])))))
+					tmp.dataframe <- cbind(tmp.dataframe, data.frame(file=files[file.index], stringsAsFactors=FALSE))
+					summary.dataframe<-rbind(summary.dataframe,tmp.dataframe)
+							
+					
+					
+					
+				}
+			}
+		}
+	}
+}
+
+save(summary.dataframe, file="~/Dropbox/SummaryRaw.RSave")
+write.csv(summary.dataframe, file="~/Dropbox/SummaryRaw.csv")
+for (charStateI in 1:((2^S))) { 
+	binaryStateIVector<-digitsBase(charStateI-1,ndigits=S)[,1]
+	iLabelShort<-sprintf(paste("%0",maxStringLength,"d",sep=""),charStateI)
+	iLabelLong<-vectorToString(binaryStateIVector)
+	names(summary.dataframe)[which(names(summary.dataframe) == paste("lambda",iLabelShort,sep="",collapse=""))]<-paste("lambda",iLabelLong,sep="",collapse="")
+	names(summary.dataframe)[which(names(summary.dataframe) == paste("mu",iLabelShort,sep="",collapse=""))]<-paste("mu",iLabelLong,sep="",collapse="")
+#			print(paste("changing names for ",iLabelLong))
+	for (charStateJ in 1:((2^S))) { 
+		binaryStateJVector<-digitsBase(charStateJ-1,ndigits=S)[,1]
+		jLabelShort<-sprintf(paste("%0",maxStringLength,"d",sep=""),charStateJ)
+		jLabelLong<-vectorToString(binaryStateJVector)
+		numberMismatches=vectorMismatch(binaryStateIVector,binaryStateJVector) #so we have two vectors, say 00101 and 00110 (though as length 5 vectors). Doing v1==v2 leads to T T T F F. T=1 for R and F=0, so 1-(v1==v2) = c(1-1,1-1,1-1,1-0,1-0), sum of which is the number of mismatches
+		if (numberMismatches==1) {
+			names(summary.dataframe)[which(names(summary.dataframe) == paste("q",iLabelShort,jLabelShort,sep="",collapse=""))]<-paste("q",iLabelLong,"_",jLabelLong,sep="",collapse="")			
+		}
+		else {
+			names(summary.dataframe)[which(names(summary.dataframe) == paste("q",iLabelShort,jLabelShort,sep="",collapse=""))]<-paste("q",iLabelLong,"_",jLabelLong,"_disallowed",sep="",collapse="")			
+		}
+	}
+}
+
+save(summary.dataframe, file="~/Dropbox/SummaryPretty.RSave")
+write.csv(summary.dataframe, file="~/Dropbox/SummaryPretty.csv")
