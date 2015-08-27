@@ -24,6 +24,7 @@ D.vector <- sequence(6)
 result.df <- data.frame()
 
 for (file.index in sequence(length(files))) {
+	result.df.local <- data.frame()
 	for(T.index in sequence(length(T.vector))) {
 		for (D.index in sequence(length(D.vector))) {
 			for(F.index in sequence(length(focal.labels))) {
@@ -32,12 +33,16 @@ for (file.index in sequence(length(files))) {
 				result <- NULL
 				try(load(file.to.load), silent=TRUE)
 				if (!is.null(result)) {
-					result.df <- rbind(result.df, data.frame(file=files[file.index], T=transitionModels$description[T.index], D=diversificationModels$description[D.index], F=focal.labels[F.index], AIC=result["AIC",1], stringsAsFactors=FALSE))
+					result.df.local <- rbind(result.df.local, data.frame(file=files[file.index], T=transitionModels$description[T.index], D=diversificationModels$description[D.index], F=focal.labels[F.index], AIC=result["AIC",1], stringsAsFactors=FALSE))
 					print(tail(result.df, 1))
 				}
 			}
 		}
 	}
+	result.df.local$deltaAIC <- result.df.local$AIC - min(result.df.local$AIC, na.rm=TRUE)
+	result.df.local$AICweight <- exp(-0.5 * result.df.local$deltaAIC)
+	result.df.local$AICweight <- result.df.local$AICweight / sum(result.df.local$AICweight)
+	result.df <- rbind(result.df, result.df.local)
 }
 
 save(result.df, file="ConcatenatedResult.RSave")
