@@ -64,13 +64,13 @@ for(i in sequence(length(param.names))) {
 }
 
 pdf(file="~/Dropbox/Qmeans.pdf", width=7, height=7)
-plot(x=c(0.5, 0.5+length(q.means)), y=estimates.range, type="n", xlab="", ylab="transition rate", xaxt="n", bty="n", log="y")
+plot(x=c(0.5, 0.5+length(q.means)), y=estimates.range, type="n", xlab="", ylab="transition rate", xaxt="n", bty="n", log="")
 #text(sequence(length(q.means)), rep(min(estimates.range), length(q.means)), names(q.means), cex=0.5, srt=90)
 axis(side=1, at=sequence(length(q.means)), labels=names(q.means), las=2, cex.axis=0.5)
 for(i in sequence(length(param.names))) {
-	print(param.names[i]) 
-	print(param.true[i])
-	local.params <- model.averages.disallowed.purged[, grepl(param.names[i],colnames(model.averages.disallowed.purged))]	
+	print(names(q.means)[i]) 
+	print(q.means[i])
+	local.params <- model.averages.disallowed.purged[, grepl(gsub("x",".",names(q.means)[i]),colnames(model.averages.disallowed.purged))]	
 	estimates <- apply(local.params, 1, mean)
 	points(rep(i, length(estimates)), estimates, pch=20, col=rgb(0, 0, 0, 0.3))
 	points(i, median(estimates), pch="-", col="purple", cex=3)
