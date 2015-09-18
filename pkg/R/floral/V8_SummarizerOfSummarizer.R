@@ -72,6 +72,7 @@ for(i in sequence(length(param.names))) {
 	print(q.means[i])
 	local.params <- model.averages.disallowed.purged[, grepl(gsub("x",".",names(q.means)[i]),colnames(model.averages.disallowed.purged))]	
 	estimates <- apply(local.params, 1, mean)
+	print(quantile(estimates, seq(from=0, to=1, length.out=21)))
 	points(rep(i, length(estimates)), estimates, pch=20, col=rgb(0, 0, 0, 0.3))
 	points(i, median(estimates), pch="-", col="purple", cex=3)
 	points(i, q.means[i], pch="-", col="red", cex=2)
@@ -93,7 +94,7 @@ for(i in sequence(length(div.means))) {
 	local.params.mu <- model.averages.disallowed.purged[, grepl(mu.names[i],colnames(model.averages.disallowed.purged))]	
 	local.params.div <- local.params.lambda - local.params.mu
 	estimates <- apply(local.params.div, 1, mean)
-	print(quantile(estimates, seq(from=0, to=1, length.out=11)))
+	print(quantile(estimates, seq(from=0, to=1, length.out=21)))
 	points(rep(i, length(estimates)), estimates, pch=20, col=rgb(0, 0, 0, 0.3))
 	points(i, median(estimates), pch="-", col="purple", cex=4)
 	points(i, div.means[i], pch="-", col="red", cex=3)
