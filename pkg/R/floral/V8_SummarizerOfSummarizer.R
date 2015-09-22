@@ -72,7 +72,7 @@ for(i in sequence(length(param.names))) {
 	print(q.means[i])
 	local.params <- model.averages.disallowed.purged[, grepl(gsub("x",".",names(q.means)[i]),colnames(model.averages.disallowed.purged))]	
 	estimates <- apply(local.params, 1, mean)
-	print(quantile(estimates, seq(from=0, to=1, length.out=21)))
+	print(quantile(estimates, c(0.0275, 0.975)))
 	points(rep(i, length(estimates)), estimates, pch=20, col=rgb(0, 0, 0, 0.3))
 	points(i, median(estimates), pch="-", col="purple", cex=3)
 	points(i, q.means[i], pch="-", col="red", cex=2)
@@ -94,7 +94,8 @@ for(i in sequence(length(div.means))) {
 	local.params.mu <- model.averages.disallowed.purged[, grepl(mu.names[i],colnames(model.averages.disallowed.purged))]	
 	local.params.div <- local.params.lambda - local.params.mu
 	estimates <- apply(local.params.div, 1, mean)
-	print(quantile(estimates, seq(from=0, to=1, length.out=21)))
+	#print(quantile(estimates, seq(from=0, to=1, length.out=21)))
+	print(quantile(estimates, c(0.0275, 0.975)))
 	points(rep(i, length(estimates)), estimates, pch=20, col=rgb(0, 0, 0, 0.3))
 	points(i, median(estimates), pch="-", col="purple", cex=4)
 	points(i, div.means[i], pch="-", col="red", cex=3)
@@ -103,3 +104,21 @@ for(i in sequence(length(div.means))) {
 dev.off()
 system("open ~/Dropbox/Div.pdf")
 
+all.estimates <- c()
+for(i in sequence(length(div.means))) {
+	print(names(div.means)[i])
+	print(div.means[i])
+	local.params.lambda <- model.averages.disallowed.purged[, grepl(lambda.names[i],colnames(model.averages.disallowed.purged))]	
+	local.params.mu <- model.averages.disallowed.purged[, grepl(mu.names[i],colnames(model.averages.disallowed.purged))]	
+	local.params.div <- local.params.lambda - local.params.mu
+	estimates <- apply(local.params.div, 1, mean)
+	print(quantile(estimates, c(0.0275, 0.975)))
+	all.estimates <- cbind(all.estimates, estimates)
+}
+colnames(all.estimates) <- names(div.means)
+Normalize <- function(x, important=4) {
+		return(x/x[important])
+}
+
+all.estimates.normalized <- t(apply(all.estimates, 1, Normalize))
+write.csv(all.estimates.normalized, "~/Desktop/AllEstimatesNormalizedFor011.csv")
